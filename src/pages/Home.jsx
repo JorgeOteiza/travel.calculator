@@ -1,17 +1,21 @@
 import React, { useState } from "react";
-import "bootstrap/dist/css/bootstrap.min.css";
+import axios from "axios";
+import { GoogleMap, useJsApiLoader } from "@react-google-maps/api";
 
 const Home = () => {
   const [formData, setFormData] = useState({
-    distance: "",
-    fuelEfficiency: "",
-    fuelPrice: "",
-    averageSpeed: "",
-    weather: "sunny", // Default condition
-    slope: "flat", // Default slope
+    vehicle: "",
+    fuelType: "gasoline",
+    location: "",
   });
-
   const [results, setResults] = useState(null);
+
+  const [mapCenter, setMapCenter] = useState({ lat: 0, lng: 0 });
+
+  const { isLoaded } = useJsApiLoader({
+    googleMapsApiKey: "YOUR_GOOGLE_MAPS_API_KEY", // Reemplázalo con tu clave
+    libraries: ["places"],
+  });
 
   const handleChange = (e) => {
     setFormData({
@@ -20,140 +24,126 @@ const Home = () => {
     });
   };
 
-  const calculateResults = () => {
-    const {
-      distance,
-      fuelEfficiency,
-      fuelPrice,
-      averageSpeed,
-      weather,
-      slope,
-    } = formData;
+  const calculateTrip = async () => {
+    try {
+      const { location, fuelType } = formData;
 
-    if (!distance || !fuelEfficiency || !fuelPrice || !averageSpeed) {
-      alert("Please fill all required fields");
-      return;
+      // 1. Geocoding para obtener coordenadas del área
+      const geoResponse = await axios.get(
+        `https://maps.googleapis.com/maps/api/geocode/json`,
+        {
+          params: {
+            address: location,
+            key: "YOUR_GOOGLE_MAPS_API_KEY",
+          },
+        }
+      );
+
+      const { lat, lng } = geoResponse.data.results[0].geometry.location;
+      setMapCenter({ lat, lng });
+
+      // 2. Distancia entre puntos y elevación
+      const distanceResponse = await axios.get(
+        `https://maps.googleapis.com/maps/api/distancematrix/json`,
+        {
+          params: {
+            origins: `${lat},${lng}`,
+            destinations: `${lat + 0.1},${lng + 0.1}`, // Ejemplo de destinos cercanos
+            key: "YOUR_GOOGLE_MAPS_API_KEY",
+          },
+        }
+      );
+
+      const distance = distanceResponse.data.rows[0].elements[0].distance.value;
+
+      const elevationResponse = await axios.get(
+        `https://maps.googleapis.com/maps/api/elevation/json`,
+        {
+          params: {
+            locations: `${lat},${lng}`,
+            key: "YOUR_GOOGLE_MAPS_API_KEY",
+          },
+        }
+      );
+
+      const elevation = elevationResponse.data.results[0].elevation;
+
+      // 3. Clima
+      const weatherResponse = await axios.get(
+        `https://api.openweathermap.org/data/2.5/weather`,
+        {
+          params: {
+            lat,
+            lon: lng,
+            appid: "YOUR_WEATHER_API_KEY", // Reemplázalo con tu clave
+            units: "metric",
+          },
+        }
+      );
+
+      const weather = weatherResponse.data;
+
+      // 4. Calcular resultados finales
+      const adjustedEfficiency =
+        fuelType === "gasoline" ? 15 : fuelType === "diesel" ? 18 : 6; // Simulación
+      const fuelConsumed = distance / 1000 / adjustedEfficiency; // km a litros
+      const totalCost = fuelConsumed * (fuelType === "electric" ? 0.12 : 1.5); // Precio estimado
+
+      setResults({
+        distance: (distance / 1000).toFixed(2),
+        fuelConsumed: fuelConsumed.toFixed(2),
+        totalCost: totalCost.toFixed(2),
+        weather: weather.weather[0].description,
+        elevation: elevation.toFixed(2),
+      });
+    } catch (error) {
+      console.error("Error calculating trip:", error);
     }
-
-    let adjustedEfficiency = parseFloat(fuelEfficiency);
-    let adjustedFuelPrice = parseFloat(fuelPrice);
-
-    // Adjust efficiency based on weather
-    switch (weather) {
-      case "sunny":
-        adjustedEfficiency *= 1.05;
-        break;
-      case "cold":
-        adjustedEfficiency *= 0.85;
-        break;
-      case "windy":
-        adjustedEfficiency *= 0.9;
-        break;
-      default:
-        break;
-    }
-
-    // Adjust efficiency based on slope
-    switch (slope) {
-      case "uphill":
-        adjustedEfficiency *= 0.8;
-        break;
-      case "downhill":
-        adjustedEfficiency *= 1.1;
-        break;
-      default:
-        break;
-    }
-
-    const fuelConsumed = parseFloat(distance) / adjustedEfficiency;
-    const totalCost = fuelConsumed * adjustedFuelPrice;
-    const travelTime = parseFloat(distance) / parseFloat(averageSpeed);
-
-    setResults({
-      fuelConsumed: fuelConsumed.toFixed(2),
-      totalCost: totalCost.toFixed(2),
-      travelTime: travelTime.toFixed(2),
-    });
   };
 
   return (
     <div className="container mt-5">
-      <h1 className="mb-4">Travel Calculator</h1>
+      <h1>Travel Calculator</h1>
       <form>
         <div className="mb-3">
-          <label className="form-label">Distance (km)</label>
+          <label className="form-label">Vehicle</label>
           <input
-            type="number"
+            type="text"
             className="form-control"
-            name="distance"
-            value={formData.distance}
+            name="vehicle"
+            value={formData.vehicle}
             onChange={handleChange}
             required
           />
         </div>
         <div className="mb-3">
-          <label className="form-label">Fuel Efficiency (km/l)</label>
-          <input
-            type="number"
-            className="form-control"
-            name="fuelEfficiency"
-            value={formData.fuelEfficiency}
-            onChange={handleChange}
-            required
-          />
-        </div>
-        <div className="mb-3">
-          <label className="form-label">Fuel Price ($/l)</label>
-          <input
-            type="number"
-            className="form-control"
-            name="fuelPrice"
-            value={formData.fuelPrice}
-            onChange={handleChange}
-            required
-          />
-        </div>
-        <div className="mb-3">
-          <label className="form-label">Average Speed (km/h)</label>
-          <input
-            type="number"
-            className="form-control"
-            name="averageSpeed"
-            value={formData.averageSpeed}
-            onChange={handleChange}
-            required
-          />
-        </div>
-        <div className="mb-3">
-          <label className="form-label">Weather</label>
+          <label className="form-label">Fuel Type</label>
           <select
             className="form-select"
-            name="weather"
-            value={formData.weather}
+            name="fuelType"
+            value={formData.fuelType}
             onChange={handleChange}
           >
-            <option value="sunny">Sunny</option>
-            <option value="cold">Cold</option>
-            <option value="windy">Windy</option>
+            <option value="gasoline">Gasoline</option>
+            <option value="diesel">Diesel</option>
+            <option value="electric">Electric</option>
           </select>
         </div>
         <div className="mb-3">
-          <label className="form-label">Slope</label>
-          <select
-            className="form-select"
-            name="slope"
-            value={formData.slope}
+          <label className="form-label">Location</label>
+          <input
+            type="text"
+            className="form-control"
+            name="location"
+            value={formData.location}
             onChange={handleChange}
-          >
-            <option value="flat">Flat</option>
-            <option value="uphill">Uphill</option>
-            <option value="downhill">Downhill</option>
-          </select>
+            required
+          />
         </div>
         <button
           type="button"
           className="btn btn-primary"
-          onClick={calculateResults}
+          onClick={calculateTrip}
         >
           Calculate
         </button>
@@ -162,10 +152,20 @@ const Home = () => {
       {results && (
         <div className="mt-5">
           <h2>Results</h2>
+          <p>Distance: {results.distance} km</p>
           <p>Fuel Consumed: {results.fuelConsumed} liters</p>
           <p>Total Cost: ${results.totalCost}</p>
-          <p>Travel Time: {results.travelTime} hours</p>
+          <p>Weather: {results.weather}</p>
+          <p>Elevation: {results.elevation} meters</p>
         </div>
+      )}
+
+      {isLoaded && (
+        <GoogleMap
+          mapContainerStyle={{ width: "100%", height: "400px" }}
+          center={mapCenter}
+          zoom={10}
+        />
       )}
     </div>
   );
