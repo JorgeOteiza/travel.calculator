@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import axios from "axios";
 import { GoogleMap, useJsApiLoader } from "@react-google-maps/api";
 import "../styles/home.css";
@@ -8,7 +8,9 @@ const Home = () => {
     vehicle: "",
     fuelType: "gasoline",
     location: "",
+    destinity: "", // Añadido para el destino
   });
+
   const [results, setResults] = useState(null);
   const [mapCenter, setMapCenter] = useState({ lat: 0, lng: 0 });
 
@@ -28,8 +30,8 @@ const Home = () => {
 
   const calculateTrip = async () => {
     try {
-      // 1. Geocoding para obtener coordenadas del área
-      const geoResponse = await axios.get(
+      // Geocoding para obtener coordenadas del origen
+      const originResponse = await axios.get(
         `https://maps.googleapis.com/maps/api/geocode/json`,
         {
           params: {
@@ -39,15 +41,28 @@ const Home = () => {
         }
       );
 
-      const { lat, lng } = geoResponse.data.results[0].geometry.location;
-      setMapCenter({ lat, lng });
+      const destResponse = await axios.get(
+        `https://maps.googleapis.com/maps/api/geocode/json`,
+        {
+          params: {
+            address: formData.destinity,
+            key: "YOUR_GOOGLE_MAPS_API_KEY",
+          },
+        }
+      );
 
-      // 2. Llamada al backend para cálculos
+      const originCoords = originResponse.data.results[0].geometry.location;
+      const destCoords = destResponse.data.results[0].geometry.location;
+
+      setMapCenter(originCoords); // Centrar mapa en el origen
+
+      // Llamada al backend para cálculos
       const response = await axios.post("http://localhost:5000/api/calculate", {
         vehicle: formData.vehicle,
         fuelType: formData.fuelType,
-        location: formData.location,
-        coordinates: { lat, lng },
+        origin: formData.location,
+        destinity: formData.destinity,
+        coordinates: { origin: originCoords, dest: destCoords },
       });
 
       setResults(response.data);
@@ -85,15 +100,25 @@ const Home = () => {
           </select>
         </div>
         <div className="mb-3">
-          <label className="form-label .text-white-50 dropdown-toggle">
-            Location
-          </label>
+          <label className="form-label">Location</label>
           <input
             type="text"
             className="form-control"
             name="location"
-            placeholder="select your section"
+            placeholder="Enter your origin"
             value={formData.location}
+            onChange={handleChange}
+            required
+          />
+        </div>
+        <div className="mb-3">
+          <label className="form-label">Destinity</label>
+          <input
+            type="text"
+            className="form-control"
+            name="destinity"
+            placeholder="Enter your destination"
+            value={formData.destinity}
             onChange={handleChange}
             required
           />
