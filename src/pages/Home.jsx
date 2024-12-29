@@ -85,11 +85,14 @@ const Home = () => {
           </select>
         </div>
         <div className="mb-3">
-          <label className="form-label">Location</label>
+          <label className="form-label .text-white-50 dropdown-toggle">
+            Location
+          </label>
           <input
             type="text"
             className="form-control"
             name="location"
+            placeholder="select your section"
             value={formData.location}
             onChange={handleChange}
             required
