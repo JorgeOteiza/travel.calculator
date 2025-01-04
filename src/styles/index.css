@@ -1,19 +1,54 @@
 @import "/node_modules/bootstrap/dist/css/bootstrap.min.css";
 
+/* Reset y layout base */
+html,
 body {
-  font-family: Arial, sans-serif;
+  height: 100%;
   margin: 0;
   padding: 0;
-  background: lightblue;
+  font-family: Arial, sans-serif;
+  display: flex;
+  flex-direction: column;
+}
+
+#root {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
 }
 
 nav {
   background-color: #333;
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.navbar-brand {
+  color: powderblue;
+}
+
+.nav-link {
+  color: white;
+}
+
+nav a {
+  color: white;
+  text-decoration: none;
+  padding: 0.5rem;
+}
+
+nav a:hover {
+  text-decoration: underline;
 }
 
 footer {
   background-color: #333;
   color: white;
   text-align: center;
-  padding: 1rem;
+  padding: 2rem;
+  border-top: 4px solid #007bff;
+  margin-top: auto;
 }

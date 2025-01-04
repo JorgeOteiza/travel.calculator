@@ -8,29 +8,25 @@ const Home = () => {
     vehicle: "",
     fuelType: "gasoline",
     location: "",
-    destinity: "", // Añadido para el destino
+    destinity: "",
   });
 
   const [results, setResults] = useState(null);
   const [mapCenter, setMapCenter] = useState({ lat: 0, lng: 0 });
 
   const { isLoaded } = useJsApiLoader({
-    googleMapsApiKey: "YOUR_GOOGLE_MAPS_API_KEY", // Reemplázalo con tu clave
+    googleMapsApiKey: "YOUR_GOOGLE_MAPS_API_KEY",
     libraries: ["places"],
   });
 
   if (!isLoaded) return <div>Loading...</div>;
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const calculateTrip = async () => {
     try {
-      // Geocoding para obtener coordenadas del origen
       const originResponse = await axios.get(
         `https://maps.googleapis.com/maps/api/geocode/json`,
         {
@@ -54,9 +50,8 @@ const Home = () => {
       const originCoords = originResponse.data.results[0].geometry.location;
       const destCoords = destResponse.data.results[0].geometry.location;
 
-      setMapCenter(originCoords); // Centrar mapa en el origen
+      setMapCenter(originCoords);
 
-      // Llamada al backend para cálculos
       const response = await axios.post("http://localhost:5000/api/calculate", {
         vehicle: formData.vehicle,
         fuelType: formData.fuelType,
@@ -72,84 +67,84 @@ const Home = () => {
   };
 
   return (
-    <div className="container formItems">
-      <h1>Travel Calculator</h1>
-      <form>
-        <div className="mb-3">
-          <label className="form-label">Vehicle</label>
-          <input
-            type="text"
-            className="form-control"
-            name="vehicle"
-            value={formData.vehicle}
-            onChange={handleChange}
-            required
-          />
-        </div>
-        <div className="mb-3">
-          <label className="form-label">Fuel Type</label>
-          <select
-            className="form-select"
-            name="fuelType"
-            value={formData.fuelType}
-            onChange={handleChange}
-          >
-            <option value="gasoline">Gasoline</option>
-            <option value="diesel">Diesel</option>
-            <option value="electric">Electric</option>
-          </select>
-        </div>
-        <div className="mb-3">
-          <label className="form-label">Location</label>
-          <input
-            type="text"
-            className="form-control"
-            name="location"
-            placeholder="Enter your origin"
-            value={formData.location}
-            onChange={handleChange}
-            required
-          />
-        </div>
-        <div className="mb-3">
-          <label className="form-label">Destinity</label>
-          <input
-            type="text"
-            className="form-control"
-            name="destinity"
-            placeholder="Enter your destination"
-            value={formData.destinity}
-            onChange={handleChange}
-            required
-          />
-        </div>
-        <button
-          type="button"
-          className="btn btn-primary"
-          onClick={calculateTrip}
-        >
-          Calculate
-        </button>
-      </form>
+    <div className="container">
+      {/* Formulario a la izquierda */}
+      <div className="formItems">
+        <h1 className="my-2">Travel Calculator</h1>
+        <form>
+          <div className="mb-3">
+            <label className="form-label">Vehicle</label>
+            <input
+              type="text"
+              className="form-control"
+              name="vehicle"
+              value={formData.vehicle}
+              onChange={handleChange}
+              required
+            />
+          </div>
+          <div className="mb-3">
+            <label className="form-label">Fuel Type</label>
+            <select
+              className="form-select"
+              name="fuelType"
+              value={formData.fuelType}
+              onChange={handleChange}
+            >
+              <option value="gasoline">Gasoline</option>
+              <option value="diesel">Diesel</option>
+              <option value="electric">Electric</option>
+            </select>
+          </div>
+          <div className="mb-3">
+            <label className="form-label">Location</label>
+            <input
+              type="text"
+              className="form-control"
+              name="location"
+              value={formData.location}
+              onChange={handleChange}
+              required
+            />
+          </div>
+          <div className="mb-3">
+            <label className="form-label">Destinity</label>
+            <input
+              type="text"
+              className="form-control"
+              name="destinity"
+              value={formData.destinity}
+              onChange={handleChange}
+              required
+            />
+          </div>
+          <button type="button" onClick={calculateTrip}>
+            Calculate
+          </button>
+        </form>
 
-      {results && (
-        <div className="mt-5">
-          <h2>Results</h2>
-          <p>Distance: {results.distance} km</p>
-          <p>Fuel Consumed: {results.fuelConsumed} liters</p>
-          <p>Total Cost: ${results.totalCost}</p>
-          <p>Weather: {results.weather}</p>
-          <p>Elevation: {results.elevation} meters</p>
-        </div>
-      )}
+        {results && (
+          <div className="mt-5">
+            <h2>Results</h2>
+            <p>Distance: {results.distance} km</p>
+            <p>Fuel Consumed: {results.fuelConsumed} liters</p>
+            <p>Total Cost: ${results.totalCost}</p>
+            <p>Weather: {results.weather}</p>
+            <p>Elevation: {results.elevation} meters</p>
+          </div>
+        )}
+      </div>
 
-      {isLoaded && (
-        <GoogleMap
-          mapContainerStyle={{ width: "100%", height: "400px" }}
-          center={mapCenter}
-          zoom={10}
-        />
-      )}
+      {/* Mapa a la derecha */}
+      <div className="mapContainer">
+        {isLoaded && (
+          <GoogleMap
+            mapContainerStyle={{ width: "100%", height: "100%" }}
+            center={mapCenter}
+            zoom={10}
+          />
+        )}
+      </div>
     </div>
   );
 };
