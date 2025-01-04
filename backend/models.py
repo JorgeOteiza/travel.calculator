@@ -12,7 +12,6 @@ class Trip(db.Model):
     total_cost = db.Column(db.Float, nullable=False)
 
     def to_dict(self):
-        """Convierte la instancia en un diccionario para facilitar la serialización"""
         return {
             "id": self.id,
             "vehicle": self.vehicle,

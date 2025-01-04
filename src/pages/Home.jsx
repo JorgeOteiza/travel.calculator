@@ -15,7 +15,7 @@ const Home = () => {
   const [mapCenter, setMapCenter] = useState({ lat: 0, lng: 0 });
 
   const { isLoaded } = useJsApiLoader({
-    googleMapsApiKey: "YOUR_GOOGLE_MAPS_API_KEY",
+    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
     libraries: ["places"],
   });
 
@@ -30,22 +30,24 @@ const Home = () => {
 
   const calculateTrip = async () => {
     try {
+      // Geocoding para origen
       const originResponse = await axios.get(
         `https://maps.googleapis.com/maps/api/geocode/json`,
         {
           params: {
             address: formData.location,
-            key: "YOUR_GOOGLE_MAPS_API_KEY",
+            key: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
           },
         }
       );
 
+      // Geocoding para destino
       const destResponse = await axios.get(
         `https://maps.googleapis.com/maps/api/geocode/json`,
         {
           params: {
             address: formData.destinity,
-            key: "YOUR_GOOGLE_MAPS_API_KEY",
+            key: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
           },
         }
       );
@@ -55,17 +57,22 @@ const Home = () => {
 
       setMapCenter(originCoords);
 
-      const response = await axios.post("http://localhost:5000/api/calculate", {
-        vehicle: formData.vehicle,
-        fuelType: formData.fuelType,
-        origin: formData.location,
-        destinity: formData.destinity,
-        coordinates: { origin: originCoords, dest: destCoords },
-      });
+      // Llamada al backend Flask
+      const response = await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/api/calculate`,
+        {
+          vehicle: formData.vehicle,
+          fuelType: formData.fuelType,
+          origin: formData.location,
+          destinity: formData.destinity,
+          coordinates: { origin: originCoords, dest: destCoords },
+        }
+      );
 
       setResults(response.data);
     } catch (error) {
       console.error("Error calculating trip:", error);
+      alert("Failed to fetch results. Check console for details.");
     }
   };
 
@@ -122,7 +129,7 @@ const Home = () => {
             />
           </div>
           <button type="button" onClick={calculateTrip}>
-            Calculate
+            Calculate Trip
           </button>
         </form>
 
@@ -137,7 +144,7 @@ const Home = () => {
       </div>
 
       {/* Mapa a la derecha */}
-      <div className="mapContainer">
+      <div className="map-container">
         <GoogleMap
           mapContainerStyle={{ width: "100%", height: "100%" }}
           center={mapCenter}
