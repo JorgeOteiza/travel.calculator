@@ -1,6 +1,5 @@
 @import "/node_modules/bootstrap/dist/css/bootstrap.min.css";
 
-/* Reset y layout base */
 html,
 body {
   height: 100%;
@@ -9,6 +8,7 @@ body {
   font-family: Arial, sans-serif;
   display: flex;
   flex-direction: column;
+  box-sizing: border-box;
 }
 
 #root {
@@ -16,6 +16,7 @@ body {
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
+  box-sizing: border-box;
 }
 
 nav {
@@ -24,23 +25,23 @@ nav {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  box-sizing: border-box;
+  border-bottom: 4px solid lightseagreen;
 }
 
 .navbar-brand {
-  color: powderblue;
+  color: cadetblue;
+  font-size: 1.5rem;
+  font-weight: bold;
 }
 
 .nav-link {
-  color: white;
-}
-
-nav a {
   color: white;
   text-decoration: none;
   padding: 0.5rem;
 }
 
-nav a:hover {
+.nav-link:hover {
   text-decoration: underline;
 }
 
@@ -49,6 +50,7 @@ footer {
   color: white;
   text-align: center;
   padding: 2rem;
-  border-top: 4px solid #007bff;
+  border-top: 4px solid lightseagreen;
   margin-top: auto;
+  box-sizing: border-box;
 }

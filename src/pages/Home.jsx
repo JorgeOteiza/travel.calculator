@@ -22,7 +22,10 @@ const Home = () => {
   if (!isLoaded) return <div>Loading...</div>;
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
   };
 
   const calculateTrip = async () => {
@@ -67,10 +70,10 @@ const Home = () => {
   };
 
   return (
-    <div className="container">
+    <div className="home-container">
       {/* Formulario a la izquierda */}
-      <div className="formItems">
-        <h1 className="my-2">Travel Calculator</h1>
+      <div className="form-container">
+        <h1>Travel Calculator</h1>
         <form>
           <div className="mb-3">
             <label className="form-label">Vehicle</label>
@@ -124,26 +127,22 @@ const Home = () => {
         </form>
 
         {results && (
-          <div className="mt-5">
+          <div className="results">
             <h2>Results</h2>
             <p>Distance: {results.distance} km</p>
             <p>Fuel Consumed: {results.fuelConsumed} liters</p>
             <p>Total Cost: ${results.totalCost}</p>
-            <p>Weather: {results.weather}</p>
-            <p>Elevation: {results.elevation} meters</p>
           </div>
         )}
       </div>
 
       {/* Mapa a la derecha */}
       <div className="mapContainer">
-        {isLoaded && (
-          <GoogleMap
-            mapContainerStyle={{ width: "100%", height: "100%" }}
-            center={mapCenter}
-            zoom={10}
-          />
-        )}
+        <GoogleMap
+          mapContainerStyle={{ width: "100%", height: "100%" }}
+          center={mapCenter}
+          zoom={10}
+        />
       </div>
     </div>
   );

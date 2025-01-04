@@ -1,12 +1,14 @@
-/* Layout general de la página */
 .home-container {
   display: flex;
-  gap: 20px;
+  justify-content: space-between;
+  align-items: flex-start;
   padding: 20px;
-  height: 80vh;
+  gap: 20px;
+  height: calc(100vh - 120px); /* Ajuste para evitar el footer */
+  box-sizing: border-box;
 }
 
-/* Estilo para el formulario */
+/* Formulario a la izquierda */
 .form-container {
   flex: 1;
   max-width: 400px;
@@ -15,38 +17,29 @@
   background-color: #f9f9f9;
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  height: 100%;
+  box-sizing: border-box;
 }
 
-h1 {
-  text-align: center;
-  color: #333;
-  margin-bottom: 20px;
-}
-
-form {
-  width: 100%;
-}
-
-form .mb-3 {
-  margin-bottom: 15px;
-}
-
+/* Estilo del mapa */
 .mapContainer {
   flex: 2;
-  height: 400px;
+  height: 100%; /* Asegurando la misma altura que el formulario */
   border-radius: 10px;
   overflow: hidden;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   border: 2px solid #007bff;
+  box-sizing: border-box;
 }
 
+/* Ajustes generales para mantener consistencia visual */
 button {
   width: 100%;
   padding: 12px;
   font-size: 16px;
   margin-top: 15px;
   background-color: #007bff;
-  color: #fff;
+  color: white;
   border: none;
   border-radius: 8px;
   transition: background-color 0.3s ease;
@@ -57,7 +50,6 @@ button:hover {
   background-color: #0056b3;
 }
 
-/* Estilo para los resultados */
 .results {
   margin-top: 20px;
   padding: 15px;
