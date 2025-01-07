@@ -1,7 +1,13 @@
 import { useState } from "react";
 import axios from "axios";
-import { GoogleMap, useJsApiLoader } from "@react-google-maps/api";
+import {
+  GoogleMap,
+  useJsApiLoader,
+  Marker, // Cambio aquí a Marker estándar
+} from "@react-google-maps/api";
 import "../styles/home.css";
+
+const libraries = ["places"];
 
 const Home = () => {
   const [formData, setFormData] = useState({
@@ -13,24 +19,21 @@ const Home = () => {
 
   const [results, setResults] = useState(null);
   const [mapCenter, setMapCenter] = useState({ lat: 0, lng: 0 });
+  const [markers, setMarkers] = useState([]);
 
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
-    libraries: ["places"],
+    libraries: libraries,
   });
 
   if (!isLoaded) return <div>Loading...</div>;
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const calculateTrip = async () => {
     try {
-      // Geocoding para origen
       const originResponse = await axios.get(
         `https://maps.googleapis.com/maps/api/geocode/json`,
         {
@@ -41,7 +44,6 @@ const Home = () => {
         }
       );
 
-      // Geocoding para destino
       const destResponse = await axios.get(
         `https://maps.googleapis.com/maps/api/geocode/json`,
         {
@@ -56,8 +58,8 @@ const Home = () => {
       const destCoords = destResponse.data.results[0].geometry.location;
 
       setMapCenter(originCoords);
+      setMarkers([originCoords, destCoords]);
 
-      // Llamada al backend Flask
       const response = await axios.post(
         `${import.meta.env.VITE_BACKEND_URL}/api/calculate`,
         {
@@ -72,13 +74,12 @@ const Home = () => {
       setResults(response.data);
     } catch (error) {
       console.error("Error calculating trip:", error);
-      alert("Failed to fetch results. Check console for details.");
+      alert("Error al calcular el viaje, verifica los datos.");
     }
   };
 
   return (
     <div className="home-container">
-      {/* Formulario a la izquierda */}
       <div className="form-container">
         <h1>Travel Calculator</h1>
         <form>
@@ -107,7 +108,7 @@ const Home = () => {
             </select>
           </div>
           <div className="mb-3">
-            <label className="form-label">Location</label>
+            <label className="form-label">Location (Origin)</label>
             <input
               type="text"
               className="form-control"
@@ -118,7 +119,7 @@ const Home = () => {
             />
           </div>
           <div className="mb-3">
-            <label className="form-label">Destinity</label>
+            <label className="form-label">Destinity (Destination)</label>
             <input
               type="text"
               className="form-control"
@@ -139,17 +140,21 @@ const Home = () => {
             <p>Distance: {results.distance} km</p>
             <p>Fuel Consumed: {results.fuelConsumed} liters</p>
             <p>Total Cost: ${results.totalCost}</p>
+            <p>Weather: {results.weather}</p>
           </div>
         )}
       </div>
 
-      {/* Mapa a la derecha */}
-      <div className="map-container">
+      <div className="mapContainer">
         <GoogleMap
           mapContainerStyle={{ width: "100%", height: "100%" }}
           center={mapCenter}
           zoom={10}
-        />
+        >
+          {markers.map((marker, index) => (
+            <Marker key={index} position={marker} />
+          ))}
+        </GoogleMap>
       </div>
     </div>
   );
