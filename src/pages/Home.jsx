@@ -1,12 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
-import {
-  GoogleMap,
-  useJsApiLoader,
-  Marker, // Cambio aquí a Marker estándar
-} from "@react-google-maps/api";
+import { GoogleMap, useJsApiLoader, Marker } from "@react-google-maps/api";
 import "../styles/home.css";
 
+// Definir las librerías de Google Maps fuera del componente para evitar advertencias
 const libraries = ["places"];
 
 const Home = () => {
@@ -26,7 +23,26 @@ const Home = () => {
     libraries: libraries,
   });
 
-  if (!isLoaded) return <div>Loading...</div>;
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const userLocation = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          };
+          setMapCenter(userLocation);
+          setMarkers([userLocation]);
+        },
+        (error) => {
+          console.error("Error obteniendo la ubicación:", error);
+          alert("No se pudo obtener la ubicación actual.");
+        }
+      );
+    } else {
+      alert("La geolocalización no es compatible con tu navegador.");
+    }
+  }, []);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -78,8 +94,14 @@ const Home = () => {
     }
   };
 
+  // ✅ Utilizar isLoaded para manejar la carga del mapa
+  if (!isLoaded) {
+    return <div>Loading Google Maps...</div>;
+  }
+
   return (
     <div className="home-container">
+      {/* Formulario */}
       <div className="form-container">
         <h1>Travel Calculator</h1>
         <form>
@@ -134,6 +156,7 @@ const Home = () => {
           </button>
         </form>
 
+        {/* Resultados */}
         {results && (
           <div className="results">
             <h2>Results</h2>
@@ -141,15 +164,17 @@ const Home = () => {
             <p>Fuel Consumed: {results.fuelConsumed} liters</p>
             <p>Total Cost: ${results.totalCost}</p>
             <p>Weather: {results.weather}</p>
+            <p>Elevation: {results.elevation} meters</p>
           </div>
         )}
       </div>
 
+      {/* Mapa con ubicación actual */}
       <div className="mapContainer">
         <GoogleMap
           mapContainerStyle={{ width: "100%", height: "100%" }}
           center={mapCenter}
-          zoom={10}
+          zoom={12}
         >
           {markers.map((marker, index) => (
             <Marker key={index} position={marker} />
