@@ -4,6 +4,9 @@ nav {
   color: white;
   font-size: 1.2rem;
   border-bottom: 4px solid #0056b3;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 nav a {
@@ -16,7 +19,6 @@ nav a:hover {
   text-decoration: underline;
 }
 
-/* Footer anclado al fondo */
 footer {
   margin-top: auto;
   background-color: #333;

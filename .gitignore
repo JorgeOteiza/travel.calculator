@@ -1,6 +1,9 @@
 # Node.js
 node_modules/
 
+# Ignorar archivos de configuración sensible
+.env
+
 # Python
 venv/
 __pycache__/

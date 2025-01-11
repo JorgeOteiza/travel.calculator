@@ -5,35 +5,35 @@ import os
 
 main_bp = Blueprint('main_bp', __name__)
 
-# ✅ Proxy para obtener marcas de vehículos (para evitar CORS)
+CAR_API_TOKEN = os.getenv("CAR_API_TOKEN")
+
+# Ruta para obtener marcas (Proxy para evitar CORS)
 @main_bp.route('/api/carsxe/brands', methods=['GET'])
 def get_car_brands():
-    make = request.args.get('make')
-    if not make:
-        return jsonify({"error": "Brand name is required"}), 400
+    try:
+        make = request.args.get('make')
+        if not make:
+            return jsonify({"error": "Make is required"}), 400
+        
+        response = requests.get(f"https://api.carsxe.com/specs?make={make}&key={CAR_API_TOKEN}")
+        return jsonify(response.json()), response.status_code
 
-    car_api_token = os.getenv('CAR_API_TOKEN')
-    response = requests.get(f"https://api.carsxe.com/specs?make={make}&key={car_api_token}")
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
-    if response.status_code != 200:
-        return jsonify({"error": "Error fetching car brands from Car API"}), response.status_code
-
-    return response.json()
-
-# ✅ Proxy para obtener modelos de vehículos basados en la marca
+# Ruta para obtener modelos (Proxy para evitar CORS)
 @main_bp.route('/api/carsxe/models', methods=['GET'])
 def get_car_models():
-    make = request.args.get('make')
-    if not make:
-        return jsonify({"error": "Brand name is required"}), 400
+    try:
+        make = request.args.get('make')
+        if not make:
+            return jsonify({"error": "Make is required"}), 400
 
-    car_api_token = os.getenv('CAR_API_TOKEN')
-    response = requests.get(f"https://api.carsxe.com/specs?make={make}&key={car_api_token}")
+        response = requests.get(f"https://api.carsxe.com/specs?make={make}&key={CAR_API_TOKEN}")
+        return jsonify(response.json()), response.status_code
 
-    if response.status_code != 200:
-        return jsonify({"error": "Error fetching car models from Car API"}), response.status_code
-
-    return response.json()
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 # ✅ Calcular viaje con validación y proxy seguro
 @main_bp.route('/api/calculate', methods=['POST'])
