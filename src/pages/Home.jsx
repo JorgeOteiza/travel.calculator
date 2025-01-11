@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import Select from "react-select";
 import { GoogleMap, useJsApiLoader, Marker } from "@react-google-maps/api";
-import { GOOGLE_MAPS_API_KEY, BACKEND_URL, CAR_API_TOKEN } from "../main.jsx";
+import { GOOGLE_MAPS_API_KEY, BACKEND_URL } from "../main.jsx";
 import "../styles/home.css";
 
 const libraries = ["places"];
@@ -52,7 +52,7 @@ const Home = () => {
             const response = await axios.get(
                 `${BACKEND_URL}/api/carsxe/brands`,
                 {
-                    params: { make: inputValue, key: CAR_API_TOKEN },
+                    params: { make: inputValue },
                 }
             );
             const brands = response.data.map((car) => ({
@@ -62,24 +62,26 @@ const Home = () => {
             setBrandOptions(brands);
         } catch (error) {
             console.error("Error fetching car brands:", error);
+            alert("Error al obtener las marcas de vehículos.");
         }
     };
 
-    // ✅ Obtener modelos al seleccionar una marca
-    const fetchCarModels = async (brand) => {
-        try {
-            const response = await axios.get(
-                `https://api.carsxe.com/specs?make=${brand}&key=${CAR_API_TOKEN}`
-            );
-            const models = response.data.map((car) => ({
-                label: car.model,
-                value: car.model,
-            }));
-            setModelOptions(models);
-        } catch (error) {
-            console.error("Error fetching car models:", error);
-        }
-    };
+    // ✅ Obtener modelos de vehículos a través del backend Flask
+const fetchCarModels = async (brand) => {
+    try {
+        const response = await axios.get(`${BACKEND_URL}/api/carsxe/models`, {
+            params: { make: brand }
+        });
+        const models = response.data.map((car) => ({
+            label: car.model,
+            value: car.model
+        }));
+        setModelOptions(models);
+    } catch (error) {
+        console.error("Error fetching car models:", error);
+        alert("Error al obtener los modelos de vehículos.");
+    }
+};
 
     // ✅ Actualizar la marca y cargar modelos
     const handleBrandSelect = (selectedOption) => {
