@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app)  # Permitir todas las solicitudes CORS
+CORS(app)
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('SQLALCHEMY_DATABASE_URI')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
@@ -40,9 +40,19 @@ class Trip(db.Model):
 with app.app_context():
     db.create_all()
 
-# ✅ Rutas CRUD
+# ✅ Obtener todas las marcas de Car API usando un proxy para evitar CORS
+@app.route('/api/carsxe/brands', methods=['GET'])
+def get_car_brands():
+    try:
+        car_api_key = os.getenv('CAR_API_TOKEN')
+        response = requests.get(f"https://api.carsxe.com/specs?key={car_api_key}")
+        if response.status_code == 200:
+            return jsonify(response.json()), 200
+        return jsonify({"error": "Failed to fetch brands"}), response.status_code
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
-# Obtener todos los registros
+# ✅ Obtener todos los registros
 @app.route('/api/trips', methods=['GET'])
 def get_trips():
     try:
@@ -51,7 +61,7 @@ def get_trips():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# Obtener un viaje por ID
+# ✅ Obtener un viaje por ID
 @app.route('/api/trips/<int:trip_id>', methods=['GET'])
 def get_trip_by_id(trip_id):
     try:
@@ -62,7 +72,7 @@ def get_trip_by_id(trip_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# ✅ POST: Calcular viaje con validación y llamada a Car API usando proxy
+# ✅ POST: Calcular viaje con validación y llamada a Car API
 @app.route('/api/calculate', methods=['POST'])
 def calculate_trip():
     try:
@@ -74,13 +84,6 @@ def calculate_trip():
 
         if not all([vehicle, fuel_type, origin, destination]):
             return jsonify({"error": "All fields are required"}), 400
-
-        # Llamada a la Car API usando un proxy para evitar CORS
-        car_api_key = os.getenv('CAR_API_TOKEN')
-        car_api_response = requests.get(f"https://api.carsxe.com/specs?make={vehicle}&key={car_api_key}")
-        
-        if car_api_response.status_code != 200:
-            return jsonify({"error": "Error fetching car data from Car API"}), car_api_response.status_code
 
         # Datos simulados para cálculo
         distance_km = 120.5

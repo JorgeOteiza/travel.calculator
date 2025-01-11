@@ -17,8 +17,8 @@ const Navbar = () => {
           </ul>
         </div>
         <div className="d-flex gap-2">
-          <Link to="/login" className="btn btn-outline-light">Iniciar Sesión</Link>
-          <Link to="/register" className="btn btn-primary">Registrarse</Link>
+          <Link to="/login" className="btn btn-outline-light">Sign in</Link>
+          <Link to="/register" className="btn btn-primary">Register</Link>
         </div>
       </div>
     </nav>

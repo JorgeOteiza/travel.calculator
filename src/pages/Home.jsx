@@ -1,15 +1,16 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
+import Select from "react-select";
 import { GoogleMap, useJsApiLoader, Marker } from "@react-google-maps/api";
 import { GOOGLE_MAPS_API_KEY, BACKEND_URL, CAR_API_TOKEN } from "../main.jsx";
 import "../styles/home.css";
 
-// Definir las librerías de Google Maps fuera del componente para evitar advertencias
 const libraries = ["places"];
 
 const Home = () => {
     const [formData, setFormData] = useState({
-        vehicle: "",
+        brand: "",
+        model: "",
         fuelType: "gasoline",
         location: "",
         destinity: "",
@@ -18,14 +19,16 @@ const Home = () => {
     const [results, setResults] = useState(null);
     const [mapCenter, setMapCenter] = useState({ lat: 0, lng: 0 });
     const [markers, setMarkers] = useState([]);
+    const [brandOptions, setBrandOptions] = useState([]);
+    const [modelOptions, setModelOptions] = useState([]);
 
-    // Cargar Google Maps y asegurar que la API está lista
+    // Cargar Google Maps
     const { isLoaded } = useJsApiLoader({
         googleMapsApiKey: GOOGLE_MAPS_API_KEY,
         libraries,
     });
 
-    // Obtener la ubicación del usuario al cargar la página
+    // Obtener ubicación del usuario al cargar la página
     useEffect(() => {
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
@@ -37,43 +40,76 @@ const Home = () => {
                     setMapCenter(userLocation);
                     setMarkers([userLocation]);
                 },
-                (error) => {
-                    console.error("Error obteniendo la ubicación:", error);
-                    alert("No se pudo obtener la ubicación actual.");
-                }
+                (error) => console.error("Error obteniendo la ubicación:", error)
             );
-        } else {
-            alert("La geolocalización no es compatible con tu navegador.");
         }
     }, []);
 
-    // Manejar cambios en el formulario
+    // ✅ Obtener marcas del vehículo (Input controlado para escribir y seleccionar)
+    const fetchCarBrands = async (inputValue) => {
+        try {
+            if (inputValue.length < 2) return;
+            const response = await axios.get(
+                `${BACKEND_URL}/api/carsxe/brands`,
+                {
+                    params: { make: inputValue, key: CAR_API_TOKEN },
+                }
+            );
+            const brands = response.data.map((car) => ({
+                label: car.make,
+                value: car.make,
+            }));
+            setBrandOptions(brands);
+        } catch (error) {
+            console.error("Error fetching car brands:", error);
+        }
+    };
+
+    // ✅ Obtener modelos al seleccionar una marca
+    const fetchCarModels = async (brand) => {
+        try {
+            const response = await axios.get(
+                `https://api.carsxe.com/specs?make=${brand}&key=${CAR_API_TOKEN}`
+            );
+            const models = response.data.map((car) => ({
+                label: car.model,
+                value: car.model,
+            }));
+            setModelOptions(models);
+        } catch (error) {
+            console.error("Error fetching car models:", error);
+        }
+    };
+
+    // ✅ Actualizar la marca y cargar modelos
+    const handleBrandSelect = (selectedOption) => {
+        setFormData({ ...formData, brand: selectedOption.value });
+        fetchCarModels(selectedOption.value);
+    };
+
+    // ✅ Actualizar el modelo del vehículo
+    const handleModelSelect = (selectedOption) => {
+        setFormData({ ...formData, model: selectedOption.value });
+    };
+
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-    // Lógica para realizar la llamada a la API y calcular el viaje
+    // ✅ Calcular el viaje con validaciones
     const calculateTrip = async () => {
         try {
-            // Validación de campos del formulario
-            if (!formData.vehicle || !formData.location || !formData.destinity) {
-                alert("Por favor, completa todos los campos obligatorios.");
+            if (!formData.brand || !formData.model || !formData.location || !formData.destinity) {
+                alert("Por favor, completa todos los campos.");
                 return;
             }
 
-            // Geocodificación para obtener coordenadas de origen y destino
             const [originResponse, destResponse] = await Promise.all([
                 axios.get(`https://maps.googleapis.com/maps/api/geocode/json`, {
-                    params: {
-                        address: formData.location,
-                        key: GOOGLE_MAPS_API_KEY,
-                    },
+                    params: { address: formData.location, key: GOOGLE_MAPS_API_KEY },
                 }),
                 axios.get(`https://maps.googleapis.com/maps/api/geocode/json`, {
-                    params: {
-                        address: formData.destinity,
-                        key: GOOGLE_MAPS_API_KEY,
-                    },
+                    params: { address: formData.destinity, key: GOOGLE_MAPS_API_KEY },
                 }),
             ]);
 
@@ -81,23 +117,15 @@ const Home = () => {
             const destCoords = destResponse.data.results[0]?.geometry?.location;
 
             if (!originCoords || !destCoords) {
-                alert("No se pudieron obtener las coordenadas. Verifica las direcciones.");
+                alert("Error al obtener coordenadas.");
                 return;
             }
 
             setMapCenter(originCoords);
             setMarkers([originCoords, destCoords]);
 
-            // ✅ Llamada a la API de Car API para obtener datos del vehículo
-            const carApiResponse = await axios.get(
-                `https://api.carsxe.com/specs?make=${formData.vehicle}&key=${CAR_API_TOKEN}`
-            );
-
-            console.log("Car API Response:", carApiResponse.data);
-
-            // Llamada al backend para calcular el viaje
             const response = await axios.post(`${BACKEND_URL}/api/calculate`, {
-                vehicle: formData.vehicle,
+                vehicle: `${formData.brand} ${formData.model}`,
                 fuelType: formData.fuelType,
                 origin: formData.location,
                 destinity: formData.destinity,
@@ -111,27 +139,37 @@ const Home = () => {
         }
     };
 
-    // Mostrar mensaje de carga si Google Maps no está listo
+    // Mostrar mensaje si Google Maps aún no está cargado
     if (!isLoaded) {
         return <div>Loading Google Maps...</div>;
     }
 
-    // 📦 Renderización de la Interfaz
+    // ✅ Renderizado de la Interfaz con separación de Brand y Model
     return (
         <div className="home-container">
-            {/* Formulario de entrada */}
             <div className="form-container">
                 <h1>Travel Calculator</h1>
                 <form>
+                    {/* Autocomplete de Marca */}
                     <div className="mb-3">
-                        <label className="form-label">Vehicle</label>
-                        <input
-                            type="text"
-                            className="form-control"
-                            name="vehicle"
-                            value={formData.vehicle}
-                            onChange={handleChange}
-                            required
+                        <label className="form-label">Brand</label>
+                        <Select
+                            options={brandOptions}
+                            onInputChange={(value) => fetchCarBrands(value)}
+                            onChange={handleBrandSelect}
+                            placeholder="Type a vehicle brand..."
+                            noOptionsMessage={() => "Start typing to see suggestions"}
+                        />
+                    </div>
+
+                    {/* Autocomplete de Modelo */}
+                    <div className="mb-3">
+                        <label className="form-label">Model</label>
+                        <Select
+                            options={modelOptions}
+                            onChange={handleModelSelect}
+                            placeholder="Select a vehicle model"
+                            noOptionsMessage={() => "Select a brand first"}
                         />
                     </div>
 
@@ -179,7 +217,7 @@ const Home = () => {
                 </form>
             </div>
 
-            {/* Sección de Resultados */}
+            {/* Mostrar Resultados */}
             {results && (
                 <div className="results">
                     <h2>Results</h2>
@@ -187,13 +225,16 @@ const Home = () => {
                     <p>Fuel Consumed: {results.fuelConsumed} liters</p>
                     <p>Total Cost: ${results.totalCost}</p>
                     <p>Weather: {results.weather}</p>
-                    <p>Elevation: {results.elevation} meters</p>
                 </div>
             )}
 
-            {/* Google Map mostrando marcadores */}
+            {/* Google Map con marcadores */}
             <div className="mapContainer">
-                <GoogleMap mapContainerStyle={{ width: "100%", height: "100%" }} center={mapCenter} zoom={12}>
+                <GoogleMap
+                    mapContainerStyle={{ width: "100%", height: "100%" }}
+                    center={mapCenter}
+                    zoom={12}
+                >
                     {markers.map((marker, index) => (
                         <Marker key={index} position={marker} />
                     ))}
