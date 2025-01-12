@@ -68,16 +68,8 @@ const TripForm = ({
   );
 };
 
-// ✅ Validación de props con PropTypes
 TripForm.propTypes = {
-  formData: PropTypes.shape({
-    brand: PropTypes.string,
-    model: PropTypes.string,
-    fuelType: PropTypes.string,
-    location: PropTypes.string,
-    destinity: PropTypes.string,
-    passengers: PropTypes.number,
-  }).isRequired,
+  formData: PropTypes.object.isRequired,
   brandOptions: PropTypes.array.isRequired,
   modelOptions: PropTypes.array.isRequired,
   fetchCarBrands: PropTypes.func.isRequired,

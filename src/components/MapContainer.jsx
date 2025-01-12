@@ -1,11 +1,13 @@
 import { GoogleMap, useJsApiLoader, Marker } from "@react-google-maps/api";
-import { GOOGLE_MAPS_API_KEY, MAP_ID } from "../main.jsx";
+import { VITE_GOOGLE_MAPS_API_KEY } from "../main.jsx";
 import PropTypes from "prop-types";
 
 const MapContainer = ({ mapCenter, markers }) => {
+  const libraries = ["places"];
   const { isLoaded } = useJsApiLoader({
-    googleMapsApiKey: GOOGLE_MAPS_API_KEY,
-    mapIds: [MAP_ID],
+    googleMapsApiKey: VITE_GOOGLE_MAPS_API_KEY,
+    libraries,
+    mapIds: [import.meta.env.VITE_MAP_ID],
   });
 
   if (!isLoaded) return <div>Loading Map...</div>;

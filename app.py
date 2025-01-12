@@ -44,7 +44,7 @@ with app.app_context():
 @app.route('/api/carsxe/brands', methods=['GET'])
 def get_car_brands():
     try:
-        car_api_key = os.getenv('CAR_API_TOKEN')
+        car_api_key = os.getenv('VITE_CAR_API_TOKEN')
         response = requests.get(f"https://api.carsxe.com/specs?key={car_api_key}")
         if response.status_code == 200:
             return jsonify(response.json()), 200
