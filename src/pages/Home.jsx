@@ -7,9 +7,8 @@ import ResultsDisplay from "../components/ResultsDisplay";
 import GoogleMapComponent from "../components/GoogleMapComponent";
 import "../styles/home.css";
 
-// ✅ Corrección: Variables de entorno con Vite
-const VITE_GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 const VITE_BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+const VITE_GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
 const libraries = ["places", "marker"];
 
@@ -55,13 +54,19 @@ const Home = () => {
 
   // ✅ Optimización con debounce y validación del input
   const fetchCarBrands = debounce(async (inputValue) => {
+    if (
+      !inputValue ||
+      typeof inputValue !== "string" ||
+      inputValue.trim().length < 2
+    ) {
+      console.warn("Invalid input provided");
+      return;
+    }
+
     try {
-      if (!inputValue || inputValue.trim().length < 2) return;
       const response = await axios.get(
         `${VITE_BACKEND_URL}/api/carsxe/brands`,
-        {
-          params: { make: inputValue.trim() },
-        }
+        { params: { make: inputValue.trim() } }
       );
 
       if (response.data.error) {
@@ -72,6 +77,7 @@ const Home = () => {
         label: car.make,
         value: car.make,
       }));
+
       setBrandOptions(brands);
     } catch (error) {
       console.error("Error fetching car brands:", error);

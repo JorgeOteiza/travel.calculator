@@ -11,25 +11,28 @@ VITE_CAR_API_TOKEN = os.getenv("VITE_CAR_API_TOKEN")
 def get_car_brands():
     try:
         make = request.args.get('make')
-        if not make or make.strip() == "":
-            return jsonify({"error": "Make parameter is invalid"}), 400
+        if not make or not isinstance(make, str) or make.strip() == "":
+            return jsonify({"error": "Parámetro 'make' inválido"}), 400
 
-        # URL actualizada con formato correcto
+        # Realizar la petición a la API externa
         response = requests.get(
             "https://api.carsxe.com/specs",
             params={"make": make.strip(), "key": VITE_CAR_API_TOKEN}
         )
 
-        # Verificación de respuesta
+        # Validación de la respuesta
         if response.status_code != 200:
-            return jsonify({"error": "Error from CarsXE API"}), response.status_code
+            return jsonify({"error": f"Error al consultar la API externa: {response.status_code}"}), response.status_code
 
         return jsonify(response.json()), 200
 
+    except requests.RequestException as e:
+        return jsonify({"error": f"Error de conexión: {str(e)}"}), 500
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# ✅ Obtener modelos de un coche por marca
+
+# ✅ Obtener modelos de un automóvil por marca
 @main_bp.route('/api/carsxe/models', methods=['GET'])
 def get_car_models():
     try:
