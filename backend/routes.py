@@ -6,7 +6,7 @@ import os
 main_bp = Blueprint('main_bp', __name__)
 VITE_CAR_API_TOKEN = os.getenv("VITE_CAR_API_TOKEN")
 
-# ✅ Obtener marcas de automóviles desde la API externa
+# ✅ Obtener marcas de automóviles desde la API externa con solo el token
 @main_bp.route('/api/carsxe/brands', methods=['GET'])
 def get_car_brands():
     try:
@@ -14,23 +14,21 @@ def get_car_brands():
         if not make or not isinstance(make, str) or make.strip() == "":
             return jsonify({"error": "Parámetro 'make' inválido"}), 400
 
-        # Realizar la petición a la API externa
+        # Realizar la petición autenticada usando solo el Token
         response = requests.get(
             "https://api.carsxe.com/specs",
             params={"make": make.strip(), "key": VITE_CAR_API_TOKEN}
         )
 
-        # Validación de la respuesta
         if response.status_code != 200:
-            return jsonify({"error": f"Error al consultar la API externa: {response.status_code}"}), response.status_code
+            return jsonify({"error": f"Error en la API externa: {response.text}"}), response.status_code
 
-        return jsonify(response.json()), 200
+        # Convertir respuesta
+        brands = [{"label": item["make"], "value": item["make"]} for item in response.json()]
+        return jsonify(brands), 200
 
     except requests.RequestException as e:
         return jsonify({"error": f"Error de conexión: {str(e)}"}), 500
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
 
 # ✅ Obtener modelos de un automóvil por marca
 @main_bp.route('/api/carsxe/models', methods=['GET'])
@@ -38,29 +36,25 @@ def get_car_models():
     try:
         make = request.args.get('make')
         if not make:
-            return jsonify({"error": "Make is required"}), 400
+            return jsonify({"error": "El parámetro 'make' es obligatorio"}), 400
 
-        response = requests.get(f"https://api.carsxe.com/specs?make={make}&key={VITE_CAR_API_TOKEN}")
+        response = requests.get(
+            "https://api.carsxe.com/specs",
+            params={"make": make.strip(), "key": VITE_CAR_API_TOKEN}
+        )
+
         if response.status_code != 200:
-            return jsonify({"error": "Failed to fetch models"}), response.status_code
+            return jsonify({"error": f"Error en la API externa: {response.text}"}), response.status_code
 
-        data = response.json()
-        
-        # Almacenar modelos en la base de datos
-        brand = Brand.query.filter_by(name=make).first()
-        if not brand:
-            return jsonify({"error": "Brand not found"}), 404
+        # Procesar y devolver modelos
+        models = [{"label": item.get("model"), "value": item.get("model")} for item in response.json()]
+        return jsonify(models), 200
 
-        for item in data:
-            if not Model.query.filter_by(name=item['model']).first():
-                new_model = Model(name=item['model'], brand_id=brand.id)
-                db.session.add(new_model)
-        db.session.commit()
-        
-        return jsonify(data), 200
-
+    except requests.RequestException as e:
+        return jsonify({"error": f"Error de conexión: {str(e)}"}), 500
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 # ✅ Calcular viaje
 @main_bp.route('/api/calculate', methods=['POST'])
