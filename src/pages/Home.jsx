@@ -1,6 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
-import debounce from "lodash/debounce";
 import { useJsApiLoader } from "@react-google-maps/api";
 import TripForm from "../components/TripForm";
 import ResultsDisplay from "../components/ResultsDisplay";
@@ -23,19 +22,40 @@ const Home = () => {
   });
 
   const [results, setResults] = useState(null);
-  const [mapCenter, setMapCenter] = useState({ lat: 0, lng: 0 });
+  const [mapCenter, setMapCenter] = useState({ lat: 37.7749, lng: -122.4194 });
   const [markers, setMarkers] = useState([]);
   const [brandOptions, setBrandOptions] = useState([]);
   const [modelOptions, setModelOptions] = useState([]);
 
-  // ✅ Implementación corregida de carga de Google Maps con Vite
+  // ✅ Cargar Google Maps correctamente
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: VITE_GOOGLE_MAPS_API_KEY,
     libraries,
-    mapIds: [import.meta.env.VITE_MAP_ID], // Asegura mapId para AdvancedMarkerElement
+    mapIds: [import.meta.env.VITE_MAP_ID],
   });
 
-  // ✅ Solicitar ubicación solo al presionar un botón (para evitar la advertencia)
+  // ✅ Obtener la lista de marcas de autos al montar el componente
+  const fetchCarBrands = async () => {
+    try {
+      const response = await axios.get(`${VITE_BACKEND_URL}/api/carsxe/brands`);
+      if (response.data.error) throw new Error(response.data.error);
+
+      const brands = response.data.map((car) => ({
+        label: car.make,
+        value: car.make,
+      }));
+      setBrandOptions(brands);
+    } catch (error) {
+      console.error("Error al cargar las marcas:", error);
+      alert("Error al cargar las marcas: " + error.message);
+    }
+  };
+
+  useEffect(() => {
+    fetchCarBrands();
+  }, []);
+
+  // ✅ Obtener la ubicación del usuario
   const requestUserLocation = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -52,40 +72,7 @@ const Home = () => {
     }
   };
 
-  // ✅ Optimización con debounce y validación del input
-  const fetchCarBrands = debounce(async (inputValue) => {
-    if (
-      !inputValue ||
-      typeof inputValue !== "string" ||
-      inputValue.trim().length < 2
-    ) {
-      console.warn("Invalid input provided");
-      return;
-    }
-
-    try {
-      const response = await axios.get(
-        `${VITE_BACKEND_URL}/api/carsxe/brands`,
-        { params: { make: inputValue.trim() } }
-      );
-
-      if (response.data.error) {
-        throw new Error(response.data.error);
-      }
-
-      const brands = response.data.map((car) => ({
-        label: car.make,
-        value: car.make,
-      }));
-
-      setBrandOptions(brands);
-    } catch (error) {
-      console.error("Error fetching car brands:", error);
-      alert(`Error fetching car brands: ${error.message}`);
-    }
-  }, 300);
-
-  // ✅ Fetch modelos de autos
+  // ✅ Fetch modelos al seleccionar marca
   const fetchCarModels = async (brand) => {
     try {
       const response = await axios.get(
@@ -100,12 +87,13 @@ const Home = () => {
       }));
       setModelOptions(models);
     } catch (error) {
-      console.error("Error fetching car models:", error);
+      console.error("Error al obtener modelos:", error);
     }
   };
 
-  // ✅ Handlers de selección
+  // ✅ Handlers corregidos
   const handleBrandSelect = (selectedOption) => {
+    if (!selectedOption) return;
     setFormData({ ...formData, brand: selectedOption.value });
     fetchCarModels(selectedOption.value);
   };
@@ -118,16 +106,17 @@ const Home = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // ✅ Cálculo del viaje con validación de campos
+  // ✅ Validación y cálculo de viaje
   const calculateTrip = async () => {
     try {
       if (
         !formData.brand ||
         !formData.model ||
         !formData.location ||
-        !formData.destinity
+        !formData.destinity ||
+        !formData.passengers
       ) {
-        alert("Please complete all fields.");
+        alert("Por favor completa todos los campos.");
         return;
       }
 
@@ -137,35 +126,36 @@ const Home = () => {
 
       setResults(response.data);
     } catch (error) {
-      console.error("Error calculating trip:", error);
-      alert("Error calculating the trip.");
+      console.error("Error al calcular el viaje:", error);
+      alert("Error al calcular el viaje.");
     }
   };
 
   if (!isLoaded) {
-    return <div>Loading Google Maps...</div>;
+    return <div>Cargando Google Maps...</div>;
   }
 
   return (
     <div className="home-container">
-      {/* ✅ Formulario con props */}
+      {/* ✅ Formulario corregido con lista pre-cargada */}
       <div className="form-container">
         <TripForm
           formData={formData}
           setFormData={setFormData}
           brandOptions={brandOptions}
           modelOptions={modelOptions}
-          fetchCarBrands={fetchCarBrands}
+          fetchCarBrands={fetchCarBrands} // ✅ Ahora correctamente pasado
           handleBrandSelect={handleBrandSelect}
           handleModelSelect={handleModelSelect}
           handleChange={handleChange}
           calculateTrip={calculateTrip}
         />
-        {/* ✅ Botón para obtener la ubicación del usuario */}
-        <button onClick={requestUserLocation}>Use My Location</button>
+        <button className="mt-3 pt-1" onClick={requestUserLocation}>
+          Usar mi ubicación
+        </button>
       </div>
 
-      {/* ✅ Componente del mapa con marcadores */}
+      {/* ✅ Componente del mapa */}
       <div className="mapContainer">
         <GoogleMapComponent mapCenter={mapCenter} markers={markers} />
       </div>

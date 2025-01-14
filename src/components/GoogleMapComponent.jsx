@@ -1,28 +1,39 @@
 import PropTypes from "prop-types";
-import { GoogleMap } from "@react-google-maps/api";
+import { GoogleMap, useJsApiLoader } from "@react-google-maps/api";
 import { useEffect, useState } from "react";
 
 const GoogleMapComponent = ({ mapCenter, markers }) => {
   const [map, setMap] = useState(null);
 
+  const { isLoaded } = useJsApiLoader({
+    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
+    libraries: ["places", "marker"],
+    mapIds: [import.meta.env.VITE_MAP_ID],
+  });
+
   useEffect(() => {
     if (window.google && map) {
       const createMarkers = async () => {
-        const { AdvancedMarkerElement } =
-          await window.google.maps.importLibrary("marker");
-        markers.forEach((marker, index) => {
-          new AdvancedMarkerElement({
-            map: map,
-            position: marker,
-            title: `Marker ${index + 1}`,
+        try {
+          const { AdvancedMarkerElement } =
+            await window.google.maps.importLibrary("marker");
+
+          markers.forEach((marker, index) => {
+            new AdvancedMarkerElement({
+              map: map,
+              position: marker,
+              title: `Marker ${index + 1}`,
+            });
           });
-        });
+        } catch (error) {
+          console.error("Error loading Advanced Markers:", error);
+        }
       };
-      createMarkers().catch((error) =>
-        console.error("Error loading markers:", error)
-      );
+      createMarkers();
     }
   }, [map, markers]);
+
+  if (!isLoaded) return <div>Loading Google Maps...</div>;
 
   return (
     <GoogleMap
@@ -31,6 +42,10 @@ const GoogleMapComponent = ({ mapCenter, markers }) => {
       zoom={12}
       mapId={import.meta.env.VITE_MAP_ID}
       onLoad={(mapInstance) => setMap(mapInstance)}
+      options={{
+        mapId: import.meta.env.VITE_MAP_ID,
+        disableDefaultUI: true, // Opcional, para un diseño más limpio
+      }}
     />
   );
 };

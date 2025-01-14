@@ -13,15 +13,15 @@ const TripForm = ({
 }) => {
   return (
     <form>
-      <label>Brand</label>
+      <label>Vehicle Brand</label>
       <Select
         options={brandOptions}
-        onInputChange={(value) => fetchCarBrands(value)}
+        onInputChange={fetchCarBrands}
         onChange={handleBrandSelect}
         placeholder="Type a vehicle brand..."
       />
 
-      <label>Model</label>
+      <label>Vehicle Model</label>
       <Select
         options={modelOptions}
         onChange={handleModelSelect}
@@ -35,7 +35,7 @@ const TripForm = ({
         <option value="electric">Electric</option>
       </select>
 
-      <label>Passengers</label>
+      <label>Numbers of Passengers</label>
       <input
         type="number"
         name="passengers"
@@ -61,7 +61,7 @@ const TripForm = ({
         onChange={handleChange}
       />
 
-      <button type="button" onClick={calculateTrip}>
+      <button className="mt-3" type="button" onClick={calculateTrip}>
         Calculate Trip
       </button>
     </form>
@@ -70,6 +70,7 @@ const TripForm = ({
 
 TripForm.propTypes = {
   formData: PropTypes.object.isRequired,
+  setFormData: PropTypes.func.isRequired,
   brandOptions: PropTypes.array.isRequired,
   modelOptions: PropTypes.array.isRequired,
   fetchCarBrands: PropTypes.func.isRequired,
