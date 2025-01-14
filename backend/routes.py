@@ -6,29 +6,41 @@ import os
 main_bp = Blueprint('main_bp', __name__)
 VITE_CAR_API_TOKEN = os.getenv("VITE_CAR_API_TOKEN")
 
+
 # ✅ Obtener marcas de automóviles desde la API externa con solo el token
 @main_bp.route('/api/carsxe/brands', methods=['GET'])
 def get_car_brands():
     try:
-        make = request.args.get('make')
-        if not make or not isinstance(make, str) or make.strip() == "":
-            return jsonify({"error": "Parámetro 'make' inválido"}), 400
+        make = request.args.get('make', 'all')  # ✅ Valor predeterminado
+        api_key = os.getenv('VITE_CAR_API_TOKEN')
 
-        # Realizar la petición autenticada usando solo el Token
+        if not api_key:
+            return jsonify({"error": "API Key is missing"}), 500
+
+        # Llamada a la API con el parámetro "all" si no se especifica
         response = requests.get(
             "https://api.carsxe.com/specs",
-            params={"make": make.strip(), "key": VITE_CAR_API_TOKEN}
+            params={"make": make, "key": api_key}
         )
 
+        # ✅ Validar el código de respuesta
         if response.status_code != 200:
-            return jsonify({"error": f"Error en la API externa: {response.text}"}), response.status_code
+            return jsonify({"error": f"Error externo: {response.status_code}, {response.text}"}), response.status_code
 
-        # Convertir respuesta
-        brands = [{"label": item["make"], "value": item["make"]} for item in response.json()]
+        data = response.json()
+
+        # ✅ Validar respuesta vacía
+        if not data:
+            return jsonify({"error": "No se encontraron marcas"}), 404
+
+        # ✅ Formatear datos antes de enviar
+        brands = [{"label": car.get("make"), "value": car.get("make")} for car in data]
         return jsonify(brands), 200
 
-    except requests.RequestException as e:
-        return jsonify({"error": f"Error de conexión: {str(e)}"}), 500
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 
 # ✅ Obtener modelos de un automóvil por marca
 @main_bp.route('/api/carsxe/models', methods=['GET'])

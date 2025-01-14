@@ -8,7 +8,6 @@ import "../styles/home.css";
 
 const VITE_BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 const VITE_GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
-
 const libraries = ["places", "marker"];
 
 const Home = () => {
@@ -27,17 +26,22 @@ const Home = () => {
   const [brandOptions, setBrandOptions] = useState([]);
   const [modelOptions, setModelOptions] = useState([]);
 
-  // ✅ Cargar Google Maps correctamente
+  // ✅ Cargar Google Maps correctamente con `libraries` como constante global
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: VITE_GOOGLE_MAPS_API_KEY,
-    libraries,
+    libraries: libraries,
     mapIds: [import.meta.env.VITE_MAP_ID],
   });
 
   // ✅ Obtener la lista de marcas de autos al montar el componente
   const fetchCarBrands = async () => {
     try {
-      const response = await axios.get(`${VITE_BACKEND_URL}/api/carsxe/brands`);
+      const response = await axios.get(
+        `${VITE_BACKEND_URL}/api/carsxe/brands`,
+        {
+          params: { make: "all" },
+        }
+      );
       if (response.data.error) throw new Error(response.data.error);
 
       const brands = response.data.map((car) => ({
@@ -91,7 +95,6 @@ const Home = () => {
     }
   };
 
-  // ✅ Handlers corregidos
   const handleBrandSelect = (selectedOption) => {
     if (!selectedOption) return;
     setFormData({ ...formData, brand: selectedOption.value });
@@ -137,14 +140,13 @@ const Home = () => {
 
   return (
     <div className="home-container">
-      {/* ✅ Formulario corregido con lista pre-cargada */}
       <div className="form-container">
         <TripForm
           formData={formData}
           setFormData={setFormData}
           brandOptions={brandOptions}
           modelOptions={modelOptions}
-          fetchCarBrands={fetchCarBrands} // ✅ Ahora correctamente pasado
+          fetchCarBrands={fetchCarBrands}
           handleBrandSelect={handleBrandSelect}
           handleModelSelect={handleModelSelect}
           handleChange={handleChange}
