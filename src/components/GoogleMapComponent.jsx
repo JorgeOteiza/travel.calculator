@@ -2,12 +2,15 @@ import PropTypes from "prop-types";
 import { GoogleMap, useJsApiLoader } from "@react-google-maps/api";
 import { useEffect, useState } from "react";
 
+// ✅ Reutilizando la constante libraries
+const libraries = ["places", "marker"];
+
 const GoogleMapComponent = ({ mapCenter, markers }) => {
   const [map, setMap] = useState(null);
 
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
-    libraries: ["places", "marker"],
+    libraries,
     mapIds: [import.meta.env.VITE_MAP_ID],
   });
 
@@ -17,7 +20,6 @@ const GoogleMapComponent = ({ mapCenter, markers }) => {
         try {
           const { AdvancedMarkerElement } =
             await window.google.maps.importLibrary("marker");
-
           markers.forEach((marker, index) => {
             new AdvancedMarkerElement({
               map: map,
@@ -42,10 +44,7 @@ const GoogleMapComponent = ({ mapCenter, markers }) => {
       zoom={12}
       mapId={import.meta.env.VITE_MAP_ID}
       onLoad={(mapInstance) => setMap(mapInstance)}
-      options={{
-        mapId: import.meta.env.VITE_MAP_ID,
-        disableDefaultUI: true, // Opcional, para un diseño más limpio
-      }}
+      options={{ disableDefaultUI: true }}
     />
   );
 };

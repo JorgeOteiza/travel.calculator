@@ -11,34 +11,20 @@ VITE_CAR_API_TOKEN = os.getenv("VITE_CAR_API_TOKEN")
 @main_bp.route('/api/carsxe/brands', methods=['GET'])
 def get_car_brands():
     try:
-        make = request.args.get('make', 'all')  # ✅ Valor predeterminado
-        api_key = os.getenv('VITE_CAR_API_TOKEN')
+        make = request.args.get('make')
+        if not make or make == "all":
+            make = ""
 
-        if not api_key:
-            return jsonify({"error": "API Key is missing"}), 500
-
-        # Llamada a la API con el parámetro "all" si no se especifica
         response = requests.get(
             "https://api.carsxe.com/specs",
-            params={"make": make, "key": api_key}
+            params={"make": make.strip(), "key": os.getenv("VITE_CAR_API_TOKEN")}
         )
-
-        # ✅ Validar el código de respuesta
         if response.status_code != 200:
-            return jsonify({"error": f"Error externo: {response.status_code}, {response.text}"}), response.status_code
+            return jsonify({"error": f"Error en la API externa: {response.text}"}), response.status_code
 
-        data = response.json()
-
-        # ✅ Validar respuesta vacía
-        if not data:
-            return jsonify({"error": "No se encontraron marcas"}), 404
-
-        # ✅ Formatear datos antes de enviar
-        brands = [{"label": car.get("make"), "value": car.get("make")} for car in data]
-        return jsonify(brands), 200
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify(response.json()), 200
+    except requests.RequestException as e:
+        return jsonify({"error": f"Error de conexión: {str(e)}"}), 500
 
 
 

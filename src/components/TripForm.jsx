@@ -1,51 +1,54 @@
 import PropTypes from "prop-types";
-import Select from "react-select";
 
 const TripForm = ({
   formData,
   brandOptions,
   modelOptions,
-  fetchCarBrands,
   handleBrandSelect,
   handleModelSelect,
   handleChange,
-  calculateTrip,
 }) => {
   return (
     <form>
-      <label>Vehicle Brand</label>
-      <Select
-        options={brandOptions}
-        onInputChange={fetchCarBrands}
-        onChange={handleBrandSelect}
-        placeholder="Type a vehicle brand..."
-      />
-
-      <label>Vehicle Model</label>
-      <Select
-        options={modelOptions}
-        onChange={handleModelSelect}
-        placeholder="Select a vehicle model"
-      />
-
-      <label>Fuel Type</label>
-      <select name="fuelType" value={formData.fuelType} onChange={handleChange}>
-        <option value="gasoline">Gasoline</option>
-        <option value="diesel">Diesel</option>
-        <option value="electric">Electric</option>
+      {/* ✅ Campo modificado para mostrar lista de marcas */}
+      <label htmlFor="brand">Vehicle Brand</label>
+      <select
+        name="brand"
+        value={formData.brand}
+        onChange={(e) => handleBrandSelect(e.target.value)}
+      >
+        <option value="">Selecciona una marca</option>
+        {brandOptions.map((brand, index) => (
+          <option key={index} value={brand}>
+            {brand}
+          </option>
+        ))}
       </select>
 
-      <label>Numbers of Passengers</label>
+      {/* ✅ Campo modificado para lista de modelos */}
+      <label htmlFor="model">Vehicle Model</label>
+      <select
+        name="model"
+        value={formData.model}
+        onChange={(e) => handleModelSelect(e.target.value)}
+      >
+        <option value="">Selecciona un modelo</option>
+        {modelOptions.map((model, index) => (
+          <option key={index} value={model}>
+            {model}
+          </option>
+        ))}
+      </select>
+
+      <label htmlFor="fuelType">Fuel Type</label>
       <input
-        type="number"
-        name="passengers"
-        value={formData.passengers}
-        min="1"
-        max="50"
+        type="text"
+        name="fuelType"
+        value={formData.fuelType}
         onChange={handleChange}
       />
 
-      <label>Location (Origin)</label>
+      <label htmlFor="location">Location</label>
       <input
         type="text"
         name="location"
@@ -53,7 +56,7 @@ const TripForm = ({
         onChange={handleChange}
       />
 
-      <label>Destinity (Destination)</label>
+      <label htmlFor="destinity">Destination</label>
       <input
         type="text"
         name="destinity"
@@ -61,9 +64,13 @@ const TripForm = ({
         onChange={handleChange}
       />
 
-      <button className="mt-3" type="button" onClick={calculateTrip}>
-        Calculate Trip
-      </button>
+      <label htmlFor="passengers">Passengers</label>
+      <input
+        type="number"
+        name="passengers"
+        value={formData.passengers}
+        onChange={handleChange}
+      />
     </form>
   );
 };
@@ -73,7 +80,6 @@ TripForm.propTypes = {
   setFormData: PropTypes.func.isRequired,
   brandOptions: PropTypes.array.isRequired,
   modelOptions: PropTypes.array.isRequired,
-  fetchCarBrands: PropTypes.func.isRequired,
   handleBrandSelect: PropTypes.func.isRequired,
   handleModelSelect: PropTypes.func.isRequired,
   handleChange: PropTypes.func.isRequired,

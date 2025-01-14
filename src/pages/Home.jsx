@@ -8,6 +8,7 @@ import "../styles/home.css";
 
 const VITE_BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 const VITE_GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+
 const libraries = ["places", "marker"];
 
 const Home = () => {
@@ -21,62 +22,36 @@ const Home = () => {
   });
 
   const [results, setResults] = useState(null);
-  const [mapCenter, setMapCenter] = useState({ lat: 37.7749, lng: -122.4194 });
-  const [markers, setMarkers] = useState([]);
-  const [brandOptions, setBrandOptions] = useState([]);
+  const [mapCenter] = useState({ lat: 37.7749, lng: -122.4194 });
+  const [markers] = useState([]);
+  const [brandOptions, setBrandOptions] = useState([]); // ✅ Ahora guarda las marcas
   const [modelOptions, setModelOptions] = useState([]);
 
-  // ✅ Cargar Google Maps correctamente con `libraries` como constante global
+  // ✅ Configuración para cargar Google Maps
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: VITE_GOOGLE_MAPS_API_KEY,
-    libraries: libraries,
+    libraries,
     mapIds: [import.meta.env.VITE_MAP_ID],
   });
 
-  // ✅ Obtener la lista de marcas de autos al montar el componente
-  const fetchCarBrands = async () => {
-    try {
-      const response = await axios.get(
-        `${VITE_BACKEND_URL}/api/carsxe/brands`,
-        {
-          params: { make: "all" },
-        }
-      );
-      if (response.data.error) throw new Error(response.data.error);
-
-      const brands = response.data.map((car) => ({
-        label: car.make,
-        value: car.make,
-      }));
-      setBrandOptions(brands);
-    } catch (error) {
-      console.error("Error al cargar las marcas:", error);
-      alert("Error al cargar las marcas: " + error.message);
-    }
-  };
-
+  // ✅ Cargar las marcas desde la API al cargar la página
   useEffect(() => {
+    const fetchCarBrands = async () => {
+      try {
+        const response = await axios.get(
+          `${VITE_BACKEND_URL}/api/carsxe/brands?make=all`
+        );
+        const brands = response.data.map((car) => car.make);
+        setBrandOptions(brands); // ✅ Guardar las marcas en el estado
+      } catch (error) {
+        console.error("Error al cargar las marcas:", error);
+      }
+    };
+
     fetchCarBrands();
   }, []);
 
-  // ✅ Obtener la ubicación del usuario
-  const requestUserLocation = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const userLocation = {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          };
-          setMapCenter(userLocation);
-          setMarkers([userLocation]);
-        },
-        (error) => console.error("Error obteniendo la ubicación:", error)
-      );
-    }
-  };
-
-  // ✅ Fetch modelos al seleccionar marca
+  // ✅ Actualizar modelos al seleccionar una marca
   const fetchCarModels = async (brand) => {
     try {
       const response = await axios.get(
@@ -85,48 +60,42 @@ const Home = () => {
           params: { make: brand },
         }
       );
-      const models = response.data.map((car) => ({
-        label: car.model,
-        value: car.model,
-      }));
+      const models = response.data.map((car) => car.model);
       setModelOptions(models);
     } catch (error) {
-      console.error("Error al obtener modelos:", error);
+      console.error("Error al cargar los modelos:", error);
     }
   };
 
-  const handleBrandSelect = (selectedOption) => {
-    if (!selectedOption) return;
-    setFormData({ ...formData, brand: selectedOption.value });
-    fetchCarModels(selectedOption.value);
+  // ✅ Handlers de selección y validación
+  const handleBrandSelect = (selectedBrand) => {
+    setFormData({ ...formData, brand: selectedBrand });
+    fetchCarModels(selectedBrand);
   };
 
-  const handleModelSelect = (selectedOption) => {
-    setFormData({ ...formData, model: selectedOption.value });
+  const handleModelSelect = (selectedModel) => {
+    setFormData({ ...formData, model: selectedModel });
   };
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // ✅ Validación y cálculo de viaje
   const calculateTrip = async () => {
     try {
       if (
         !formData.brand ||
         !formData.model ||
         !formData.location ||
-        !formData.destinity ||
-        !formData.passengers
+        !formData.destinity
       ) {
         alert("Por favor completa todos los campos.");
         return;
       }
-
-      const response = await axios.post(`${VITE_BACKEND_URL}/api/calculate`, {
-        ...formData,
-      });
-
+      const response = await axios.post(
+        `${VITE_BACKEND_URL}/api/calculate`,
+        formData
+      );
       setResults(response.data);
     } catch (error) {
       console.error("Error al calcular el viaje:", error);
@@ -144,25 +113,22 @@ const Home = () => {
         <TripForm
           formData={formData}
           setFormData={setFormData}
-          brandOptions={brandOptions}
+          brandOptions={brandOptions} // ✅ Pasando las marcas al formulario
           modelOptions={modelOptions}
-          fetchCarBrands={fetchCarBrands}
           handleBrandSelect={handleBrandSelect}
           handleModelSelect={handleModelSelect}
           handleChange={handleChange}
           calculateTrip={calculateTrip}
         />
-        <button className="mt-3 pt-1" onClick={requestUserLocation}>
-          Usar mi ubicación
+        <button className="mt-3 pt-1" onClick={calculateTrip}>
+          Calcular Viaje
         </button>
       </div>
 
-      {/* ✅ Componente del mapa */}
       <div className="mapContainer">
         <GoogleMapComponent mapCenter={mapCenter} markers={markers} />
       </div>
 
-      {/* ✅ Mostrar resultados */}
       <ResultsDisplay results={results} />
     </div>
   );
