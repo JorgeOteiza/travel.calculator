@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
 from .models import db, Trip, Brand, Model
+from backend.carAPI_jwt import get_car_api_jwt
 import requests
 import os
 
@@ -7,24 +8,67 @@ main_bp = Blueprint('main_bp', __name__)
 VITE_CAR_API_TOKEN = os.getenv("VITE_CAR_API_TOKEN")
 
 
-# ✅ Obtener marcas de automóviles desde la API externa con solo el token
+# ✅ Registro de usuario
+@main_bp.route('/api/register', methods=['POST'])
+def register_user():
+    try:
+        data = request.json
+        name = data.get('name')
+        email = data.get('email')
+        password = data.get('password')
+
+        if not all([name, email, password]):
+            return jsonify({"error": "Todos los campos son requeridos"}), 400
+
+        if User.query.filter_by(email=email).first():
+            return jsonify({"error": "El correo ya está registrado"}), 400
+
+        new_user = User(name=name, email=email)
+        new_user.set_password(password)
+        db.session.add(new_user)
+        db.session.commit()
+
+        return jsonify({"message": "Usuario registrado exitosamente"}), 201
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# ✅ Autenticación de usuario
+@main_bp.route('/api/login', methods=['POST'])
+def login_user():
+    data = request.json
+    email = data.get('email')
+    password = data.get('password')
+
+    user = User.query.filter_by(email=email).first()
+    if user and user.check_password(password):
+        return jsonify({"message": "Inicio de sesión exitoso", "user": user.to_dict()}), 200
+    else:
+        return jsonify({"error": "Credenciales inválidas"}), 401
+
+
+
+# ✅ Obtener JWT y Llamada a la API externa
 @main_bp.route('/api/carsxe/brands', methods=['GET'])
 def get_car_brands():
     try:
-        make = request.args.get('make')
-        if not make or make == "all":
-            make = ""
+        jwt_token = get_car_api_jwt()
+        if isinstance(jwt_token, dict) and "error" in jwt_token:
+            return jsonify(jwt_token), 500
 
         response = requests.get(
             "https://api.carsxe.com/specs",
-            params={"make": make.strip(), "key": os.getenv("VITE_CAR_API_TOKEN")}
+            headers={"Authorization": f"Bearer {jwt_token}"}
         )
-        if response.status_code != 200:
-            return jsonify({"error": f"Error en la API externa: {response.text}"}), response.status_code
 
-        return jsonify(response.json()), 200
-    except requests.RequestException as e:
-        return jsonify({"error": f"Error de conexión: {str(e)}"}), 500
+        if response.status_code != 200:
+            return jsonify({"error": response.json()}), response.status_code
+
+        brands = response.json()
+        return jsonify(brands), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 
@@ -52,6 +96,8 @@ def get_car_models():
         return jsonify({"error": f"Error de conexión: {str(e)}"}), 500
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
 
 
 # ✅ Calcular viaje
@@ -89,6 +135,9 @@ def calculate_trip():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    
+    
+    
 
 # ✅ Obtener todos los viajes
 @main_bp.route('/api/trips', methods=['GET'])
