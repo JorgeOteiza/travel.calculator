@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from .models import db, Trip, Brand, Model
+from .models import db, Trip, Brand, Model, User
 from backend.carAPI_jwt import get_car_api_jwt
 import requests
 import os
@@ -47,29 +47,31 @@ def login_user():
         return jsonify({"error": "Credenciales inválidas"}), 401
 
 
-
 # ✅ Obtener JWT y Llamada a la API externa
 @main_bp.route('/api/carsxe/brands', methods=['GET'])
-def get_car_brands():
+def get_brands():
     try:
-        jwt_token = get_car_api_jwt()
-        if isinstance(jwt_token, dict) and "error" in jwt_token:
-            return jsonify(jwt_token), 500
+        make = request.args.get('make')
+        if not make:
+            return jsonify({"error": "Parámetro 'make' es requerido"}), 400
 
+        # Obtener el JWT de la API
+        jwt_token = get_car_api_jwt()
+        if not jwt_token or isinstance(jwt_token, dict):
+            return jsonify({"error": "Error al obtener token JWT"}), 500
+
+        # Llamada a la API externa
         response = requests.get(
-            "https://api.carsxe.com/specs",
+            f"https://api.carsxe.com/brands?make={make}",
             headers={"Authorization": f"Bearer {jwt_token}"}
         )
+        response.raise_for_status()
+        return jsonify(response.json()), 200
 
-        if response.status_code != 200:
-            return jsonify({"error": response.json()}), response.status_code
-
-        brands = response.json()
-        return jsonify(brands), 200
-
+    except requests.exceptions.RequestException as e:
+        return jsonify({"error": f"Error al conectar con CarsXE: {str(e)}"}), 500
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
 
 
 # ✅ Obtener modelos de un automóvil por marca
@@ -84,20 +86,16 @@ def get_car_models():
             "https://api.carsxe.com/specs",
             params={"make": make.strip(), "key": VITE_CAR_API_TOKEN}
         )
-
-        if response.status_code != 200:
-            return jsonify({"error": f"Error en la API externa: {response.text}"}), response.status_code
+        response.raise_for_status()
 
         # Procesar y devolver modelos
         models = [{"label": item.get("model"), "value": item.get("model")} for item in response.json()]
         return jsonify(models), 200
 
-    except requests.RequestException as e:
-        return jsonify({"error": f"Error de conexión: {str(e)}"}), 500
+    except requests.exceptions.RequestException as e:
+        return jsonify({"error": f"Error de conexión con CarsXE: {str(e)}"}), 500
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
-
 
 
 # ✅ Calcular viaje
@@ -111,7 +109,7 @@ def calculate_trip():
         destination = data.get('destinity')
 
         if not all([vehicle, fuel_type, location, destination]):
-            return jsonify({"error": "All fields are required"}), 400
+            return jsonify({"error": "Todos los campos son requeridos"}), 400
 
         # Simulación de distancia y cálculos
         distance_km = 120.5
@@ -135,9 +133,7 @@ def calculate_trip():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-    
-    
-    
+
 
 # ✅ Obtener todos los viajes
 @main_bp.route('/api/trips', methods=['GET'])
@@ -154,11 +150,11 @@ def delete_trip(trip_id):
     try:
         trip = Trip.query.get(trip_id)
         if not trip:
-            return jsonify({"error": "Trip not found"}), 404
+            return jsonify({"error": "El viaje no fue encontrado"}), 404
 
         db.session.delete(trip)
         db.session.commit()
-        return jsonify({"message": "Trip deleted successfully"}), 200
+        return jsonify({"message": "Viaje eliminado exitosamente"}), 200
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
