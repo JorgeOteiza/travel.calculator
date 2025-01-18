@@ -55,12 +55,10 @@ def get_brands():
         if not make:
             return jsonify({"error": "Parámetro 'make' es requerido"}), 400
 
-        # Obtener el JWT de la API
         jwt_token = get_car_api_jwt()
         if not jwt_token or isinstance(jwt_token, dict):
-            return jsonify({"error": "Error al obtener token JWT"}), 500
+            return jsonify({"error": f"Error al obtener token JWT: {jwt_token}"}), 500
 
-        # Llamada a la API externa
         response = requests.get(
             f"https://api.carsxe.com/brands?make={make}",
             headers={"Authorization": f"Bearer {jwt_token}"}

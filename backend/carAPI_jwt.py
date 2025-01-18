@@ -6,6 +6,10 @@ def get_car_api_jwt():
     api_token = os.getenv('VITE_CAR_API_TOKEN')
     api_secret = os.getenv('VITE_CAR_API_SECRET')
 
+    # Imprimir las variables de entorno para depuración
+    print(f"API Token: {api_token}, API Secret: {api_secret}")
+
+    # Verificar si las variables de entorno están configuradas
     if not api_token or not api_secret:
         raise ValueError("API Token o API Secret no configurados en el archivo .env")
 
@@ -19,10 +23,20 @@ def get_car_api_jwt():
             }
         )
 
-        if response.status_code == 200:
-            jwt_token = response.json().get("jwt")
-            return jwt_token
-        else:
-            return {"error": "Autenticación fallida con CarsXE API"}
-    except requests.RequestException as e:
-        return {"error": f"Error de conexión: {str(e)}"}
+        # Imprimir el estado de respuesta y el contenido de la respuesta para depuración
+        print(f"Estado de respuesta: {response.status_code}")
+        print(f"Respuesta del servidor: {response.text}")
+
+        # Manejar posibles errores en la respuesta
+        response.raise_for_status()
+
+        # Retornar el JWT
+        return response.json().get("jwt")
+    except requests.exceptions.RequestException as e:
+        # Imprimir errores específicos de conexión
+        print(f"Error en la solicitud POST: {e}")
+        return {"error": f"Error de conexión con la API: {str(e)}"}
+    except Exception as e:
+        # Capturar cualquier otro error inesperado
+        print(f"Error inesperado: {e}")
+        return {"error": f"Error inesperado: {str(e)}"}
