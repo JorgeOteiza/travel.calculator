@@ -26,6 +26,7 @@ const Home = () => {
   const [markers] = useState([]);
   const [brandOptions, setBrandOptions] = useState([]); // ✅ Ahora guarda las marcas
   const [modelOptions, setModelOptions] = useState([]);
+  const [vehicleOptions, setVehicleOptions] = useState([]); // ✅ Guardar los vehículos
 
   // ✅ Configuración para cargar Google Maps
   const { isLoaded } = useJsApiLoader({
@@ -51,6 +52,22 @@ const Home = () => {
     fetchCarBrands();
   }, []);
 
+  // ✅ Cargar los vehículos desde la API al cargar la página
+  useEffect(() => {
+    const fetchVehicles = async () => {
+      try {
+        const response = await axios.get(
+          `${VITE_BACKEND_URL}/api/carsxe/vehicles`
+        );
+        setVehicleOptions(response.data); // ✅ Guardar los vehículos en el estado
+      } catch (error) {
+        console.error("Error al cargar los vehículos:", error);
+      }
+    };
+
+    fetchVehicles();
+  }, []); // ✅ Esta useEffect se ejecuta solo una vez al cargar la página
+
   // ✅ Actualizar modelos al seleccionar una marca
   const fetchCarModels = async (brand) => {
     try {
@@ -75,6 +92,10 @@ const Home = () => {
 
   const handleModelSelect = (selectedModel) => {
     setFormData({ ...formData, model: selectedModel });
+  };
+
+  const handleVehicleSelect = (selectedVehicle) => {
+    setFormData({ ...formData, vehicle: selectedVehicle }); // ✅ Actualizar vehículo
   };
 
   const handleChange = (e) => {
@@ -115,8 +136,10 @@ const Home = () => {
           setFormData={setFormData}
           brandOptions={brandOptions} // ✅ Pasando las marcas al formulario
           modelOptions={modelOptions}
+          vehicleOptions={vehicleOptions} // ✅ Pasando los vehículos al formulario
           handleBrandSelect={handleBrandSelect}
           handleModelSelect={handleModelSelect}
+          handleVehicleSelect={handleVehicleSelect} // ✅ Handler para seleccionar vehículo
           handleChange={handleChange}
           calculateTrip={calculateTrip}
         />

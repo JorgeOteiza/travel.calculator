@@ -4,9 +4,20 @@ from backend.carAPI_jwt import get_car_api_jwt
 import requests
 import os
 
-main_bp = Blueprint('main_bp', __name__)
-VITE_CAR_API_TOKEN = os.getenv("VITE_CAR_API_TOKEN")
+def get_vehicles(jwt_token):
+    try:
+        # Solicitud GET a la API de vehículos
+        response = requests.get(
+            "https://api.carsxe.com/vehicles",
+            headers={"Authorization": f"Bearer {jwt_token}"}
+        )
+        response.raise_for_status()
+        return response.json()  # Devuelve los datos de los vehículos
+    except requests.exceptions.RequestException as e:
+        print(f"Error en la solicitud GET: {e}")
+        return None
 
+main_bp = Blueprint('main_bp', __name__)
 
 # ✅ Registro de usuario
 @main_bp.route('/api/register', methods=['POST'])
@@ -46,6 +57,26 @@ def login_user():
     else:
         return jsonify({"error": "Credenciales inválidas"}), 401
 
+# ✅ Obtener lista de vehículos
+@main_bp.route('/api/carsxe/vehicles', methods=['GET'])
+def get_vehicles_list():
+    try:
+        jwt_token = get_car_api_jwt()
+        if not jwt_token:
+            return jsonify({"error": "No se pudo obtener el JWT"}), 500
+        
+        # Hacer la solicitud GET a la API de vehículos
+        vehicles = get_vehicles(jwt_token)
+        if not vehicles:
+            return jsonify({"error": "No se pudieron obtener los vehículos"}), 500
+        
+        # Retornar los vehículos obtenidos
+        return jsonify(vehicles), 200
+
+    except requests.exceptions.RequestException as e:
+        return jsonify({"error": f"Error al conectar con CarsXE: {str(e)}"}), 500
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 # ✅ Obtener JWT y Llamada a la API externa
 @main_bp.route('/api/carsxe/brands', methods=['GET'])
@@ -71,7 +102,6 @@ def get_brands():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
 # ✅ Obtener modelos de un automóvil por marca
 @main_bp.route('/api/carsxe/models', methods=['GET'])
 def get_car_models():
@@ -94,7 +124,6 @@ def get_car_models():
         return jsonify({"error": f"Error de conexión con CarsXE: {str(e)}"}), 500
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
 
 # ✅ Calcular viaje
 @main_bp.route('/api/calculate', methods=['POST'])
@@ -131,7 +160,6 @@ def calculate_trip():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
 
 # ✅ Obtener todos los viajes
 @main_bp.route('/api/trips', methods=['GET'])

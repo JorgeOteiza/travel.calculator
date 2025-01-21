@@ -2,41 +2,42 @@ import os
 import requests
 
 def get_car_api_jwt():
-    """Obtiene un token JWT desde la API de CarsXE usando el Token y Secret Key."""
-    api_token = os.getenv('VITE_CAR_API_TOKEN')
-    api_secret = os.getenv('VITE_CAR_API_SECRET')
+    api_token = os.getenv('VITE_CAR_API_TOKEN')  # Token de la API
+    api_secret = os.getenv('VITE_CAR_API_SECRET')  # Secreto de la API
 
-    # Imprimir las variables de entorno para depuración
-    print(f"API Token: {api_token}, API Secret: {api_secret}")
-
-    # Verificar si las variables de entorno están configuradas
     if not api_token or not api_secret:
         raise ValueError("API Token o API Secret no configurados en el archivo .env")
 
     try:
-        # Realizar la solicitud POST para obtener el JWT
+        # Realiza la solicitud para obtener el JWT
         response = requests.post(
-            "https://api.carsxe.com/authenticate",
+            "https://carapi.app/api/auth/login",  # URL correcta para autenticarse
+            headers={
+                "accept": "application/json",  # Asegúrate de que la respuesta sea JSON
+                "Content-Type": "application/json"
+            },
             json={
-                "token": api_token,
-                "secret": api_secret
+                "api_token": api_token,
+                "api_secret": api_secret
             }
         )
 
-        # Imprimir el estado de respuesta y el contenido de la respuesta para depuración
-        print(f"Estado de respuesta: {response.status_code}")
-        print(f"Respuesta del servidor: {response.text}")
+        # Revisar el código de estado de la respuesta
+        if response.status_code != 200:
+            print(f"Error en la autenticación: {response.status_code} - {response.text}")
+            return None
 
-        # Manejar posibles errores en la respuesta
-        response.raise_for_status()
+        # Extraer el JWT del cuerpo de la respuesta
+        jwt_token = response.json().get("jwt")
+        if not jwt_token:
+            raise ValueError("No se pudo obtener el JWT")
 
-        # Retornar el JWT
-        return response.json().get("jwt")
+        return jwt_token
+
     except requests.exceptions.RequestException as e:
-        # Imprimir errores específicos de conexión
-        print(f"Error en la solicitud POST: {e}")
-        return {"error": f"Error de conexión con la API: {str(e)}"}
+        print(f"Error al realizar la solicitud POST: {e}")
+        return None
+
     except Exception as e:
-        # Capturar cualquier otro error inesperado
         print(f"Error inesperado: {e}")
-        return {"error": f"Error inesperado: {str(e)}"}
+        return None
