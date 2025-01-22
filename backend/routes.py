@@ -4,6 +4,8 @@ from backend.carAPI_jwt import get_car_api_jwt
 import requests
 import os
 
+VITE_CAR_API_TOKEN = os.getenv('VITE_CAR_API_TOKEN')
+
 def get_vehicles(jwt_token):
     try:
         # Solicitud GET a la API de vehículos

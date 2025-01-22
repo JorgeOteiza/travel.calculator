@@ -19,75 +19,119 @@ const Home = () => {
     location: "",
     destinity: "",
     passengers: 1,
+    vehicle: "", // Añadido para el vehículo
   });
 
   const [results, setResults] = useState(null);
   const [mapCenter] = useState({ lat: 37.7749, lng: -122.4194 });
   const [markers] = useState([]);
-  const [brandOptions, setBrandOptions] = useState([]); // ✅ Ahora guarda las marcas
+  const [brandOptions, setBrandOptions] = useState([]);
   const [modelOptions, setModelOptions] = useState([]);
-  const [vehicleOptions, setVehicleOptions] = useState([]); // ✅ Guardar los vehículos
+  const [vehicleOptions, setVehicleOptions] = useState([]);
+  const [jwtToken, setJwtToken] = useState(null); // Guardar el JWT para no solicitarlo varias veces
 
-  // ✅ Configuración para cargar Google Maps
+  // Configuración para cargar Google Maps
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: VITE_GOOGLE_MAPS_API_KEY,
     libraries,
     mapIds: [import.meta.env.VITE_MAP_ID],
   });
 
-  // ✅ Cargar las marcas desde la API al cargar la página
-  useEffect(() => {
-    const fetchCarBrands = async () => {
-      try {
-        const response = await axios.get(
-          `${VITE_BACKEND_URL}/api/carsxe/brands?make=all`
-        );
-        const brands = response.data.map((car) => car.make);
-        setBrandOptions(brands); // ✅ Guardar las marcas en el estado
-      } catch (error) {
-        console.error("Error al cargar las marcas:", error);
-      }
-    };
-
-    fetchCarBrands();
-  }, []);
-
-  // ✅ Cargar los vehículos desde la API al cargar la página
-  useEffect(() => {
-    const fetchVehicles = async () => {
-      try {
-        const response = await axios.get(
-          `${VITE_BACKEND_URL}/api/carsxe/vehicles`
-        );
-        setVehicleOptions(response.data); // ✅ Guardar los vehículos en el estado
-      } catch (error) {
-        console.error("Error al cargar los vehículos:", error);
-      }
-    };
-
-    fetchVehicles();
-  }, []); // ✅ Esta useEffect se ejecuta solo una vez al cargar la página
-
-  // ✅ Actualizar modelos al seleccionar una marca
-  const fetchCarModels = async (brand) => {
-    try {
-      const response = await axios.get(
-        `${VITE_BACKEND_URL}/api/carsxe/models`,
-        {
-          params: { make: brand },
+  const handleCurrentLocation = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          setFormData((prev) => ({
+            ...prev,
+            location: `Lat: ${latitude}, Lon: ${longitude}`, // Actualiza la ubicación en el estado
+          }));
+        },
+        (error) => {
+          console.error("Error obteniendo la ubicación:", error);
+          alert("No se pudo obtener tu ubicación.");
         }
       );
-      const models = response.data.map((car) => car.model);
-      setModelOptions(models);
-    } catch (error) {
-      console.error("Error al cargar los modelos:", error);
+    } else {
+      alert("La geolocalización no es compatible con tu navegador.");
     }
   };
 
-  // ✅ Handlers de selección y validación
+  // Obtener JWT solo si no está almacenado
+  useEffect(() => {
+    if (!jwtToken) {
+      const fetchJwt = async () => {
+        try {
+          const response = await axios.post(
+            `${VITE_BACKEND_URL}/api/auth/login`
+          );
+          setJwtToken(response.data.jwt); // Almacenar el JWT
+        } catch (error) {
+          console.error("Error al obtener el JWT", error);
+        }
+      };
+      fetchJwt();
+    }
+  }, [jwtToken]);
+
+  // Obtener marcas solo cuando no están almacenadas
+  useEffect(() => {
+    if (!brandOptions.length) {
+      const fetchCarBrands = async () => {
+        try {
+          const response = await axios.get(
+            `${VITE_BACKEND_URL}/api/carsxe/brands?make=all`
+          );
+          setBrandOptions(response.data.map((car) => car.make)); // Guardar las marcas
+        } catch (error) {
+          console.error("Error al cargar las marcas:", error);
+        }
+      };
+      fetchCarBrands();
+    }
+  }, [brandOptions]);
+
+  // Obtener vehículos solo cuando no están almacenados
+  useEffect(() => {
+    if (!vehicleOptions.length) {
+      const fetchVehicles = async () => {
+        try {
+          const response = await axios.get(
+            `${VITE_BACKEND_URL}/api/carsxe/vehicles`
+          );
+          setVehicleOptions(response.data); // Guardar los vehículos
+        } catch (error) {
+          console.error("Error al cargar los vehículos:", error);
+        }
+      };
+      fetchVehicles();
+    }
+  }, [vehicleOptions]);
+
+  // Obtener modelos cuando se selecciona una marca
+  useEffect(() => {
+    if (formData.brand) {
+      const fetchCarModels = async (brand) => {
+        try {
+          const response = await axios.get(
+            `${VITE_BACKEND_URL}/api/carsxe/models`,
+            {
+              params: { make: brand },
+            }
+          );
+          setModelOptions(response.data.map((car) => car.model));
+        } catch (error) {
+          console.error("Error al cargar los modelos:", error);
+        }
+      };
+
+      fetchCarModels(formData.brand);
+    }
+  }, [formData.brand]);
+
+  // Handlers de selección
   const handleBrandSelect = (selectedBrand) => {
     setFormData({ ...formData, brand: selectedBrand });
-    fetchCarModels(selectedBrand);
   };
 
   const handleModelSelect = (selectedModel) => {
@@ -95,7 +139,7 @@ const Home = () => {
   };
 
   const handleVehicleSelect = (selectedVehicle) => {
-    setFormData({ ...formData, vehicle: selectedVehicle }); // ✅ Actualizar vehículo
+    setFormData({ ...formData, vehicle: selectedVehicle });
   };
 
   const handleChange = (e) => {
@@ -134,16 +178,17 @@ const Home = () => {
         <TripForm
           formData={formData}
           setFormData={setFormData}
-          brandOptions={brandOptions} // ✅ Pasando las marcas al formulario
+          brandOptions={brandOptions}
           modelOptions={modelOptions}
-          vehicleOptions={vehicleOptions} // ✅ Pasando los vehículos al formulario
+          vehicleOptions={vehicleOptions} // Pasando los vehículos al formulario
           handleBrandSelect={handleBrandSelect}
           handleModelSelect={handleModelSelect}
-          handleVehicleSelect={handleVehicleSelect} // ✅ Handler para seleccionar vehículo
+          handleVehicleSelect={handleVehicleSelect} // Handler para seleccionar vehículo
           handleChange={handleChange}
           calculateTrip={calculateTrip}
+          handleCurrentLocation={handleCurrentLocation} // Handler para obtener la ubicación actual
         />
-        <button className="mt-3 pt-1" onClick={calculateTrip}>
+        <button className="mt-3" onClick={calculateTrip}>
           Calcular Viaje
         </button>
       </div>

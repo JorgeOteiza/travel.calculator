@@ -1,5 +1,5 @@
-import os
 import requests
+import os
 
 def get_car_api_jwt():
     api_token = os.getenv('VITE_CAR_API_TOKEN')  # Token de la API
@@ -9,11 +9,10 @@ def get_car_api_jwt():
         raise ValueError("API Token o API Secret no configurados en el archivo .env")
 
     try:
-        # Realiza la solicitud para obtener el JWT
         response = requests.post(
             "https://carapi.app/api/auth/login",  # URL correcta para autenticarse
             headers={
-                "accept": "application/json",  # Asegúrate de que la respuesta sea JSON
+                "accept": "application/json",
                 "Content-Type": "application/json"
             },
             json={
@@ -22,17 +21,24 @@ def get_car_api_jwt():
             }
         )
 
-        # Revisar el código de estado de la respuesta
-        if response.status_code != 200:
+        # Imprimir detalles de la respuesta
+        print(f"Status Code: {response.status_code}")
+        print(f"Response Text: {response.text}")
+        
+        if response.status_code == 200:
+            try:
+                response_json = response.json()
+                print(f"Response JSON: {response_json}")
+                jwt_token = response_json.get("jwt")
+                if not jwt_token:
+                    raise ValueError("No se pudo obtener el JWT")
+                return jwt_token
+            except ValueError as e:
+                print(f"Error al procesar el JSON: {e}")
+                return None
+        else:
             print(f"Error en la autenticación: {response.status_code} - {response.text}")
             return None
-
-        # Extraer el JWT del cuerpo de la respuesta
-        jwt_token = response.json().get("jwt")
-        if not jwt_token:
-            raise ValueError("No se pudo obtener el JWT")
-
-        return jwt_token
 
     except requests.exceptions.RequestException as e:
         print(f"Error al realizar la solicitud POST: {e}")
