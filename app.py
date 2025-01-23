@@ -17,7 +17,7 @@ def create_app():
     # Configuración de la base de datos y variables de entorno
     app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('SQLALCHEMY_DATABASE_URI')
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
-    app.config['DEBUG'] = os.getenv('DEBUG') == 'True'
+    app.config['DEBUG'] = True
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = os.getenv('SQLALCHEMY_TRACK_MODIFICATIONS') == 'True'
 
     # Inicializar la base de datos y migraciones

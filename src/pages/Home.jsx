@@ -19,7 +19,8 @@ const Home = () => {
     location: "",
     destinity: "",
     passengers: 1,
-    vehicle: "", // Añadido para el vehículo
+    vehicle: "", // Se eliminó
+    extraWeight: 0, // Campo de peso extra
   });
 
   const [results, setResults] = useState(null);
@@ -28,7 +29,7 @@ const Home = () => {
   const [brandOptions, setBrandOptions] = useState([]);
   const [modelOptions, setModelOptions] = useState([]);
   const [vehicleOptions, setVehicleOptions] = useState([]);
-  const [jwtToken, setJwtToken] = useState(null); // Guardar el JWT para no solicitarlo varias veces
+  const [jwtToken, setJwtToken] = useState(null);
 
   // Configuración para cargar Google Maps
   const { isLoaded } = useJsApiLoader({
@@ -44,7 +45,7 @@ const Home = () => {
           const { latitude, longitude } = position.coords;
           setFormData((prev) => ({
             ...prev,
-            location: `Lat: ${latitude}, Lon: ${longitude}`, // Actualiza la ubicación en el estado
+            location: `Lat: ${latitude}, Lon: ${longitude}`,
           }));
         },
         (error) => {
@@ -57,7 +58,7 @@ const Home = () => {
     }
   };
 
-  // Obtener JWT solo si no está almacenado
+  // Obtener JWT
   useEffect(() => {
     if (!jwtToken) {
       const fetchJwt = async () => {
@@ -74,7 +75,7 @@ const Home = () => {
     }
   }, [jwtToken]);
 
-  // Obtener marcas solo cuando no están almacenadas
+  // Obtener marcas
   useEffect(() => {
     if (!brandOptions.length) {
       const fetchCarBrands = async () => {
@@ -82,7 +83,7 @@ const Home = () => {
           const response = await axios.get(
             `${VITE_BACKEND_URL}/api/carsxe/brands?make=all`
           );
-          setBrandOptions(response.data.map((car) => car.make)); // Guardar las marcas
+          setBrandOptions(response.data.map((car) => car.make));
         } catch (error) {
           console.error("Error al cargar las marcas:", error);
         }
@@ -91,7 +92,7 @@ const Home = () => {
     }
   }, [brandOptions]);
 
-  // Obtener vehículos solo cuando no están almacenados
+  // Obtener vehículos
   useEffect(() => {
     if (!vehicleOptions.length) {
       const fetchVehicles = async () => {
@@ -99,7 +100,7 @@ const Home = () => {
           const response = await axios.get(
             `${VITE_BACKEND_URL}/api/carsxe/vehicles`
           );
-          setVehicleOptions(response.data); // Guardar los vehículos
+          setVehicleOptions(response.data);
         } catch (error) {
           console.error("Error al cargar los vehículos:", error);
         }
@@ -180,15 +181,15 @@ const Home = () => {
           setFormData={setFormData}
           brandOptions={brandOptions}
           modelOptions={modelOptions}
-          vehicleOptions={vehicleOptions} // Pasando los vehículos al formulario
+          vehicleOptions={vehicleOptions}
           handleBrandSelect={handleBrandSelect}
           handleModelSelect={handleModelSelect}
-          handleVehicleSelect={handleVehicleSelect} // Handler para seleccionar vehículo
+          handleVehicleSelect={handleVehicleSelect}
           handleChange={handleChange}
           calculateTrip={calculateTrip}
-          handleCurrentLocation={handleCurrentLocation} // Handler para obtener la ubicación actual
+          handleCurrentLocation={handleCurrentLocation}
         />
-        <button className="mt-3" onClick={calculateTrip}>
+        <button className="mt-3 rounded-3" onClick={calculateTrip}>
           Calcular Viaje
         </button>
       </div>

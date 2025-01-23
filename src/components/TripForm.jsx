@@ -1,14 +1,13 @@
 import PropTypes from "prop-types";
 import Select from "react-select";
+import "../styles/TripForm.css";
 
 const TripForm = ({
   formData,
   brandOptions,
   modelOptions,
-  vehicleOptions,
   handleBrandSelect,
   handleModelSelect,
-  handleVehicleSelect,
   handleChange,
   handleCurrentLocation,
 }) => {
@@ -19,7 +18,7 @@ const TripForm = ({
 
   return (
     <form>
-      {/* ✅ Selector de marca con búsqueda */}
+      {/* Selector de marca con búsqueda */}
       <label htmlFor="brand">Vehicle Brand</label>
       <Select
         id="brand"
@@ -35,7 +34,7 @@ const TripForm = ({
         isClearable
       />
 
-      {/* ✅ Lista de modelos */}
+      {/* Lista de modelos */}
       <label htmlFor="model">Vehicle Model</label>
       <select
         name="model"
@@ -50,22 +49,7 @@ const TripForm = ({
         ))}
       </select>
 
-      {/* ✅ Lista de vehículos */}
-      <label htmlFor="vehicle">Vehicle</label>
-      <select
-        name="vehicle"
-        value={formData.vehicle}
-        onChange={(e) => handleVehicleSelect(e.target.value)}
-      >
-        <option value="">Selecciona un vehículo</option>
-        {vehicleOptions.map((vehicle, index) => (
-          <option key={index} value={vehicle}>
-            {vehicle}
-          </option>
-        ))}
-      </select>
-
-      {/* ✅ Selector de tipo de combustible */}
+      {/* Selector de tipo de combustible */}
       <label htmlFor="fuelType">Fuel Type</label>
       <select name="fuelType" value={formData.fuelType} onChange={handleChange}>
         <option value="">-</option>
@@ -74,7 +58,7 @@ const TripForm = ({
         <option value="electric">Electric</option>
       </select>
 
-      {/* ✅ Campo de ubicación con botón */}
+      {/* Campo de ubicación con botón */}
       <label htmlFor="location">Location</label>
       <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
         <input
@@ -104,7 +88,7 @@ const TripForm = ({
         </button>
       </div>
 
-      {/* ✅ Campo de destino */}
+      {/* Campo de destino */}
       <label htmlFor="destinity">Destination</label>
       <input
         type="text"
@@ -113,14 +97,28 @@ const TripForm = ({
         onChange={handleChange}
       />
 
-      {/* ✅ Campo de pasajeros */}
-      <label htmlFor="passengers">Passengers</label>
-      <input
-        type="number"
-        name="passengers"
-        value={formData.passengers}
-        onChange={handleChange}
-      />
+      {/* Campo de pasajeros y peso extra */}
+      <div className="passengers-container">
+        <div>
+          <label htmlFor="passengers">Passengers</label>
+          <input
+            type="number"
+            name="passengers"
+            value={formData.passengers}
+            onChange={handleChange}
+          />
+        </div>
+
+        <div className="extra-weight-container">
+          <label htmlFor="extraWeight">Extra Weight</label>
+          <input
+            type="number"
+            name="extraWeight"
+            value={formData.extraWeight}
+            onChange={handleChange}
+          />
+        </div>
+      </div>
     </form>
   );
 };
@@ -129,12 +127,10 @@ TripForm.propTypes = {
   formData: PropTypes.object.isRequired,
   brandOptions: PropTypes.array.isRequired,
   modelOptions: PropTypes.array.isRequired,
-  vehicleOptions: PropTypes.array.isRequired,
   handleBrandSelect: PropTypes.func.isRequired,
   handleModelSelect: PropTypes.func.isRequired,
-  handleVehicleSelect: PropTypes.func.isRequired,
   handleChange: PropTypes.func.isRequired,
-  handleCurrentLocation: PropTypes.func.isRequired, // Validación de la nueva prop
+  handleCurrentLocation: PropTypes.func.isRequired,
 };
 
 export default TripForm;

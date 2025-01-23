@@ -4,83 +4,41 @@ from backend.carAPI_jwt import get_car_api_jwt
 import requests
 import os
 
-VITE_CAR_API_TOKEN = os.getenv('VITE_CAR_API_TOKEN')
-
-def get_vehicles(jwt_token):
-    try:
-        # Solicitud GET a la API de vehículos
-        response = requests.get(
-            "https://api.carsxe.com/vehicles",
-            headers={"Authorization": f"Bearer {jwt_token}"}
-        )
-        response.raise_for_status()
-        return response.json()  # Devuelve los datos de los vehículos
-    except requests.exceptions.RequestException as e:
-        print(f"Error en la solicitud GET: {e}")
-        return None
-
 main_bp = Blueprint('main_bp', __name__)
 
-# ✅ Registro de usuario
-@main_bp.route('/api/register', methods=['POST'])
-def register_user():
+# Ruta para obtener el JWT
+@main_bp.route('/api/auth/login', methods=['POST'])
+def get_jwt():
     try:
-        data = request.json
-        name = data.get('name')
-        email = data.get('email')
-        password = data.get('password')
+        # La autenticación con CarAPI se realiza internamente en get_car_api_jwt()
+        jwt_token = get_car_api_jwt()  # Obtén el JWT sin necesidad de pasarle parámetros
+        
+        if not jwt_token:
+            return jsonify({"error": "No se pudo obtener el JWT"}), 500
 
-        if not all([name, email, password]):
-            return jsonify({"error": "Todos los campos son requeridos"}), 400
-
-        if User.query.filter_by(email=email).first():
-            return jsonify({"error": "El correo ya está registrado"}), 400
-
-        new_user = User(name=name, email=email)
-        new_user.set_password(password)
-        db.session.add(new_user)
-        db.session.commit()
-
-        return jsonify({"message": "Usuario registrado exitosamente"}), 201
+        return jsonify({"jwt": jwt_token}), 200
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# ✅ Autenticación de usuario
-@main_bp.route('/api/login', methods=['POST'])
-def login_user():
-    data = request.json
-    email = data.get('email')
-    password = data.get('password')
-
-    user = User.query.filter_by(email=email).first()
-    if user and user.check_password(password):
-        return jsonify({"message": "Inicio de sesión exitoso", "user": user.to_dict()}), 200
-    else:
-        return jsonify({"error": "Credenciales inválidas"}), 401
-
-# ✅ Obtener lista de vehículos
+# Ruta para obtener vehículos
 @main_bp.route('/api/carsxe/vehicles', methods=['GET'])
 def get_vehicles_list():
     try:
-        jwt_token = get_car_api_jwt()
+        jwt_token = get_car_api_jwt()  # Obtén el JWT antes de hacer la solicitud
         if not jwt_token:
             return jsonify({"error": "No se pudo obtener el JWT"}), 500
         
-        # Hacer la solicitud GET a la API de vehículos
         vehicles = get_vehicles(jwt_token)
         if not vehicles:
             return jsonify({"error": "No se pudieron obtener los vehículos"}), 500
         
-        # Retornar los vehículos obtenidos
         return jsonify(vehicles), 200
 
-    except requests.exceptions.RequestException as e:
-        return jsonify({"error": f"Error al conectar con CarsXE: {str(e)}"}), 500
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# ✅ Obtener JWT y Llamada a la API externa
+# Ruta para obtener marcas
 @main_bp.route('/api/carsxe/brands', methods=['GET'])
 def get_brands():
     try:
@@ -89,8 +47,8 @@ def get_brands():
             return jsonify({"error": "Parámetro 'make' es requerido"}), 400
 
         jwt_token = get_car_api_jwt()
-        if not jwt_token or isinstance(jwt_token, dict):
-            return jsonify({"error": f"Error al obtener token JWT: {jwt_token}"}), 500
+        if not jwt_token:
+            return jsonify({"error": "Error al obtener el token JWT"}), 500
 
         response = requests.get(
             f"https://api.carsxe.com/brands?make={make}",
@@ -104,7 +62,7 @@ def get_brands():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# ✅ Obtener modelos de un automóvil por marca
+# Ruta para obtener modelos
 @main_bp.route('/api/carsxe/models', methods=['GET'])
 def get_car_models():
     try:
@@ -114,7 +72,7 @@ def get_car_models():
 
         response = requests.get(
             "https://api.carsxe.com/specs",
-            params={"make": make.strip(), "key": VITE_CAR_API_TOKEN}
+            params={"make": make.strip(), "key": os.getenv('VITE_CAR_API_TOKEN')}
         )
         response.raise_for_status()
 
@@ -127,7 +85,7 @@ def get_car_models():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# ✅ Calcular viaje
+# Ruta para calcular el viaje
 @main_bp.route('/api/calculate', methods=['POST'])
 def calculate_trip():
     try:
@@ -163,7 +121,7 @@ def calculate_trip():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# ✅ Obtener todos los viajes
+# Ruta para obtener todos los viajes
 @main_bp.route('/api/trips', methods=['GET'])
 def get_trips():
     try:
@@ -172,7 +130,7 @@ def get_trips():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# ✅ Eliminar un viaje
+# Ruta para eliminar un viaje
 @main_bp.route('/api/trips/<int:trip_id>', methods=['DELETE'])
 def delete_trip(trip_id):
     try:
