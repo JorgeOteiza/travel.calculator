@@ -66,7 +66,7 @@ const TripForm = ({
           name="location"
           value={formData.location}
           onChange={handleChange}
-          placeholder="Escribe tu ubicación"
+          placeholder="Elige tu ubicación"
           style={{ flex: 1 }}
         />
         <button
@@ -93,6 +93,7 @@ const TripForm = ({
       <input
         type="text"
         name="destinity"
+        placeholder="Elige tu destino"
         value={formData.destinity}
         onChange={handleChange}
       />
