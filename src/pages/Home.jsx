@@ -190,7 +190,7 @@ const Home = () => {
           handleCurrentLocation={handleCurrentLocation}
         />
         <button className="mt-3 rounded-3" onClick={calculateTrip}>
-          Calcular Viaje
+          Calculate Trip
         </button>
       </div>
 
