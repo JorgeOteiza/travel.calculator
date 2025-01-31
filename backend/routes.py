@@ -6,6 +6,12 @@ import os
 
 main_bp = Blueprint('main_bp', __name__)
 
+
+@main_bp.route("/", methods=["GET"])
+def home():
+    return jsonify({"message": "API Running"}), 200
+
+
 # Ruta para obtener el JWT
 @main_bp.route('/api/auth/login', methods=['POST'])
 def get_jwt():
