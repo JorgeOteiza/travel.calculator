@@ -7,10 +7,10 @@ import os
 auth_bp = Blueprint('auth_bp', __name__)
 SECRET_KEY = os.getenv('SECRET_KEY')
 
-# Simulación de usuarios en base de datos (debes conectar con Postgres)
+# Simulación de usuarios en base de datos
 users_db = {
     "jorge": {
-        "password": "pbkdf2:sha256:260000$examplehash",  # Contraseña hasheada
+        "password": "pbkdf2:sha256:260000$examplehash",
     }
 }
 

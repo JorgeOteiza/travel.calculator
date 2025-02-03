@@ -6,11 +6,9 @@ jwt_token = None  # Mantener el JWT en memoria para no obtener uno nuevo cada ve
 def get_car_api_jwt(api_token=None, api_secret=None):
     global jwt_token
 
-    # Si ya existe un JWT guardado, se reutiliza
     if jwt_token:
         return jwt_token
 
-    # Si no hay JWT guardado, obtenemos uno nuevo usando el API token y secret
     if api_token is None or api_secret is None:
         api_token = os.getenv('VITE_CAR_API_TOKEN')
         api_secret = os.getenv('VITE_CAR_API_SECRET')
@@ -31,9 +29,11 @@ def get_car_api_jwt(api_token=None, api_secret=None):
             }
         )
 
-        # Revisar si la respuesta es correcta
+        print(f"Estado de la respuesta: {response.status_code}")
+        print(f"Respuesta del servidor (1000 chars): {response.text[:1000]}")
+
         if response.status_code == 200:
-            jwt_token = response.json().get('jwt')
+            jwt_token = response.text.strip()  # ✅ Manejar la respuesta como texto en lugar de JSON
             if not jwt_token:
                 raise ValueError("No se pudo obtener el JWT")
             return jwt_token

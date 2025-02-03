@@ -19,8 +19,8 @@ const Home = () => {
     location: "",
     destinity: "",
     passengers: 1,
-    vehicle: "", // Se eliminó
-    extraWeight: 0, // Campo de peso extra
+    vehicle: "",
+    extraWeight: 0,
   });
 
   const [results, setResults] = useState(null);
@@ -31,7 +31,6 @@ const Home = () => {
   const [vehicleOptions, setVehicleOptions] = useState([]);
   const [jwtToken, setJwtToken] = useState(null);
 
-  // Configuración para cargar Google Maps
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: VITE_GOOGLE_MAPS_API_KEY,
     libraries,
@@ -58,79 +57,89 @@ const Home = () => {
     }
   };
 
-  // Obtener JWT
+  // ✅ Obtener JWT solo una vez
   useEffect(() => {
+    const fetchJwt = async () => {
+      try {
+        const response = await axios.post(`${VITE_BACKEND_URL}/api/auth/login`);
+        setJwtToken(response.data.jwt);
+      } catch (error) {
+        console.error("Error al obtener el JWT", error);
+      }
+    };
+
     if (!jwtToken) {
-      const fetchJwt = async () => {
-        try {
-          const response = await axios.post(
-            `${VITE_BACKEND_URL}/api/auth/login`
-          );
-          setJwtToken(response.data.jwt); // Almacenar el JWT
-        } catch (error) {
-          console.error("Error al obtener el JWT", error);
-        }
-      };
       fetchJwt();
     }
   }, [jwtToken]);
 
-  // Obtener marcas
+  // ✅ Obtener marcas solo una vez
   useEffect(() => {
-    if (!brandOptions.length) {
-      const fetchCarBrands = async () => {
-        try {
-          const response = await axios.get(
-            `${VITE_BACKEND_URL}/api/carsxe/brands?make=all`
-          );
-          setBrandOptions(response.data.map((car) => car.make));
-        } catch (error) {
-          console.error("Error al cargar las marcas:", error);
-        }
-      };
+    const fetchCarBrands = async () => {
+      try {
+        const response = await axios.get(
+          `${VITE_BACKEND_URL}/api/carsxe/brands`
+        );
+        setBrandOptions(
+          response.data.data.map((brand) => ({
+            label: brand.name,
+            value: brand.id,
+          }))
+        );
+      } catch (error) {
+        console.error("Error al cargar las marcas:", error);
+      }
+    };
+
+    if (jwtToken && brandOptions.length === 0) {
       fetchCarBrands();
     }
-  }, [brandOptions]);
+  }, [jwtToken, brandOptions]);
 
-  // Obtener vehículos
+  // ✅ Obtener vehículos solo una vez
   useEffect(() => {
-    if (!vehicleOptions.length) {
-      const fetchVehicles = async () => {
-        try {
-          const response = await axios.get(
-            `${VITE_BACKEND_URL}/api/carsxe/vehicles`
-          );
-          setVehicleOptions(response.data);
-        } catch (error) {
-          console.error("Error al cargar los vehículos:", error);
-        }
-      };
+    const fetchVehicles = async () => {
+      try {
+        const response = await axios.get(
+          `${VITE_BACKEND_URL}/api/carsxe/vehicles`
+        );
+        setVehicleOptions(response.data);
+      } catch (error) {
+        console.error("Error al cargar los vehículos:", error);
+      }
+    };
+
+    if (jwtToken && vehicleOptions.length === 0) {
       fetchVehicles();
     }
-  }, [vehicleOptions]);
+  }, [jwtToken, vehicleOptions]);
 
-  // Obtener modelos cuando se selecciona una marca
+  // ✅ Obtener modelos cuando se selecciona una marca
   useEffect(() => {
-    if (formData.brand) {
-      const fetchCarModels = async (brand) => {
-        try {
-          const response = await axios.get(
-            `${VITE_BACKEND_URL}/api/carsxe/models`,
-            {
-              params: { make: brand },
-            }
-          );
-          setModelOptions(response.data.map((car) => car.model));
-        } catch (error) {
-          console.error("Error al cargar los modelos:", error);
-        }
-      };
+    const fetchCarModels = async () => {
+      try {
+        const response = await axios.get(
+          `${VITE_BACKEND_URL}/api/carsxe/models`,
+          {
+            params: { make: formData.brand },
+          }
+        );
+        setModelOptions(
+          response.data.map((model) => ({
+            label: model.label,
+            value: model.value,
+          }))
+        );
+      } catch (error) {
+        console.error("Error al cargar los modelos:", error);
+      }
+    };
 
-      fetchCarModels(formData.brand);
+    if (formData.brand) {
+      fetchCarModels();
     }
   }, [formData.brand]);
 
-  // Handlers de selección
   const handleBrandSelect = (selectedBrand) => {
     setFormData({ ...formData, brand: selectedBrand });
   };
@@ -149,19 +158,22 @@ const Home = () => {
 
   const calculateTrip = async () => {
     try {
-      if (
-        !formData.brand ||
-        !formData.model ||
-        !formData.location ||
-        !formData.destinity
-      ) {
+      const { brand, model, fuelType, location, destinity } = formData;
+
+      if (!brand || !model || !location || !destinity) {
         alert("Por favor completa todos los campos.");
         return;
       }
-      const response = await axios.post(
-        `${VITE_BACKEND_URL}/api/calculate`,
-        formData
-      );
+
+      const vehicle = `${brand} ${model}`;
+
+      const response = await axios.post(`${VITE_BACKEND_URL}/api/calculate`, {
+        vehicle,
+        fuelType,
+        location,
+        destinity,
+      });
+
       setResults(response.data);
     } catch (error) {
       console.error("Error al calcular el viaje:", error);

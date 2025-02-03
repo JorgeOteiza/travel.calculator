@@ -11,11 +11,6 @@ const TripForm = ({
   handleChange,
   handleCurrentLocation,
 }) => {
-  const brandSelectOptions = brandOptions.map((brand) => ({
-    value: brand,
-    label: brand,
-  }));
-
   return (
     <form>
       {/* Selector de marca con búsqueda */}
@@ -23,10 +18,8 @@ const TripForm = ({
       <Select
         id="brand"
         name="brand"
-        options={brandSelectOptions}
-        value={brandSelectOptions.find(
-          (option) => option.value === formData.brand
-        )}
+        options={brandOptions}
+        value={brandOptions.find((option) => option.value === formData.brand)}
         onChange={(selectedOption) =>
           handleBrandSelect(selectedOption ? selectedOption.value : "")
         }
@@ -36,18 +29,17 @@ const TripForm = ({
 
       {/* Lista de modelos */}
       <label htmlFor="model">Vehicle Model</label>
-      <select
+      <Select
+        id="model"
         name="model"
-        value={formData.model}
-        onChange={(e) => handleModelSelect(e.target.value)}
-      >
-        <option value="">Selecciona un modelo</option>
-        {modelOptions.map((model, index) => (
-          <option key={index} value={model}>
-            {model}
-          </option>
-        ))}
-      </select>
+        options={modelOptions}
+        value={modelOptions.find((option) => option.value === formData.model)}
+        onChange={(selectedOption) =>
+          handleModelSelect(selectedOption ? selectedOption.value : "")
+        }
+        placeholder="Selecciona un modelo"
+        isClearable
+      />
 
       {/* Selector de tipo de combustible */}
       <label htmlFor="fuelType">Fuel Type</label>
