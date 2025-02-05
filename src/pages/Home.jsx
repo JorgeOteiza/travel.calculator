@@ -118,12 +118,14 @@ const Home = () => {
   useEffect(() => {
     const fetchCarModels = async () => {
       try {
+        console.log("📡 Solicitando modelos para la marca ID:", formData.brand);
         const response = await axios.get(
           `${VITE_BACKEND_URL}/api/carsxe/models`,
           {
             params: { make: formData.brand },
           }
         );
+        console.log("📥 Modelos recibidos:", response.data);
         setModelOptions(
           response.data.map((model) => ({
             label: model.label,
@@ -131,7 +133,7 @@ const Home = () => {
           }))
         );
       } catch (error) {
-        console.error("Error al cargar los modelos:", error);
+        console.error("❌ Error al cargar los modelos:", error);
       }
     };
 
@@ -141,15 +143,17 @@ const Home = () => {
   }, [formData.brand]);
 
   const handleBrandSelect = (selectedBrand) => {
-    setFormData({ ...formData, brand: selectedBrand });
+    console.log("🚗 Marca seleccionada:", selectedBrand);
+    setFormData({ ...formData, brand: selectedBrand.value, model: "" }); // Limpiar el modelo al cambiar de marca
+    setModelOptions([]); // Limpiar opciones de modelos previas
   };
 
   const handleModelSelect = (selectedModel) => {
-    setFormData({ ...formData, model: selectedModel });
+    setFormData({ ...formData, model: selectedModel.value }); // Usar el ID del modelo
   };
 
   const handleVehicleSelect = (selectedVehicle) => {
-    setFormData({ ...formData, vehicle: selectedVehicle });
+    setFormData({ ...formData, vehicle: selectedVehicle.value });
   };
 
   const handleChange = (e) => {

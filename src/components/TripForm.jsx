@@ -29,17 +29,20 @@ const TripForm = ({
 
       {/* Lista de modelos */}
       <label htmlFor="model">Vehicle Model</label>
-      <Select
-        id="model"
+      <select
         name="model"
-        options={modelOptions}
-        value={modelOptions.find((option) => option.value === formData.model)}
-        onChange={(selectedOption) =>
-          handleModelSelect(selectedOption ? selectedOption.value : "")
+        value={formData.model}
+        onChange={(e) =>
+          handleModelSelect({ label: e.target.value, value: e.target.value })
         }
-        placeholder="Selecciona un modelo"
-        isClearable
-      />
+      >
+        <option value="">Selecciona un modelo</option>
+        {modelOptions.map((model) => (
+          <option key={model.value} value={model.label}>
+            {model.label}
+          </option>
+        ))}
+      </select>
 
       {/* Selector de tipo de combustible */}
       <label htmlFor="fuelType">Fuel Type</label>

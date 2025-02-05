@@ -6,6 +6,11 @@ import os
 
 main_bp = Blueprint('main_bp', __name__)
 
+# ✅ Ruta principal
+@main_bp.route("/", methods=["GET"])
+def home():
+    return jsonify({"message": "API Running"}), 200
+
 # ✅ Función para obtener vehículos
 def get_vehicles(jwt_token):
     try:
@@ -19,10 +24,6 @@ def get_vehicles(jwt_token):
         print(f"Error al obtener vehículos: {e}")
         return None
 
-# ✅ Ruta principal
-@main_bp.route("/", methods=["GET"])
-def home():
-    return jsonify({"message": "API Running"}), 200
 
 # ✅ Ruta para obtener el JWT
 @main_bp.route('/api/auth/login', methods=['POST'])
@@ -75,39 +76,38 @@ def get_brands():
 @main_bp.route('/api/carsxe/models', methods=['GET'])
 def get_car_models():
     try:
-        make = request.args.get('make')
-        if not make:
+        make_id = request.args.get('make')  # Obtener el ID de la marca
+        if not make_id:
             return jsonify({"error": "El parámetro 'make' es obligatorio"}), 400
 
-        print(f"Obteniendo modelos para la marca: {make}")
+        print(f"✅ Obteniendo modelos para la marca ID: {make_id}")
 
-        # 🔑 Intentar con el nombre de la marca en lugar del ID
+        # Asegurarse de que 'make_id' es el parámetro correcto para la API externa
         response = requests.get(
             "https://carapi.app/api/models",
-            params={"make": make},  # 🚀 Enviar el nombre de la marca
+            params={"make_id": make_id},  # Usar el ID de la marca aquí
             headers={"Authorization": f"Bearer {get_car_api_jwt()}"}
         )
 
-        print(f"Estado de la respuesta: {response.status_code}")
-        print(f"Respuesta de la API: {response.text[:500]}")
-
+        print(f"🌐 URL de la solicitud: {response.url}")
+        print(f"✅ Estado de la respuesta: {response.status_code}")
+        print(f"📥 Respuesta de la API: {response.text[:500]}")
         response.raise_for_status()
 
         data = response.json()
         if "data" not in data:
             return jsonify({"error": "La respuesta de la API no contiene datos de modelos"}), 500
 
+        # Formatear para el frontend
         models = [{"label": item.get("name"), "value": item.get("id")} for item in data.get('data', [])]
-
-        print(f"Modelos obtenidos: {models[:5]}")
-
+        print(f"📊 Modelos obtenidos: {models[:5]}")
         return jsonify(models), 200
 
     except requests.exceptions.RequestException as e:
-        print(f"Error de conexión con la API externa: {e}")
+        print(f"🚨 Error de conexión con la API externa: {e}")
         return jsonify({"error": f"Error de conexión con la API de vehículos: {str(e)}"}), 500
     except Exception as e:
-        print(f"Error inesperado: {e}")
+        print(f"⚠️ Error inesperado: {e}")
         return jsonify({"error": str(e)}), 500
 
 
