@@ -76,31 +76,42 @@ def get_brands():
 @main_bp.route('/api/carsxe/models', methods=['GET'])
 def get_car_models():
     try:
-        make_id = request.args.get('make')  # Obtener el ID de la marca
+        make_id = request.args.get('make_id')  # Obtener el ID de la marca
         if not make_id:
-            return jsonify({"error": "El parámetro 'make' es obligatorio"}), 400
+            return jsonify({"error": "El parámetro 'make_id' es obligatorio"}), 400
 
         print(f"✅ Obteniendo modelos para la marca ID: {make_id}")
 
         # Asegurarse de que 'make_id' es el parámetro correcto para la API externa
         response = requests.get(
             "https://carapi.app/api/models",
-            params={"make_id": make_id},  # Usar el ID de la marca aquí
+            params={"make_id": make_id, "verbose": "yes"},  # Usar verbose para obtener más detalles
             headers={"Authorization": f"Bearer {get_car_api_jwt()}"}
         )
 
         print(f"🌐 URL de la solicitud: {response.url}")
         print(f"✅ Estado de la respuesta: {response.status_code}")
-        print(f"📥 Respuesta de la API: {response.text[:500]}")
+        print(f"📥 Respuesta de la API completa: {response.json()}")  # ✅ Ver respuesta completa de la API
+
         response.raise_for_status()
 
         data = response.json()
         if "data" not in data:
             return jsonify({"error": "La respuesta de la API no contiene datos de modelos"}), 500
 
-        # Formatear para el frontend
-        models = [{"label": item.get("name"), "value": item.get("id")} for item in data.get('data', [])]
-        print(f"📊 Modelos obtenidos: {models[:5]}")
+        # ✅ Procesamiento y formateo de los modelos
+        models = []
+        for item in data.get('data', []):
+            model_name = item.get("name", "Modelo Desconocido")
+            print(f"📝 Modelo detectado: {model_name}")  # Verificar el nombre en la consola
+
+            models.append({
+                "label": model_name,
+                "value": item.get("id")
+            })
+
+        print(f"📊 Modelos obtenidos: {models[:5]}")  # Muestra los primeros 5 modelos
+
         return jsonify(models), 200
 
     except requests.exceptions.RequestException as e:
