@@ -1,8 +1,9 @@
+import json
+import requests
+import os
 from flask import Blueprint, request, jsonify
 from .models import db, Trip, Brand, Model, User
 from backend.carAPI_jwt import get_car_api_jwt
-import requests
-import os
 
 main_bp = Blueprint('main_bp', __name__)
 
@@ -76,48 +77,52 @@ def get_brands():
 @main_bp.route('/api/carsxe/models', methods=['GET'])
 def get_car_models():
     try:
-        make_id = request.args.get('make_id')  # Obtener el ID de la marca
+        make_id = request.args.get('make_id')
+        
         if not make_id:
+            print("🚨 Error: No se recibió 'make_id' en la solicitud")
             return jsonify({"error": "El parámetro 'make_id' es obligatorio"}), 400
 
         print(f"✅ Obteniendo modelos para la marca ID: {make_id}")
 
-        # Consulta JSON para filtrar modelos entre 2015 y 2020
+        try:
+            make_id = int(make_id)
+        except ValueError:
+            print("🚨 Error: 'make_id' no es un número válido")
+            return jsonify({"error": "El parámetro 'make_id' debe ser un número válido"}), 400
+
+        # Filtrar modelos entre 2015 y 2020
         query_filter = [
             {"field": "make_id", "op": "=", "val": make_id},
             {"field": "year", "op": ">=", "val": 2015},
             {"field": "year", "op": "<=", "val": 2020}
         ]
 
-        response = requests.get(
-            "https://carapi.app/api/models",
-            params={"json": str(query_filter), "verbose": "yes"},
-            headers={"Authorization": f"Bearer {get_car_api_jwt()}"}
-        )
+        url = "https://carapi.app/api/models"
+        headers = {"Authorization": f"Bearer {get_car_api_jwt()}"}
+        params = {"json": json.dumps(query_filter), "verbose": "yes"}
 
-        print(f"🌐 URL de la solicitud: {response.url}")
+        print(f"🌍 Enviando solicitud a {url} con params: {params}")
+
+        response = requests.get(url, headers=headers, params=params)
+
         print(f"✅ Estado de la respuesta: {response.status_code}")
-        print(f"📥 Respuesta de la API: {response.text[:500]}")
 
-        response.raise_for_status()
-
+        # ✅ Mover la asignación de 'data' aquí, después de obtener la respuesta
         data = response.json()
+
+        print(f"📥 Respuesta completa de la API (1000 chars): {json.dumps(data)[:1000]}")
+
         if "data" not in data:
             return jsonify({"error": "La respuesta de la API no contiene datos de modelos"}), 500
 
-        # Filtrar solo los modelos que no están ocultos
-        models = []
-        for item in data.get('data', []):
-            model_name = item.get("name", "")
-            if "(hidden)" not in model_name:
-                models.append({
-                    "label": model_name,
-                    "value": item.get("id")
-                })
+        # Filtrar modelos visibles
+        models = [
+            {"label": item.get("name"), "value": item.get("id")}
+            for item in data.get('data', [])
+            if "(hidden)" not in item.get("name", "") and item.get("name", "").strip()
+        ]
 
-        print(f"📊 Modelos visibles obtenidos: {models[:5]}")
-
-        # Manejo en caso de que todos los modelos estén ocultos
         if not models:
             return jsonify({"message": "No se encontraron modelos visibles para esta marca."}), 200
 
@@ -126,10 +131,10 @@ def get_car_models():
     except requests.exceptions.RequestException as e:
         print(f"🚨 Error de conexión con la API externa: {e}")
         return jsonify({"error": f"Error de conexión con la API de vehículos: {str(e)}"}), 500
-    except Exception as e:
-        print(f"⚠️ Error inesperado: {e}")
-        return jsonify({"error": str(e)}), 500
 
+    except Exception as e:
+        print(f"⚠️ Error inesperado en el servidor: {e}")
+        return jsonify({"error": str(e)}), 500
 
 
         # ✅ Verificación del contenido JSON recibido

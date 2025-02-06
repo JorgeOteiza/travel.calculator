@@ -7,7 +7,7 @@ import GoogleMapComponent from "../components/GoogleMapComponent";
 import "../styles/home.css";
 
 const VITE_BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
-const libraries = ["places", "marker"]; // ✅ Declarado fuera del componente
+const libraries = ["places", "marker"];
 
 const Home = () => {
   const [formData, setFormData] = useState({
@@ -84,22 +84,50 @@ const Home = () => {
   useEffect(() => {
     const fetchCarModels = async () => {
       try {
-        if (!formData.brand) return;
+        if (!formData.brand) {
+          console.warn("🚨 No hay 'make_id' para la solicitud");
+          return;
+        }
 
-        const response = await axios.get(
-          `${VITE_BACKEND_URL}/api/carsxe/models`,
-          {
-            params: { make_id: formData.brand },
-          }
-        );
-        setModelOptions(
-          response.data.map((model) => ({
-            label: model.label,
-            value: String(model.value),
-          }))
-        );
+        const url = `${VITE_BACKEND_URL}/api/carsxe/models?make_id=${formData.brand}`;
+        console.log(`🌍 Enviando solicitud a: ${url}`);
+
+        const response = await axios.get(url);
+
+        console.log("📥 Respuesta recibida:", response.data);
+
+        if (Array.isArray(response.data)) {
+          // ✅ Si la respuesta es una lista, actualizar opciones
+          setModelOptions(
+            response.data.map((model) => ({
+              label: model.label,
+              value: String(model.value),
+            }))
+          );
+        } else if (response.data.message) {
+          // 🔍 Si la API devuelve un mensaje en vez de una lista, mostrar alerta
+          alert(response.data.message);
+          setModelOptions([]);
+        } else {
+          console.error(
+            "⚠️ La API no devolvió una lista de modelos válida:",
+            response.data
+          );
+          setModelOptions([]);
+        }
       } catch (error) {
-        console.error("Error al cargar los modelos:", error);
+        if (error.response) {
+          if (error.response.status === 403) {
+            alert(
+              "⚠️ No se pueden obtener modelos visibles en el plan gratuito."
+            );
+          } else if (error.response.status === 400) {
+            alert("⚠️ Solicitud incorrecta. Verifica la marca seleccionada.");
+          } else {
+            alert("⚠️ Ocurrió un error al obtener los modelos.");
+          }
+        }
+        console.error("🚨 Error al cargar los modelos:", error);
       }
     };
 
