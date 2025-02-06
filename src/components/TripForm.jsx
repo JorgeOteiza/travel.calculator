@@ -19,17 +19,23 @@ const TripForm = ({
         id="brand"
         name="brand"
         options={brandOptions}
-        value={brandOptions.find((option) => option.value === formData.brand)}
+        value={
+          brandOptions.find((option) => option.value === formData.brand) || null
+        }
         onChange={handleBrandSelect}
         placeholder="Selecciona una marca"
         isClearable
       />
 
+      {/* Selector de modelo con búsqueda */}
+      <label htmlFor="model">Vehicle Model</label>
       <Select
         id="model"
         name="model"
         options={modelOptions}
-        value={modelOptions.find((option) => option.value === formData.model)}
+        value={
+          modelOptions.find((option) => option.value === formData.model) || null
+        }
         onChange={handleModelSelect}
         placeholder="Selecciona un modelo"
         isClearable
@@ -96,7 +102,6 @@ const TripForm = ({
             onChange={handleChange}
           />
         </div>
-
         <div className="extra-weight-container">
           <label htmlFor="extraWeight">Extra Weight</label>
           <input
@@ -111,10 +116,29 @@ const TripForm = ({
   );
 };
 
+// Definición de propTypes
 TripForm.propTypes = {
-  formData: PropTypes.object.isRequired,
-  brandOptions: PropTypes.array.isRequired,
-  modelOptions: PropTypes.array.isRequired,
+  formData: PropTypes.shape({
+    brand: PropTypes.string.isRequired,
+    model: PropTypes.string.isRequired,
+    fuelType: PropTypes.string.isRequired,
+    location: PropTypes.string.isRequired,
+    destinity: PropTypes.string.isRequired,
+    passengers: PropTypes.number.isRequired,
+    extraWeight: PropTypes.number.isRequired,
+  }).isRequired,
+  brandOptions: PropTypes.arrayOf(
+    PropTypes.shape({
+      label: PropTypes.string.isRequired,
+      value: PropTypes.string.isRequired,
+    })
+  ).isRequired,
+  modelOptions: PropTypes.arrayOf(
+    PropTypes.shape({
+      label: PropTypes.string.isRequired,
+      value: PropTypes.string.isRequired,
+    })
+  ).isRequired,
   handleBrandSelect: PropTypes.func.isRequired,
   handleModelSelect: PropTypes.func.isRequired,
   handleChange: PropTypes.func.isRequired,

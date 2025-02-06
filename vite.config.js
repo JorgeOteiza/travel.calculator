@@ -8,11 +8,11 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      '/api/carsxe': {
-        target: 'https://api.carsxe.com',
+      "/api/carsxe": {
+        target: "https://api.carsxe.com",
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/carsxe/, '')
-      }
-    }
-  }
+        rewrite: (path) => path.replace(/^\/api\/carsxe/, ""),
+      },
+    },
+  },
 });

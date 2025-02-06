@@ -7,13 +7,12 @@ import GoogleMapComponent from "../components/GoogleMapComponent";
 import "../styles/home.css";
 
 const VITE_BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
-const VITE_GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
-const libraries = ["places", "marker"];
+const libraries = ["places", "marker"]; // ✅ Declarado fuera del componente
 
 const Home = () => {
   const [formData, setFormData] = useState({
-    brand: "", // ID de la marca seleccionada
-    model: "", // ID del modelo seleccionado
+    brand: "",
+    model: "",
     fuelType: "gasoline",
     location: "",
     destinity: "",
@@ -22,56 +21,44 @@ const Home = () => {
     extraWeight: 0,
   });
   const [results, setResults] = useState(null);
-  const [mapCenter] = useState({ lat: 37.7749, lng: -122.4194 });
-  const [markers] = useState([]);
-  const [brandOptions, setBrandOptions] = useState([]); // Opciones de marcas
-  const [modelOptions, setModelOptions] = useState([]); // Opciones de modelos
-  const [vehicleOptions, setVehicleOptions] = useState([]); // Opciones de vehículos
+  const [mapCenter, setMapCenter] = useState({ lat: 37.7749, lng: -122.4194 });
+  const [markers, setMarkers] = useState([]);
+  const [brandOptions, setBrandOptions] = useState([]);
+  const [modelOptions, setModelOptions] = useState([]);
+  const [vehicleOptions] = useState([]);
   const [jwtToken, setJwtToken] = useState(null);
 
   const { isLoaded } = useJsApiLoader({
-    googleMapsApiKey: VITE_GOOGLE_MAPS_API_KEY,
+    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
     libraries,
     mapIds: [import.meta.env.VITE_MAP_ID],
   });
 
-  // ✅ Obtener ubicación actual
-  const handleCurrentLocation = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          setFormData((prev) => ({
-            ...prev,
-            location: `${latitude}, ${longitude}`,
-          }));
-        },
-        (error) => {
-          console.error("Error obteniendo la ubicación:", error);
-          alert("No se pudo obtener tu ubicación.");
-        }
-      );
-    } else {
-      alert("La geolocalización no es compatible con tu navegador.");
-    }
-  };
-
-  // ✅ Obtener JWT solo una vez
   useEffect(() => {
     const fetchJwt = async () => {
       try {
         const response = await axios.post(`${VITE_BACKEND_URL}/api/auth/login`);
+        console.log("JWT recibido:", response.data.jwt);
         setJwtToken(response.data.jwt);
       } catch (error) {
-        console.error("Error al obtener el JWT", error);
+        if (error.response) {
+          console.error("❌ Error del backend:", error.response.data);
+        } else if (error.request) {
+          console.error(
+            "❌ No se recibió respuesta del backend:",
+            error.request
+          );
+        } else {
+          console.error("❌ Error desconocido:", error.message);
+        }
       }
     };
+
     if (!jwtToken) {
       fetchJwt();
     }
   }, [jwtToken]);
 
-  // ✅ Obtener marcas solo una vez
   useEffect(() => {
     const fetchCarBrands = async () => {
       try {
@@ -81,55 +68,38 @@ const Home = () => {
         setBrandOptions(
           response.data.data.map((brand) => ({
             label: brand.name,
-            value: brand.id,
+            value: String(brand.id),
           }))
         );
       } catch (error) {
         console.error("Error al cargar las marcas:", error);
       }
     };
+
     if (jwtToken && brandOptions.length === 0) {
       fetchCarBrands();
     }
   }, [jwtToken, brandOptions]);
 
-  // ✅ Obtener vehículos solo una vez
-  useEffect(() => {
-    const fetchVehicles = async () => {
-      try {
-        const response = await axios.get(
-          `${VITE_BACKEND_URL}/api/carsxe/vehicles`
-        );
-        setVehicleOptions(response.data);
-      } catch (error) {
-        console.error("Error al cargar los vehículos:", error);
-      }
-    };
-    if (jwtToken && vehicleOptions.length === 0) {
-      fetchVehicles();
-    }
-  }, [jwtToken, vehicleOptions]);
-
-  // ✅ Obtener modelos cuando se selecciona una marca
   useEffect(() => {
     const fetchCarModels = async () => {
       try {
-        console.log("📡 Solicitando modelos para la marca ID:", formData.brand);
+        if (!formData.brand) return;
+
         const response = await axios.get(
           `${VITE_BACKEND_URL}/api/carsxe/models`,
           {
-            params: { make_id: formData.brand }, // Usar make_id aquí
+            params: { make_id: formData.brand },
           }
         );
-        console.log("📥 Modelos recibidos:", response.data);
         setModelOptions(
           response.data.map((model) => ({
             label: model.label,
-            value: model.value,
+            value: String(model.value),
           }))
         );
       } catch (error) {
-        console.error("❌ Error al cargar los modelos:", error);
+        console.error("Error al cargar los modelos:", error);
       }
     };
 
@@ -138,28 +108,6 @@ const Home = () => {
     }
   }, [formData.brand]);
 
-  const handleBrandSelect = (selectedBrand) => {
-    console.log("🚗 Marca seleccionada:", selectedBrand);
-    setFormData({ ...formData, brand: selectedBrand.value, model: "" });
-    setModelOptions([]); // Limpiar modelos anteriores
-  };
-
-  // ✅ Manejar la selección de modelo
-  const handleModelSelect = (selectedModel) => {
-    setFormData({ ...formData, model: selectedModel.value }); // Usar el ID del modelo
-  };
-
-  // ✅ Manejar la selección de vehículo
-  const handleVehicleSelect = (selectedVehicle) => {
-    setFormData({ ...formData, vehicle: selectedVehicle.value });
-  };
-
-  // ✅ Manejar cambios en otros campos del formulario
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  // ✅ Calcular el viaje
   const calculateTrip = async () => {
     try {
       const { brand, model, fuelType, location, destinity } = formData;
@@ -194,19 +142,57 @@ const Home = () => {
           brandOptions={brandOptions}
           modelOptions={modelOptions}
           vehicleOptions={vehicleOptions}
-          handleBrandSelect={handleBrandSelect}
-          handleModelSelect={handleModelSelect}
-          handleVehicleSelect={handleVehicleSelect}
-          handleChange={handleChange}
+          handleBrandSelect={(selectedBrand) =>
+            setFormData({ ...formData, brand: selectedBrand.value, model: "" })
+          }
+          handleModelSelect={(selectedModel) =>
+            setFormData({ ...formData, model: selectedModel.value })
+          }
+          handleVehicleSelect={(selectedVehicle) =>
+            setFormData({ ...formData, vehicle: selectedVehicle.value })
+          }
+          handleChange={(e) =>
+            setFormData({ ...formData, [e.target.name]: e.target.value })
+          }
           calculateTrip={calculateTrip}
-          handleCurrentLocation={handleCurrentLocation}
+          handleCurrentLocation={() => {
+            if (navigator.geolocation) {
+              navigator.geolocation.getCurrentPosition(
+                (position) => {
+                  const { latitude, longitude } = position.coords;
+                  setFormData((prev) => ({
+                    ...prev,
+                    location: `${latitude}, ${longitude}`,
+                  }));
+                  setMapCenter({ lat: latitude, lng: longitude });
+                },
+                (error) => {
+                  console.error("Error obteniendo la ubicación:", error);
+                  alert("No se pudo obtener tu ubicación.");
+                }
+              );
+            } else {
+              alert("La geolocalización no es compatible con tu navegador.");
+            }
+          }}
         />
         <button className="mt-3 rounded-3" onClick={calculateTrip}>
           Calculate Trip
         </button>
       </div>
       <div className="mapContainer">
-        <GoogleMapComponent mapCenter={mapCenter} markers={markers} />
+        <GoogleMapComponent
+          mapCenter={mapCenter}
+          markers={markers}
+          setMarkers={setMarkers}
+          onLocationChange={(newLocation) =>
+            setFormData((prev) => ({
+              ...prev,
+              location: `${newLocation.lat}, ${newLocation.lng}`,
+            }))
+          }
+          setMapCenter={setMapCenter}
+        />
       </div>
       <ResultsDisplay results={results} />
     </div>

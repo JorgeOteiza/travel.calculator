@@ -82,16 +82,22 @@ def get_car_models():
 
         print(f"✅ Obteniendo modelos para la marca ID: {make_id}")
 
-        # Asegurarse de que 'make_id' es el parámetro correcto para la API externa
+        # Consulta JSON para filtrar modelos entre 2015 y 2020
+        query_filter = [
+            {"field": "make_id", "op": "=", "val": make_id},
+            {"field": "year", "op": ">=", "val": 2015},
+            {"field": "year", "op": "<=", "val": 2020}
+        ]
+
         response = requests.get(
             "https://carapi.app/api/models",
-            params={"make_id": make_id, "verbose": "yes"},  # Usar verbose para obtener más detalles
+            params={"json": str(query_filter), "verbose": "yes"},
             headers={"Authorization": f"Bearer {get_car_api_jwt()}"}
         )
 
         print(f"🌐 URL de la solicitud: {response.url}")
         print(f"✅ Estado de la respuesta: {response.status_code}")
-        print(f"📥 Respuesta de la API completa: {response.json()}")  # ✅ Ver respuesta completa de la API
+        print(f"📥 Respuesta de la API: {response.text[:500]}")
 
         response.raise_for_status()
 
@@ -99,18 +105,21 @@ def get_car_models():
         if "data" not in data:
             return jsonify({"error": "La respuesta de la API no contiene datos de modelos"}), 500
 
-        # ✅ Procesamiento y formateo de los modelos
+        # Filtrar solo los modelos que no están ocultos
         models = []
         for item in data.get('data', []):
-            model_name = item.get("name", "Modelo Desconocido")
-            print(f"📝 Modelo detectado: {model_name}")  # Verificar el nombre en la consola
+            model_name = item.get("name", "")
+            if "(hidden)" not in model_name:
+                models.append({
+                    "label": model_name,
+                    "value": item.get("id")
+                })
 
-            models.append({
-                "label": model_name,
-                "value": item.get("id")
-            })
+        print(f"📊 Modelos visibles obtenidos: {models[:5]}")
 
-        print(f"📊 Modelos obtenidos: {models[:5]}")  # Muestra los primeros 5 modelos
+        # Manejo en caso de que todos los modelos estén ocultos
+        if not models:
+            return jsonify({"message": "No se encontraron modelos visibles para esta marca."}), 200
 
         return jsonify(models), 200
 
@@ -120,6 +129,7 @@ def get_car_models():
     except Exception as e:
         print(f"⚠️ Error inesperado: {e}")
         return jsonify({"error": str(e)}), 500
+
 
 
         # ✅ Verificación del contenido JSON recibido
