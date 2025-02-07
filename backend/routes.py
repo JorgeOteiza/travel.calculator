@@ -1,174 +1,124 @@
-import json
 import requests
-import os
+import json
 from flask import Blueprint, request, jsonify
-from .models import db, Trip, Brand, Model, User
-from backend.carAPI_jwt import get_car_api_jwt
+from .models import db, Trip, User
 
-main_bp = Blueprint('main_bp', __name__)
+main_bp = Blueprint("main_bp", __name__)
+
+CARQUERY_API_URL = "https://www.carqueryapi.com/api/0.3/"
 
 # ✅ Ruta principal
 @main_bp.route("/", methods=["GET"])
 def home():
     return jsonify({"message": "API Running"}), 200
 
-# ✅ Función para obtener vehículos
-def get_vehicles(jwt_token):
+# ✅ Nueva función para limpiar JSONP y obtener JSON válido
+def clean_jsonp(response_text):
     try:
-        response = requests.get(
-            "https://carapi.app/api/makes",  # Endpoint corregido
-            headers={"Authorization": f"Bearer {jwt_token}"}
-        )
-        response.raise_for_status()
-        return response.json()
-    except requests.exceptions.RequestException as e:
-        print(f"Error al obtener vehículos: {e}")
+        start = response_text.find("{")
+        end = response_text.rfind("}") + 1
+        json_text = response_text[start:end]
+        return json.loads(json_text)  # Convertir a JSON
+    except Exception as e:
+        print(f"🚨 Error al limpiar JSONP: {e}")
         return None
 
-
-# ✅ Ruta para obtener el JWT
-@main_bp.route('/api/auth/login', methods=['POST'])
-def get_jwt():
-    try:
-        jwt_token = get_car_api_jwt()
-        if not jwt_token:
-            return jsonify({"error": "No se pudo obtener el JWT"}), 500
-        return jsonify({"jwt": jwt_token}), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-# ✅ Ruta para obtener vehículos
-@main_bp.route('/api/carsxe/vehicles', methods=['GET'])
-def get_vehicles_list():
-    try:
-        jwt_token = get_car_api_jwt()
-        if not jwt_token:
-            return jsonify({"error": "No se pudo obtener el JWT"}), 500
-
-        vehicles = get_vehicles(jwt_token)
-        if not vehicles:
-            return jsonify({"error": "No se pudieron obtener los vehículos"}), 500
-
-        return jsonify(vehicles), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-# ✅ Ruta para obtener marcas
+# ✅ Ruta para obtener marcas desde CarQuery API usando Flask como proxy
 @main_bp.route('/api/carsxe/brands', methods=['GET'])
-def get_brands():
+def get_car_brands():
     try:
-        jwt_token = get_car_api_jwt()
-        if not jwt_token:
-            return jsonify({"error": "Error al obtener el token JWT"}), 500
+        headers = {
+            "User-Agent": request.headers.get("User-Agent", "Mozilla/5.0"),
+            "Accept": "application/json"
+        }
+        response = requests.get(f"{CARQUERY_API_URL}?cmd=getMakes", headers=headers)
 
-        response = requests.get(
-            "https://carapi.app/api/makes",
-            headers={"Authorization": f"Bearer {jwt_token}"}
-        )
-        response.raise_for_status()
+        if response.status_code != 200:
+            return jsonify({"error": f"Error en la API de CarQuery: {response.status_code}"}), response.status_code
 
-        return jsonify(response.json()), 200
+        data = clean_jsonp(response.text)
+
+        if not data or "Makes" not in data:
+            return jsonify({"error": "No se encontraron marcas en la API"}), 500
+
+        brands = [{"label": brand["make_display"], "value": brand["make_id"]} for brand in data["Makes"]]
+        return jsonify(brands), 200
+
     except requests.exceptions.RequestException as e:
-        return jsonify({"error": f"Error al conectar con CarAPI: {str(e)}"}), 500
+        return jsonify({"error": f"Error al conectar con CarQuery: {str(e)}"}), 500
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": f"Error inesperado: {str(e)}"}), 500
 
-# ✅ Ruta para obtener modelos de vehículos
+
+# ✅ Ruta para obtener modelos de una marca
 @main_bp.route('/api/carsxe/models', methods=['GET'])
 def get_car_models():
     try:
         make_id = request.args.get('make_id')
-        
+
         if not make_id:
-            print("🚨 Error: No se recibió 'make_id' en la solicitud")
             return jsonify({"error": "El parámetro 'make_id' es obligatorio"}), 400
 
-        print(f"✅ Obteniendo modelos para la marca ID: {make_id}")
+        print(f"✅ Obteniendo modelos para la marca: {make_id}")
 
-        try:
-            make_id = int(make_id)
-        except ValueError:
-            print("🚨 Error: 'make_id' no es un número válido")
-            return jsonify({"error": "El parámetro 'make_id' debe ser un número válido"}), 400
+        headers = {
+            "User-Agent": request.headers.get("User-Agent", "Mozilla/5.0"),
+            "Accept": "application/json"
+        }
+        response = requests.get(f"{CARQUERY_API_URL}?cmd=getModels&make={make_id}", headers=headers)
 
-        # Filtrar modelos entre 2015 y 2020
-        query_filter = [
-            {"field": "make_id", "op": "=", "val": make_id},
-            {"field": "year", "op": ">=", "val": 2015},
-            {"field": "year", "op": "<=", "val": 2020}
-        ]
+        if response.status_code != 200:
+            return jsonify({"error": f"Error en la API de CarQuery: {response.status_code}"}), response.status_code
 
-        url = "https://carapi.app/api/models"
-        headers = {"Authorization": f"Bearer {get_car_api_jwt()}"}
-        params = {"json": json.dumps(query_filter), "verbose": "yes"}
+        # ✅ Limpiar JSONP y convertirlo en JSON válido
+        data = clean_jsonp(response.text)
 
-        print(f"🌍 Enviando solicitud a {url} con params: {params}")
+        if not data or "Models" not in data:
+            return jsonify({"error": "No se encontraron modelos para esta marca"}), 500
 
-        response = requests.get(url, headers=headers, params=params)
-
-        print(f"✅ Estado de la respuesta: {response.status_code}")
-
-        # ✅ Mover la asignación de 'data' aquí, después de obtener la respuesta
-        data = response.json()
-
-        print(f"📥 Respuesta completa de la API (1000 chars): {json.dumps(data)[:1000]}")
-
-        if "data" not in data:
-            return jsonify({"error": "La respuesta de la API no contiene datos de modelos"}), 500
-
-        # Filtrar modelos visibles
-        models = [
-            {"label": item.get("name"), "value": item.get("id")}
-            for item in data.get('data', [])
-            if "(hidden)" not in item.get("name", "") and item.get("name", "").strip()
-        ]
-
-        if not models:
-            return jsonify({"message": "No se encontraron modelos visibles para esta marca."}), 200
-
+        models = [{"label": model["model_name"], "value": model["model_name"]} for model in data["Models"]]
+        
         return jsonify(models), 200
 
     except requests.exceptions.RequestException as e:
-        print(f"🚨 Error de conexión con la API externa: {e}")
-        return jsonify({"error": f"Error de conexión con la API de vehículos: {str(e)}"}), 500
-
+        return jsonify({"error": f"Error al conectar con CarQuery: {str(e)}"}), 500
     except Exception as e:
-        print(f"⚠️ Error inesperado en el servidor: {e}")
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": f"Error inesperado: {str(e)}"}), 500
 
 
-        # ✅ Verificación del contenido JSON recibido
+# ✅ Ruta para obtener detalles de un modelo específico
+@main_bp.route("/api/carsqe/model_details", methods=["GET"])
+def get_model_details():
+    try:
+        model_name = request.args.get("model")
+        if not model_name:
+            return jsonify({"error": "El parámetro 'model' es obligatorio"}), 400
+
+        url = f"{CARQUERY_API_URL}?cmd=getTrims&model={model_name}&full_results=1"
+        response = requests.get(url)
+        response.raise_for_status()
+
         data = response.json()
-        if "data" not in data:
-            return jsonify({"error": "La respuesta de la API no contiene datos de modelos"}), 500
 
-        # ✅ Formatear los modelos para el frontend
-        models = [{"label": item.get("name"), "value": item.get("id")} for item in data.get('data', [])]
+        if "Trims" not in data:
+            return jsonify({"error": "No se encontraron detalles para este modelo"}), 500
 
-        print(f"Modelos obtenidos: {models[:5]}")  # 🔍 Mostrar los primeros 5 modelos obtenidos
-
-        return jsonify(models), 200
-
+        return jsonify(data["Trims"]), 200
     except requests.exceptions.RequestException as e:
-        print(f"Error de conexión con la API externa: {e}")  # 🔍 Error de red
-        return jsonify({"error": f"Error de conexión con la API de vehículos: {str(e)}"}), 500
-    except Exception as e:
-        print(f"Error inesperado: {e}")  # 🔍 Cualquier otro error inesperado
-        return jsonify({"error": str(e)}), 500
-
+        print(f"🚨 Error obteniendo detalles del modelo: {e}")
+        return jsonify({"error": "Error al obtener detalles del modelo"}), 500
 
 # ✅ Ruta para calcular el viaje
-@main_bp.route('/api/calculate', methods=['POST'])
+@main_bp.route("/api/calculate", methods=["POST"])
 def calculate_trip():
     try:
         data = request.json
-        brand = data.get('brand')
-        model = data.get('model')
-        fuel_type = data.get('fuelType')
-        location = data.get('location')
-        destination = data.get('destinity')
+        brand = data.get("brand")
+        model = data.get("model")
+        fuel_type = data.get("fuelType")
+        location = data.get("location")
+        destination = data.get("destinity")
 
-        # ✅ Verificar que todos los campos estén completos
         if not all([brand, model, fuel_type, location, destination]):
             return jsonify({"error": "Todos los campos son requeridos"}), 400
 
@@ -184,20 +134,18 @@ def calculate_trip():
             location=location,
             distance=distance_km,
             fuel_consumed=fuel_consumed,
-            total_cost=total_cost
+            total_cost=total_cost,
         )
         db.session.add(new_trip)
         db.session.commit()
 
         return jsonify(new_trip.to_dict()), 201
-
     except Exception as e:
+        print(f"🚨 Error en el cálculo del viaje: {e}")
         return jsonify({"error": str(e)}), 500
 
-
-
 # ✅ Ruta para obtener todos los viajes
-@main_bp.route('/api/trips', methods=['GET'])
+@main_bp.route("/api/trips", methods=["GET"])
 def get_trips():
     try:
         trips = Trip.query.all()
@@ -206,7 +154,7 @@ def get_trips():
         return jsonify({"error": str(e)}), 500
 
 # ✅ Ruta para eliminar un viaje
-@main_bp.route('/api/trips/<int:trip_id>', methods=['DELETE'])
+@main_bp.route("/api/trips/<int:trip_id>", methods=["DELETE"])
 def delete_trip(trip_id):
     try:
         trip = Trip.query.get(trip_id)
