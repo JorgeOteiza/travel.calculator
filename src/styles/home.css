@@ -1,7 +1,8 @@
 .home-container {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+  flex-direction: row;
+  justify-content: space-around;
+  align-items: stretch;
   padding: 20px;
   gap: 20px;
   height: calc(100vh - 120px);
@@ -16,52 +17,33 @@
   background-color: #f9f9f9;
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  height: 100%;
   box-sizing: border-box;
 }
 
-.mapContainer {
+.map-wrapper {
   flex: 2;
   height: 100%;
-  border-radius: 10px;
+  border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   border: 2px solid #007bff;
-  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-select,
-input {
-  width: 100%;
-  padding: 10px;
-  margin-top: 10px;
-  border-radius: 8px;
-  border: 1px solid #ccc;
-  font-size: 16px;
-}
-
-button {
+.calculate-btn {
   width: 100%;
   padding: 12px;
   font-size: 16px;
-  margin-top: 15px;
   background-color: #007bff;
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: 12px;
   transition: background-color 0.3s ease;
   cursor: pointer;
 }
 
-button:hover {
+.calculate-btn:hover {
   background-color: #0056b3;
-}
-
-.results {
-  margin-top: 20px;
-  padding: 15px;
-  border: 1px solid #ddd;
-  border-radius: 10px;
-  background: #e3f2fd;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }

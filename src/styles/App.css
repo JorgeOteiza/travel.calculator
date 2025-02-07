@@ -1,3 +1,9 @@
+.main-container {
+  min-height: 80vh;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
 nav {
   background-color: #007bff;
   padding: 1rem;
@@ -20,7 +26,6 @@ nav a:hover {
 }
 
 footer {
-  margin-top: auto;
   background-color: #333;
   color: white;
   text-align: center;

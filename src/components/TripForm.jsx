@@ -9,140 +9,91 @@ const TripForm = ({
   handleBrandSelect,
   handleModelSelect,
   handleChange,
-  handleCurrentLocation,
 }) => {
+  const fuelTypeOptions = [
+    { label: "Gasoline 93", value: "gasoline_93" },
+    { label: "Gasoline 95", value: "gasoline_95" },
+    { label: "Gasoline 97", value: "gasoline_97" },
+  ];
+
   return (
-    <form>
-      {/* Selector de marca con búsqueda */}
+    <form className="trip-form">
+      {/* Selector de marca */}
       <label htmlFor="brand">Vehicle Brand</label>
       <Select
         id="brand"
         name="brand"
         options={brandOptions}
-        value={
-          brandOptions.find((option) => option.value === formData.brand) || null
-        }
+        getOptionLabel={(e) => e.label || "Unknown"}
+        getOptionValue={(e) => e.value || ""}
+        value={brandOptions.find((option) => option.value === formData.brand)}
         onChange={handleBrandSelect}
-        placeholder="Selecciona una marca"
+        placeholder="Select a brand"
         isClearable
+        className="custom-select"
+        classNamePrefix="custom-select"
       />
 
-      {/* Selector de modelo con búsqueda */}
+      {/* Selector de modelo */}
       <label htmlFor="model">Vehicle Model</label>
       <Select
         id="model"
         name="model"
         options={modelOptions}
-        value={
-          modelOptions.find((option) => option.value === formData.model) || null
-        }
+        getOptionLabel={(e) => e.label || "Unknown"}
+        getOptionValue={(e) => e.value || ""}
+        value={modelOptions.find((option) => option.value === formData.model)}
         onChange={handleModelSelect}
-        placeholder="Selecciona un modelo"
+        placeholder="Select a model"
         isClearable
-        getOptionLabel={(e) => e.label || "Sin nombre"}
+        className="custom-select"
+        classNamePrefix="custom-select"
       />
 
-      {/* Selector de tipo de combustible */}
-      <label htmlFor="fuelType">Fuel Type</label>
-      <select name="fuelType" value={formData.fuelType} onChange={handleChange}>
-        <option value="">-</option>
-        <option value="gasoline">Gasoline</option>
-        <option value="oil">Oil</option>
-        <option value="electric">Electric</option>
-      </select>
+      {/* Selector de tipo de gasolina */}
+      <label htmlFor="fuelType">Octane rating</label>
+      <Select
+        id="fuelType"
+        name="fuelType"
+        options={fuelTypeOptions}
+        getOptionLabel={(e) => e.label}
+        getOptionValue={(e) => e.value}
+        value={fuelTypeOptions.find(
+          (option) => option.value === formData.fuelType
+        )}
+        onChange={(selectedOption) =>
+          handleChange({
+            target: { name: "fuelType", value: selectedOption.value },
+          })
+        }
+        placeholder="Select octane rating"
+        isClearable
+        className="custom-select"
+        classNamePrefix="custom-select"
+      />
 
-      {/* Campo de ubicación con botón */}
-      <label htmlFor="location">Location</label>
-      <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-        <input
-          type="text"
-          name="location"
-          value={formData.location}
-          onChange={handleChange}
-          placeholder="Elige tu ubicación"
-          style={{ flex: 1 }}
-        />
-        <button
-          type="button"
-          onClick={handleCurrentLocation}
-          style={{
-            width: "32px",
-            height: "32px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            borderRadius: "50%",
-            border: "1px solid #ccc",
-            background: "#f9f9f9",
-            cursor: "pointer",
-          }}
-        >
-          📍
-        </button>
-      </div>
-
-      {/* Campo de destino */}
-      <label htmlFor="destinity">Destination</label>
+      {/* Campo de peso total estimado */}
+      <label htmlFor="totalWeight">Estimated Total Weight (kg)</label>
       <input
-        type="text"
-        name="destinity"
-        placeholder="Elige tu destino"
-        value={formData.destinity}
+        type="number"
+        name="totalWeight"
+        value={formData.totalWeight}
         onChange={handleChange}
+        placeholder="Passengers, luggage, cargo, etc."
+        min="0"
+        className="custom-input"
       />
-
-      {/* Campo de pasajeros y peso extra */}
-      <div className="passengers-container">
-        <div>
-          <label htmlFor="passengers">Passengers</label>
-          <input
-            type="number"
-            name="passengers"
-            value={formData.passengers}
-            onChange={handleChange}
-          />
-        </div>
-        <div className="extra-weight-container">
-          <label htmlFor="extraWeight">Extra Weight</label>
-          <input
-            type="number"
-            name="extraWeight"
-            value={formData.extraWeight}
-            onChange={handleChange}
-          />
-        </div>
-      </div>
     </form>
   );
 };
 
-// Definición de propTypes
 TripForm.propTypes = {
-  formData: PropTypes.shape({
-    brand: PropTypes.string.isRequired,
-    model: PropTypes.string.isRequired,
-    fuelType: PropTypes.string.isRequired,
-    location: PropTypes.string.isRequired,
-    destinity: PropTypes.string.isRequired,
-    passengers: PropTypes.number.isRequired,
-    extraWeight: PropTypes.number.isRequired,
-  }).isRequired,
-  brandOptions: PropTypes.arrayOf(
-    PropTypes.shape({
-      label: PropTypes.string.isRequired,
-      value: PropTypes.string.isRequired,
-    })
-  ).isRequired,
-  modelOptions: PropTypes.arrayOf(
-    PropTypes.shape({
-      label: PropTypes.string.isRequired,
-      value: PropTypes.string.isRequired,
-    })
-  ).isRequired,
+  formData: PropTypes.object.isRequired,
+  brandOptions: PropTypes.array.isRequired,
+  modelOptions: PropTypes.array.isRequired,
   handleBrandSelect: PropTypes.func.isRequired,
   handleModelSelect: PropTypes.func.isRequired,
   handleChange: PropTypes.func.isRequired,
-  handleCurrentLocation: PropTypes.func.isRequired,
 };
 
 export default TripForm;

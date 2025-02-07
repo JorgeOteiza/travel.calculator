@@ -5,12 +5,13 @@ import Home from "./pages/Home";
 import About from "./pages/About";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import "./styles/app.css";
 
 function App() {
   return (
     <Router>
       <Navbar />
-      <main style={{ minHeight: "80vh" }}>
+      <main className="main-container">
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/about" element={<About />} />
