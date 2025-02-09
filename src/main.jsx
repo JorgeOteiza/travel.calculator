@@ -12,6 +12,7 @@ if (!VITE_GOOGLE_MAPS_API_KEY || !VITE_BACKEND_URL || !VITE_MAP_ID) {
   console.error(
     "⚠️ Faltan variables de entorno críticas. Revisa tu archivo .env"
   );
+  console.log("🔑 Google Maps API Key:", VITE_GOOGLE_MAPS_API_KEY);
 }
 
 ReactDOM.createRoot(document.getElementById("root")).render(

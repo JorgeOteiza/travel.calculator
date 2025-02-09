@@ -25,17 +25,19 @@ const Home = () => {
     vehicle: "",
   });
 
-  const [results, setResults] = useState(null);
   const [mapCenter, setMapCenter] = useState({ lat: 37.7749, lng: -122.4194 });
   const [markers, setMarkers] = useState([]);
   const [brandOptions, setBrandOptions] = useState([]);
   const [modelOptions, setModelOptions] = useState([]);
+  const [results, setResults] = useState(null);
 
   const { isLoaded, loadError } = useJsApiLoader({
     googleMapsApiKey: VITE_GOOGLE_MAPS_API_KEY,
     libraries,
     mapIds: [VITE_MAP_ID],
   });
+
+  console.log("✅ Google Maps Loaded:", isLoaded, "Error:", loadError);
 
   useEffect(() => {
     const fetchCarBrands = async () => {
@@ -113,7 +115,7 @@ const Home = () => {
     setFormData({ ...formData, model: selectedModel.value });
   };
 
-  const handleCurrentLocation = () => {
+  const handleLocationChange = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -151,7 +153,7 @@ const Home = () => {
       const response = await axios.post(`${VITE_BACKEND_URL}/api/calculate`, {
         vehicle: `${formData.brand} ${formData.model}`,
         fuelType: formData.fuelType,
-        totalWeight: formData.totalWeight + formData.extraWeight, // ✅ Se incluye peso extra
+        totalWeight: formData.totalWeight + formData.extraWeight,
         location: formData.location,
         destinity: formData.destinity,
       });
@@ -188,14 +190,14 @@ const Home = () => {
             mapCenter={mapCenter}
             markers={markers}
             setMarkers={setMarkers}
-            handleCurrentLocation={handleCurrentLocation}
+            handleLocationChange={handleLocationChange}
           />
         ) : (
           <div className="map-loading">Cargando Google Maps...</div>
         )}
       </div>
 
-      <TripResults results={results} />
+      {results && <TripResults results={results} />}
     </div>
   );
 };

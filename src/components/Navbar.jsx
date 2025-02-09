@@ -4,7 +4,7 @@ import "bootstrap/dist/css/bootstrap.min.css";
 const Navbar = () => {
   return (
     <nav className="navbar navbar-expand-lg navbar-dark bg-dark">
-      <div className="container-fluid">
+      <div className="container-fluid mx-4">
         <Link className="navbar-brand" to="/">
           Travel Calculator
         </Link>
