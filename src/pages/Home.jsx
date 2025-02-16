@@ -10,7 +10,7 @@ const VITE_BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 const VITE_GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 const VITE_MAP_ID = import.meta.env.VITE_MAP_ID;
 
-const libraries = ["places", "marker"];
+const libraries = ["places"];
 
 const Home = () => {
   const [formData, setFormData] = useState({
@@ -25,11 +25,12 @@ const Home = () => {
     vehicle: "",
   });
 
+  const [results, setResults] = useState(null);
   const [mapCenter, setMapCenter] = useState({ lat: 37.7749, lng: -122.4194 });
   const [markers, setMarkers] = useState([]);
   const [brandOptions, setBrandOptions] = useState([]);
   const [modelOptions, setModelOptions] = useState([]);
-  const [results, setResults] = useState(null);
+  const [errors, setErrors] = useState({});
 
   const { isLoaded, loadError } = useJsApiLoader({
     googleMapsApiKey: VITE_GOOGLE_MAPS_API_KEY,
@@ -115,43 +116,42 @@ const Home = () => {
     setFormData({ ...formData, model: selectedModel.value });
   };
 
-  const handleLocationChange = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          console.log("📍 Ubicación obtenida:", latitude, longitude);
-          setFormData((prev) => ({
-            ...prev,
-            location: `${latitude}, ${longitude}`,
-          }));
-          setMapCenter({ lat: latitude, lng: longitude });
-          setMarkers([{ lat: latitude, lng: longitude }]);
-        },
-        (error) => {
-          console.error("🚨 Error obteniendo la ubicación:", error);
-          alert("No se pudo obtener tu ubicación.");
-        }
-      );
-    } else {
-      alert("La geolocalización no es compatible con tu navegador.");
-    }
+  const handleLocationChange = (field, newLocation) => {
+    setFormData((prev) => ({
+      ...prev,
+      [field]: `${newLocation.lat}, ${newLocation.lng}`,
+    }));
+    setMapCenter(newLocation); // ✅ Ahora sí se usa correctamente
+  };
+
+  const validateForm = () => {
+    let newErrors = {};
+    if (!formData.brand) newErrors.brand = "Selecciona una marca.";
+    if (!formData.model) newErrors.model = "Selecciona un modelo.";
+    if (!formData.fuelType)
+      newErrors.fuelType = "Selecciona un tipo de combustible.";
+    if (!formData.location)
+      newErrors.location = "Selecciona una ubicación de inicio.";
+    if (!formData.destinity) newErrors.destinity = "Selecciona un destino.";
+    if (isNaN(formData.totalWeight) || formData.totalWeight <= 0)
+      newErrors.totalWeight = "Ingrese un peso válido.";
+    if (isNaN(formData.passengers) || formData.passengers <= 0)
+      newErrors.passengers = "Ingrese cantidad válida de pasajeros.";
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const calculateTrip = async () => {
-    try {
-      if (
-        !formData.brand ||
-        !formData.model ||
-        !formData.location ||
-        !formData.destinity
-      ) {
-        alert("Por favor completa todos los campos.");
-        return;
-      }
+    if (!validateForm()) {
+      alert("Por favor ingresa todos los datos correctamente.");
+      return;
+    }
 
+    try {
       const response = await axios.post(`${VITE_BACKEND_URL}/api/calculate`, {
-        vehicle: `${formData.brand} ${formData.model}`,
+        brand: formData.brand,
+        model: formData.model,
         fuelType: formData.fuelType,
         totalWeight: formData.totalWeight + formData.extraWeight,
         location: formData.location,
@@ -176,6 +176,7 @@ const Home = () => {
           handleBrandSelect={handleBrandSelect}
           handleModelSelect={handleModelSelect}
           handleChange={handleChange}
+          errors={errors}
         />
         <button className="calculate-btn" onClick={calculateTrip}>
           Calcular Viaje
