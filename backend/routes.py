@@ -113,6 +113,8 @@ def get_model_details():
 def calculate_trip():
     try:
         data = request.json
+        print("📡 Datos recibidos:", data)
+         
         brand = data.get("brand")
         model = data.get("model")
         fuel_type = data.get("fuelType")
