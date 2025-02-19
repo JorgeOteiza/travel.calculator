@@ -53,8 +53,8 @@ class Model(db.Model):
 
 class Trip(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    user = db.relationship('User', back_populates="trips")
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)  # ✅ Ahora es opcional
+    user = db.relationship('User', back_populates="trips")  # 🔹 Relación correcta
     brand = db.Column(db.String(80), nullable=False)
     model = db.Column(db.String(80), nullable=False)
     fuel_type = db.Column(db.String(20), nullable=False)
@@ -63,8 +63,6 @@ class Trip(db.Model):
     fuel_consumed = db.Column(db.Float, nullable=False)
     total_cost = db.Column(db.Float, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-    user = db.relationship('User')
 
     def to_dict(self):
         return {

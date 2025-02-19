@@ -114,14 +114,15 @@ def calculate_trip():
     try:
         data = request.json
         print("📡 Datos recibidos:", data)
-         
+
         brand = data.get("brand")
         model = data.get("model")
         fuel_type = data.get("fuelType")
         location = data.get("location")
         destination = data.get("destinity")
+        user_id = data.get("user_id")
 
-        if not all([brand, model, fuel_type, location, destination]):
+        if not all([brand, model, fuel_type, location, destination, user_id]):
             return jsonify({"error": "Todos los campos son requeridos"}), 400
 
         # Simulación de distancia y cálculos
@@ -130,6 +131,7 @@ def calculate_trip():
         total_cost = fuel_consumed * 1.5
 
         new_trip = Trip(
+            user_id=user_id,
             brand=brand,
             model=model,
             fuel_type=fuel_type,

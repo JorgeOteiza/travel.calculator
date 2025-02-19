@@ -149,20 +149,34 @@ const Home = () => {
     }
 
     try {
-      const response = await axios.post(`${VITE_BACKEND_URL}/api/calculate`, {
+      const user_id = localStorage.getItem("user_id"); // 🚀 Obtener user_id desde el almacenamiento local
+
+      if (!user_id) {
+        alert("Usuario no autenticado. Inicia sesión para continuar.");
+        return;
+      }
+
+      const tripData = {
+        user_id, // ✅ Ahora enviamos user_id
         brand: formData.brand,
         model: formData.model,
         fuelType: formData.fuelType,
-        totalWeight: formData.totalWeight + formData.extraWeight,
         location: formData.location,
         destinity: formData.destinity,
-      });
+      };
+
+      console.log("📡 Enviando datos al backend:", tripData);
+
+      const response = await axios.post(
+        `${VITE_BACKEND_URL}/api/calculate`,
+        tripData
+      );
 
       console.log("✅ Resultados del viaje:", response.data);
       setResults(response.data);
     } catch (error) {
       console.error("🚨 Error al calcular el viaje:", error);
-      alert("Error al calcular el viaje.");
+      alert("Error al calcular el viaje. Revisa la consola para más detalles.");
     }
   };
 
