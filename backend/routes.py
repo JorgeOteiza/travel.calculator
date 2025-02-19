@@ -113,25 +113,30 @@ def get_model_details():
 def calculate_trip():
     try:
         data = request.json
-        print("📡 Datos recibidos:", data)
+        print("📡 Datos recibidos en /api/calculate:", data)
+
+        user_id = data.get("user_id")
+        if not user_id:
+            print("🚨 Usuario no autenticado, se requiere iniciar sesión.")
+            return jsonify({"error": "Usuario no autenticado. Inicia sesión para continuar."}), 401
 
         brand = data.get("brand")
         model = data.get("model")
         fuel_type = data.get("fuelType")
         location = data.get("location")
         destination = data.get("destinity")
-        user_id = data.get("user_id")
 
-        if not all([brand, model, fuel_type, location, destination, user_id]):
+        if not all([brand, model, fuel_type, location, destination]):
+            print("🚨 Falta información en la solicitud:", data)
             return jsonify({"error": "Todos los campos son requeridos"}), 400
 
-        # Simulación de distancia y cálculos
+        # Simulación de cálculo
         distance_km = 120.5
         fuel_consumed = distance_km * 0.08
         total_cost = fuel_consumed * 1.5
 
         new_trip = Trip(
-            user_id=user_id,
+            user_id=user_id,  # ✅ Se incluye el usuario
             brand=brand,
             model=model,
             fuel_type=fuel_type,
@@ -143,7 +148,9 @@ def calculate_trip():
         db.session.add(new_trip)
         db.session.commit()
 
+        print("✅ Viaje registrado exitosamente:", new_trip)
         return jsonify(new_trip.to_dict()), 201
+
     except Exception as e:
         print(f"🚨 Error en el cálculo del viaje: {e}")
         return jsonify({"error": str(e)}), 500

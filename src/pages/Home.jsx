@@ -13,6 +13,7 @@ const VITE_MAP_ID = import.meta.env.VITE_MAP_ID;
 const libraries = ["places"];
 
 const Home = () => {
+  const [user, setUser] = useState(null);
   const [formData, setFormData] = useState({
     brand: "",
     model: "",
@@ -39,6 +40,28 @@ const Home = () => {
   });
 
   console.log("✅ Google Maps Loaded:", isLoaded, "Error:", loadError);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        console.log("📡 Solicitando usuario...");
+        const response = await axios.get(`${VITE_BACKEND_URL}/api/user`, {
+          withCredentials: true,
+        });
+
+        if (response.data && response.data.id) {
+          setUser(response.data);
+          console.log("✅ Usuario autenticado:", response.data);
+        } else {
+          console.warn("⚠️ Usuario no autenticado");
+        }
+      } catch (error) {
+        console.error("🚨 Error al obtener usuario:", error);
+      }
+    };
+
+    fetchUser();
+  }, []);
 
   useEffect(() => {
     const fetchCarBrands = async () => {
@@ -121,7 +144,7 @@ const Home = () => {
       ...prev,
       [field]: `${newLocation.lat}, ${newLocation.lng}`,
     }));
-    setMapCenter(newLocation); // ✅ Ahora sí se usa correctamente
+    setMapCenter(newLocation);
   };
 
   const validateForm = () => {
@@ -149,7 +172,7 @@ const Home = () => {
     }
 
     try {
-      const user_id = localStorage.getItem("user_id"); // 🚀 Obtener user_id desde el almacenamiento local
+      const user_id = localStorage.getItem("user_id");
 
       if (!user_id) {
         alert("Usuario no autenticado. Inicia sesión para continuar.");
@@ -157,10 +180,11 @@ const Home = () => {
       }
 
       const tripData = {
-        user_id, // ✅ Ahora enviamos user_id
+        user_id,
         brand: formData.brand,
         model: formData.model,
         fuelType: formData.fuelType,
+        totalWeight: formData.totalWeight + formData.extraWeight,
         location: formData.location,
         destinity: formData.destinity,
       };
@@ -211,6 +235,11 @@ const Home = () => {
           <div className="map-loading">Cargando Google Maps...</div>
         )}
       </div>
+      {!user && (
+        <p className="warning-message">
+          🔒 Debes iniciar sesión para guardar tu viaje.
+        </p>
+      )}
 
       {results && <TripResults results={results} />}
     </div>
