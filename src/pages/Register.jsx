@@ -1,22 +1,59 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
 import "../styles/Register.css";
+import PropTypes from "prop-types";
 
-const Register = () => {
+const VITE_BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+
+const Register = ({ setUser }) => {
   const [form, setForm] = useState({ name: "", email: "", password: "" });
+  const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    alert(`¡Registro exitoso! Bienvenido, ${form.name}`);
+    setError(null);
+
+    try {
+      const response = await axios.post(
+        `${VITE_BACKEND_URL}/api/register`,
+        form
+      );
+
+      if (response.status === 201) {
+        const { jwt, user } = response.data;
+
+        // Guardar token en localStorage
+        localStorage.setItem("token", jwt);
+
+        // Actualizar estado global del usuario
+        setUser(user);
+
+        // Redirigir al usuario a la página principal
+        navigate("/");
+      }
+    } catch (error) {
+      console.error(
+        "Error al registrar:",
+        error.response?.data || error.message
+      );
+      setError(
+        error.response?.data?.error ||
+          "Error al registrarse. Intenta nuevamente."
+      );
+    }
   };
 
   return (
     <div className="register-container">
       <form className="register-form" onSubmit={handleSubmit}>
         <h2>Registrarse</h2>
+        {error && <p className="error-message">{error}</p>}
         <input
           type="text"
           name="name"
@@ -45,6 +82,10 @@ const Register = () => {
       </form>
     </div>
   );
+};
+
+Register.propTypes = {
+  setUser: PropTypes.func.isRequired,
 };
 
 export default Register;

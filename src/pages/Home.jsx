@@ -43,20 +43,22 @@ const Home = () => {
 
   useEffect(() => {
     const fetchUser = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+
       try {
-        console.log("📡 Solicitando usuario...");
+        console.log("📡 Verificando usuario autenticado...");
         const response = await axios.get(`${VITE_BACKEND_URL}/api/user`, {
-          withCredentials: true,
+          headers: { Authorization: `Bearer ${token}` },
         });
 
         if (response.data && response.data.id) {
           setUser(response.data);
           console.log("✅ Usuario autenticado:", response.data);
-        } else {
-          console.warn("⚠️ Usuario no autenticado");
         }
       } catch (error) {
         console.error("🚨 Error al obtener usuario:", error);
+        localStorage.removeItem("token");
       }
     };
 
@@ -74,8 +76,6 @@ const Home = () => {
         if (!response.data || response.data.length === 0) {
           throw new Error("No se recibieron datos");
         }
-
-        console.log("✅ Marcas recibidas:", response.data);
 
         setBrandOptions(
           response.data.map((brand) => ({
@@ -106,8 +106,6 @@ const Home = () => {
           throw new Error("No se recibieron modelos");
         }
 
-        console.log("✅ Modelos recibidos:", response.data);
-
         setModelOptions(
           response.data.map((model) => ({
             label: model.label ?? "Modelo Desconocido",
@@ -129,13 +127,11 @@ const Home = () => {
 
   const handleBrandSelect = (selectedBrand) => {
     if (!selectedBrand) return;
-    console.log("🛠 Marca seleccionada:", selectedBrand);
     setFormData({ ...formData, brand: selectedBrand.value, model: "" });
   };
 
   const handleModelSelect = (selectedModel) => {
     if (!selectedModel) return;
-    console.log("🛠 Modelo seleccionado:", selectedModel);
     setFormData({ ...formData, model: selectedModel.value });
   };
 
@@ -172,15 +168,14 @@ const Home = () => {
     }
 
     try {
-      const user_id = localStorage.getItem("user_id");
+      const token = localStorage.getItem("token");
 
-      if (!user_id) {
+      if (!token) {
         alert("Usuario no autenticado. Inicia sesión para continuar.");
         return;
       }
 
       const tripData = {
-        user_id,
         brand: formData.brand,
         model: formData.model,
         fuelType: formData.fuelType,
@@ -193,7 +188,10 @@ const Home = () => {
 
       const response = await axios.post(
         `${VITE_BACKEND_URL}/api/calculate`,
-        tripData
+        tripData,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
       );
 
       console.log("✅ Resultados del viaje:", response.data);
