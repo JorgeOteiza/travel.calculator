@@ -35,12 +35,12 @@ const Login = ({ setUser }) => {
       }
     } catch (error) {
       console.error(
-        "Error al iniciar sesión:",
+        "🚨 Error al iniciar sesión:",
         error.response?.data || error.message
       );
       setError(
         error.response?.data?.error ||
-          "Error en el inicio de sesión. Verifica tus credenciales."
+          "Error al iniciar sesión. Verifica tus credenciales."
       );
     }
   };

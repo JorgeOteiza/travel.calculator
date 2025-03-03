@@ -44,7 +44,10 @@ const Home = () => {
   useEffect(() => {
     const fetchUser = async () => {
       const token = localStorage.getItem("token");
-      if (!token) return;
+      if (!token) {
+        setUser(null); // Asegurar que se borre cualquier usuario previo si no hay token
+        return;
+      }
 
       try {
         console.log("📡 Verificando usuario autenticado...");
@@ -57,13 +60,21 @@ const Home = () => {
           console.log("✅ Usuario autenticado:", response.data);
         }
       } catch (error) {
-        console.error("🚨 Error al obtener usuario:", error);
-        localStorage.removeItem("token");
+        console.error(
+          "🚨 Error al obtener usuario:",
+          error.response?.data || error.message
+        );
+
+        // Si el token es inválido o expirado, eliminarlo y actualizar el estado
+        if (error.response?.status === 403) {
+          localStorage.removeItem("token");
+          setUser(null);
+        }
       }
     };
 
     fetchUser();
-  }, []);
+  }, [setUser]); // 🟢 Se incluye `setUser` en las dependencias para asegurar actualizaciones
 
   useEffect(() => {
     const fetchCarBrands = async () => {
