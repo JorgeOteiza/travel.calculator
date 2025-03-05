@@ -78,7 +78,14 @@ const Navbar = ({ user, setUser }) => {
           <div className="d-flex gap-2">
             {isAuthenticated ? (
               <>
-                <span className="navbar-text text-light">👤 {user?.name}</span>
+                {/* 🔹 Ahora el nombre del usuario es un enlace a "/profile" */}
+                <Link
+                  to="/profile"
+                  className="nav-link text-light fw-bold"
+                  style={{ cursor: "pointer" }}
+                >
+                  👤 {user?.name}
+                </Link>
                 <button
                   className="btn btn-outline-danger"
                   onClick={handleLogout}
