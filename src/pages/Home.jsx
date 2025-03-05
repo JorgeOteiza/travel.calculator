@@ -45,36 +45,35 @@ const Home = () => {
     const fetchUser = async () => {
       const token = localStorage.getItem("token");
       if (!token) {
-        setUser(null); // Asegurar que se borre cualquier usuario previo si no hay token
+        console.warn(
+          "⚠️ No hay token en localStorage, usuario no autenticado."
+        );
         return;
       }
 
       try {
-        console.log("📡 Verificando usuario autenticado...");
+        console.log("📡 Enviando solicitud para verificar usuario...");
+        console.log("🔑 Token enviado:", token);
+
         const response = await axios.get(`${VITE_BACKEND_URL}/api/user`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
         if (response.data && response.data.id) {
-          setUser(response.data);
           console.log("✅ Usuario autenticado:", response.data);
+          setUser(response.data);
         }
       } catch (error) {
         console.error(
           "🚨 Error al obtener usuario:",
           error.response?.data || error.message
         );
-
-        // Si el token es inválido o expirado, eliminarlo y actualizar el estado
-        if (error.response?.status === 403) {
-          localStorage.removeItem("token");
-          setUser(null);
-        }
+        localStorage.removeItem("token"); // Eliminar el token inválido
       }
     };
 
     fetchUser();
-  }, [setUser]); // 🟢 Se incluye `setUser` en las dependencias para asegurar actualizaciones
+  }, []);
 
   useEffect(() => {
     const fetchCarBrands = async () => {

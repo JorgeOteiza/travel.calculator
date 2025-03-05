@@ -22,18 +22,15 @@ const Navbar = ({ user, setUser }) => {
           setUser(response.data);
           setIsAuthenticated(true);
         })
-        .catch(
-          (error) => {
-            console.error(
-              "Error al obtener usuario:",
-              error.response?.data || error.message
-            );
-            localStorage.removeItem("token");
-            setIsAuthenticated(false);
-            setUser(null);
-          },
-          [setUser]
-        );
+        .catch((error) => {
+          console.error(
+            "Error al obtener usuario:",
+            error.response?.data || error.message
+          );
+          localStorage.removeItem("token"); // Eliminar solo si el token es inválido
+          setIsAuthenticated(false);
+          setUser(null);
+        });
     } else {
       setIsAuthenticated(false);
       setUser(null);

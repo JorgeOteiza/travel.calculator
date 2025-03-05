@@ -1,12 +1,24 @@
-export const getUser = () => {
-  const token = localStorage.getItem("jwt");
+export const getUser = async () => {
+  const token = localStorage.getItem("token"); // 🔹 Asegurar que usamos "token"
   if (!token) return null;
 
   try {
-    const payload = JSON.parse(atob(token.split(".")[1])); // Decodificar JWT
-    return { username: payload.username }; // Extraer información relevante
+    const response = await fetch(
+      `${import.meta.env.VITE_BACKEND_URL}/api/user`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (!response.ok) throw new Error("No autorizado");
+
+    return await response.json();
   } catch (error) {
-    console.error("Error decoding JWT:", error);
+    console.error("🚨 Error obteniendo usuario:", error);
     return null;
   }
 };

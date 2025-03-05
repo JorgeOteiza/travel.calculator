@@ -24,11 +24,18 @@ const Login = ({ setUser }) => {
       if (response.status === 200) {
         const { jwt, user } = response.data;
 
-        // Guardar token en localStorage
+        if (!jwt) {
+          throw new Error("No se recibió un token válido.");
+        }
+
+        // ✅ Guardar correctamente el token en localStorage
         localStorage.setItem("token", jwt);
 
-        // Actualizar estado global del usuario
+        // ✅ Actualizar el estado del usuario
         setUser(user);
+
+        console.log("✅ Usuario autenticado con éxito:", user);
+        console.log("🔑 Token guardado en localStorage:", jwt);
 
         // Redirigir a la página principal
         navigate("/");

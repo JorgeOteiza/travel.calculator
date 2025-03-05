@@ -8,29 +8,43 @@ from functools import wraps
 
 auth_bp = Blueprint('auth_bp', __name__)
 
-# 🔹 Garantizar que SECRET_KEY nunca sea None
 SECRET_KEY = os.getenv('SECRET_KEY', 'default_secret_key')
 
+# ✅ Middleware para verificar el token en rutas protegidas
 def token_required(f):
-    """ Middleware para verificar el token JWT en rutas protegidas """
     @wraps(f)
     def decorated(*args, **kwargs):
         token = request.headers.get("Authorization")
+
         if not token:
+            print("🚨 Token faltante en la solicitud")
             return jsonify({"error": "Token faltante"}), 403
 
         try:
-            decoded = jwt.decode(token.split(" ")[1], SECRET_KEY, algorithms=["HS256"])
-            current_user = User.query.get(decoded['user_id'])  # 🔹 Ahora busca por ID en lugar de email
+            print(f"🔍 Token recibido: {token}")  # 👈 Debugging
+            token = token.split(" ")[1] if " " in token else token  # Evitar errores si no hay 'Bearer'
+
+            decoded = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+            current_user = User.query.get(decoded['user_id'])
+
             if not current_user:
+                print("🚨 Usuario no encontrado en la base de datos")
                 return jsonify({"error": "Usuario no encontrado"}), 403
+
         except jwt.ExpiredSignatureError:
+            print("🚨 Token expirado")
             return jsonify({"error": "Token expirado"}), 403
         except jwt.InvalidTokenError:
+            print("🚨 Token inválido")
             return jsonify({"error": "Token inválido"}), 403
+        except Exception as e:
+            print(f"🚨 Error desconocido en token: {e}")
+            return jsonify({"error": "Error desconocido en token"}), 403
 
         return f(current_user, *args, **kwargs)
     return decorated
+
+
 
 # ✅ Registro de usuario
 @auth_bp.route('/api/register', methods=['POST'])
@@ -43,19 +57,16 @@ def register():
     if not all([name, email, password]):
         return jsonify({"error": "Todos los campos son obligatorios"}), 400
 
-    # Verificar si el usuario ya existe
     existing_user = User.query.filter_by(email=email).first()
     if existing_user:
         return jsonify({"error": "El correo ya está registrado"}), 409
 
-    # Crear usuario
-    hashed_password = generate_password_hash(password)  # 🔹 Se usa directamente aquí
+    hashed_password = generate_password_hash(password)
     new_user = User(name=name, email=email, password_hash=hashed_password)
     
     db.session.add(new_user)
     db.session.commit()
 
-    # 🔹 Generar token JWT con user_id en payload
     token = jwt.encode(
         {"user_id": new_user.id, "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=2)},
         SECRET_KEY,
@@ -79,7 +90,6 @@ def login():
     if not user or not check_password_hash(user.password_hash, password):
         return jsonify({"error": "Credenciales inválidas"}), 401
 
-    # 🔹 Generar un nuevo token JWT con ID en lugar de email
     token = jwt.encode(
         {"user_id": user.id, "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=2)},
         SECRET_KEY,
@@ -91,12 +101,14 @@ def login():
         "user": {"id": user.id, "name": user.name, "email": user.email}
     }), 200
 
-# ✅ Ruta protegida para obtener datos del usuario
+# ✅ Obtener usuario autenticado
 @auth_bp.route('/api/user', methods=['GET'])
 @token_required
 def get_user(current_user):
+    print(f"✅ Usuario autenticado correctamente: {current_user.name}")  # 👈 Agregado para debugging
     return jsonify({
         "id": current_user.id,
         "name": current_user.name,
         "email": current_user.email
     })
+
