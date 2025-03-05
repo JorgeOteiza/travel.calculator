@@ -200,14 +200,20 @@ const Home = () => {
         `${VITE_BACKEND_URL}/api/calculate`,
         tripData,
         {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
         }
       );
 
       console.log("✅ Resultados del viaje:", response.data);
       setResults(response.data);
     } catch (error) {
-      console.error("🚨 Error al calcular el viaje:", error);
+      console.error(
+        "🚨 Error al calcular el viaje:",
+        error.response?.data || error.message
+      );
       alert("Error al calcular el viaje. Revisa la consola para más detalles.");
     }
   };

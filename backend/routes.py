@@ -1,7 +1,8 @@
 import requests
 import json
 from flask import Blueprint, request, jsonify
-from .models import db, Trip, User
+from backend.models import db, Trip, User
+from backend.auth_routes import token_required
 
 main_bp = Blueprint("main_bp", __name__)
 
@@ -110,7 +111,7 @@ def get_model_details():
 
 # ✅ Ruta para calcular el viaje
 @main_bp.route("/api/calculate", methods=["POST"])
-def calculate_trip():
+def calculate_trip(current_user):
     try:
         data = request.json
         print("📡 Datos recibidos en /api/calculate:", data)
@@ -136,7 +137,7 @@ def calculate_trip():
         total_cost = fuel_consumed * 1.5
 
         new_trip = Trip(
-            user_id=user_id,  # ✅ Se incluye el usuario
+            user_id=current_user.id,
             brand=brand,
             model=model,
             fuel_type=fuel_type,

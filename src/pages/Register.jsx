@@ -45,13 +45,17 @@ const Register = ({ setUser }) => {
       }
     } catch (error) {
       console.error(
-        "🚨 Error al iniciar sesión:",
+        "🚨 Error al registrar:",
         error.response?.data || error.message
       );
-      setError(
-        error.response?.data?.error ||
-          "Error al iniciar sesión. Verifica tus credenciales."
-      );
+      if (error.response?.status === 409) {
+        setError("El correo ya está registrado. Intenta con otro.");
+      } else {
+        setError(
+          error.response?.data?.error ||
+            "Error al registrarse. Intenta nuevamente."
+        );
+      }
     }
   };
 
