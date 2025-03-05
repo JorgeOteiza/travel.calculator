@@ -111,12 +111,14 @@ def get_model_details():
 
 # ✅ Ruta para calcular el viaje
 @main_bp.route("/api/calculate", methods=["POST"])
+@token_required 
 def calculate_trip(current_user):
     try:
         data = request.json
         print("📡 Datos recibidos en /api/calculate:", data)
 
-        user_id = data.get("user_id")
+        # Se obtiene el ID del usuario autenticado desde el decorador
+        user_id = current_user.id
         if not user_id:
             print("🚨 Usuario no autenticado, se requiere iniciar sesión.")
             return jsonify({"error": "Usuario no autenticado. Inicia sesión para continuar."}), 401
@@ -137,7 +139,7 @@ def calculate_trip(current_user):
         total_cost = fuel_consumed * 1.5
 
         new_trip = Trip(
-            user_id=current_user.id,
+            user_id=user_id,  # ✅ Se usa el ID del usuario autenticado
             brand=brand,
             model=model,
             fuel_type=fuel_type,
