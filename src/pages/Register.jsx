@@ -24,8 +24,9 @@ const Register = ({ setUser }) => {
         `${VITE_BACKEND_URL}/api/register`,
         form
       );
-      if (response.status === 200) {
-        const { jwt, user } = response.data;
+
+      if (response.status === 201) {
+        const { jwt } = response.data;
 
         if (!jwt) {
           throw new Error("No se recibió un token válido.");
@@ -34,14 +35,35 @@ const Register = ({ setUser }) => {
         // ✅ Guardar correctamente el token en localStorage
         localStorage.setItem("token", jwt);
 
-        // ✅ Actualizar el estado del usuario
-        setUser(user);
-
-        console.log("✅ Usuario autenticado con éxito:", user);
+        console.log("✅ Usuario registrado con éxito");
         console.log("🔑 Token guardado en localStorage:", jwt);
+        // ✅ Esperar a que el token esté en localStorage y obtener el usuario
+        setTimeout(async () => {
+          try {
+            const userResponse = await axios.get(
+              `${VITE_BACKEND_URL}/api/user`,
+              {
+                headers: { Authorization: `Bearer ${jwt}` },
+              }
+            );
 
-        // Redirigir a la página principal
-        navigate("/");
+            if (userResponse.status === 200) {
+              setUser(userResponse.data); // ✅ Ahora sí se actualiza correctamente
+              console.log(
+                "✅ Usuario autenticado automáticamente:",
+                userResponse.data
+              );
+
+              // ✅ Redirigir al home solo si el usuario se autenticó correctamente
+              navigate("/");
+            }
+          } catch (error) {
+            console.error(
+              "🚨 Error al obtener usuario después del registro:",
+              error
+            );
+          }
+        }, 500); // Esperamos 500ms para asegurarnos de que el token ya está guardado
       }
     } catch (error) {
       console.error(

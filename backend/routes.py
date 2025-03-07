@@ -88,7 +88,7 @@ def get_car_models():
 
 
 # ✅ Ruta para obtener detalles de un modelo específico
-@main_bp.route("/api/carsqe/model_details", methods=["GET"])
+@main_bp.route("/api/carsxe/model_details", methods=["GET"])
 def get_model_details():
     try:
         model_name = request.args.get("model")

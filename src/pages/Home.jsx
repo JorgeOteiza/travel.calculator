@@ -18,12 +18,12 @@ const Home = () => {
     brand: "",
     model: "",
     fuelType: "",
+    fuelPrice: 0,
     passengers: 1,
     totalWeight: 0,
-    extraWeight: 0,
     location: "",
     destinity: "",
-    vehicle: "",
+    climate: "",
   });
 
   const [results, setResults] = useState(null);
@@ -68,7 +68,7 @@ const Home = () => {
           "🚨 Error al obtener usuario:",
           error.response?.data || error.message
         );
-        localStorage.removeItem("token"); // Eliminar el token inválido
+        localStorage.removeItem("token");
       }
     };
 
@@ -151,6 +151,10 @@ const Home = () => {
       [field]: `${newLocation.lat}, ${newLocation.lng}`,
     }));
     setMapCenter(newLocation);
+
+    if (field === "location") {
+      fetchWeather(newLocation.lat, newLocation.lng);
+    }
   };
 
   const validateForm = () => {
@@ -169,6 +173,35 @@ const Home = () => {
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  const fetchWeather = async (latitude, longitude) => {
+    try {
+      console.log(
+        "🔑 OpenWeather API Key:",
+        import.meta.env.VITE_OPENWEATHERMAP_API_KEY
+      );
+
+      const API_KEY = import.meta.env.VITE_OPENWEATHERMAP_API_KEY;
+      if (!API_KEY) {
+        console.error("🚨 ERROR: No se encontró la clave API de OpenWeather");
+        return;
+      }
+
+      const url = `https://api.openweathermap.org/data/3.0/onecall?lat=${latitude}&lon=${longitude}&exclude=minutely,hourly,daily,alerts&appid=${API_KEY}&units=metric&lang=es`;
+
+      console.log("🌍 Solicitando datos del clima a:", url);
+
+      const response = await axios.get(url);
+
+      if (response.data) {
+        const weather = response.data.current.weather[0].description;
+        console.log("🌤️ Clima actual:", weather);
+        setFormData((prev) => ({ ...prev, climate: weather }));
+      }
+    } catch (error) {
+      console.error("🚨 Error al obtener clima:", error);
+    }
   };
 
   const calculateTrip = async () => {

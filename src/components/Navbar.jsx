@@ -75,7 +75,7 @@ const Navbar = ({ user, setUser }) => {
             </li>
           </ul>
 
-          <div className="d-flex gap-2">
+          <div className="d-flex gap-2 text-nowrap">
             {isAuthenticated ? (
               <>
                 {/* 🔹 Ahora el nombre del usuario es un enlace a "/profile" */}

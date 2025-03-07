@@ -21,8 +21,9 @@ def token_required(f):
             return jsonify({"error": "Token faltante"}), 403
 
         try:
-            print(f"🔍 Token recibido: {token}")  # 👈 Debugging
-            token = token.split(" ")[1] if " " in token else token  # Evitar errores si no hay 'Bearer'
+            print(f"🔍 Token recibido: {token}")  
+            if "Bearer " in token:
+                token = token.split(" ")[1]  
 
             decoded = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
             current_user = User.query.get(decoded['user_id'])
@@ -43,7 +44,6 @@ def token_required(f):
 
         return f(current_user, *args, **kwargs)
     return decorated
-
 
 
 # ✅ Registro de usuario
@@ -110,5 +110,4 @@ def get_user(current_user):
         "id": current_user.id,
         "name": current_user.name,
         "email": current_user.email
-    })
-
+    }), 200
