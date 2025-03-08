@@ -17,6 +17,7 @@ const Home = () => {
   const [formData, setFormData] = useState({
     brand: "",
     model: "",
+    year: "",
     fuelType: "",
     fuelPrice: 0,
     passengers: 1,
@@ -73,18 +74,18 @@ const Home = () => {
     };
 
     fetchUser();
-  }, []);
+  }, [formData.year]);
 
   useEffect(() => {
     const fetchCarBrands = async () => {
       try {
         console.log("📡 Solicitando marcas de vehículos...");
         const response = await axios.get(
-          `${VITE_BACKEND_URL}/api/carsxe/brands`
+          `${VITE_BACKEND_URL}/api/carsxe/brands?year=${formData.year || 2024}`
         );
 
         if (!response.data || response.data.length === 0) {
-          throw new Error("No se recibieron datos");
+          throw new Error("No se recibieron marcas");
         }
 
         setBrandOptions(
@@ -100,7 +101,7 @@ const Home = () => {
     };
 
     fetchCarBrands();
-  }, []);
+  }, [formData.year]);
 
   useEffect(() => {
     const fetchCarModels = async () => {
@@ -108,6 +109,8 @@ const Home = () => {
 
       try {
         console.log("📡 Solicitando modelos para la marca:", formData.brand);
+
+        // 🔹 Ahora la petición se hace a Flask
         const response = await axios.get(
           `${VITE_BACKEND_URL}/api/carsxe/models?make_id=${formData.brand}`
         );
@@ -221,6 +224,7 @@ const Home = () => {
       const tripData = {
         brand: formData.brand,
         model: formData.model,
+        year: formData.year,
         fuelType: formData.fuelType,
         totalWeight: formData.totalWeight + formData.extraWeight,
         location: formData.location,

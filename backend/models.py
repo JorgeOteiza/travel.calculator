@@ -18,43 +18,37 @@ class User(db.Model):
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
-class Brand(db.Model):
+# ✅ Mueve `Vehicle` fuera de `User`
+class Vehicle(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(80), unique=True, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    make = db.Column(db.String(80), nullable=False)
+    model = db.Column(db.String(80), nullable=False)
+    year = db.Column(db.Integer, nullable=False)
+    fuel_type = db.Column(db.String(50), nullable=True)
+    engine_cc = db.Column(db.Integer, nullable=True)
+    engine_cylinders = db.Column(db.Integer, nullable=True)
+    weight_kg = db.Column(db.Integer, nullable=True)
+    lkm_mixed = db.Column(db.Float, nullable=True)  # Consumo en litros cada 100 km
+    mpg_mixed = db.Column(db.Float, nullable=True)  # Consumo en millas por galón
 
     def to_dict(self):
         return {
             "id": self.id,
-            "name": self.name,
-            "created_at": self.created_at.isoformat()
+            "make": self.make,
+            "model": self.model,
+            "year": self.year,
+            "fuel_type": self.fuel_type,
+            "engine_cc": self.engine_cc,
+            "engine_cylinders": self.engine_cylinders,
+            "weight_kg": self.weight_kg,
+            "lkm_mixed": self.lkm_mixed,
+            "mpg_mixed": self.mpg_mixed
         }
-
-    def __repr__(self):
-        return f"<Brand {self.name}>"
-
-class Model(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(80), nullable=False)
-    brand_id = db.Column(db.Integer, db.ForeignKey('brand.id'))
-    brand = db.relationship('Brand')
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-    def to_dict(self):
-        return {
-            "id": self.id,
-            "name": self.name,
-            "brand": self.brand.name,
-            "created_at": self.created_at.isoformat()
-        }
-
-    def __repr__(self):
-        return f"<Model {self.name} - Brand {self.brand.name}>"
 
 class Trip(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)  # ✅ Ahora es opcional
-    user = db.relationship('User', back_populates="trips")  # 🔹 Relación correcta
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    user = db.relationship('User', back_populates="trips")
     brand = db.Column(db.String(80), nullable=False)
     model = db.Column(db.String(80), nullable=False)
     fuel_type = db.Column(db.String(20), nullable=False)

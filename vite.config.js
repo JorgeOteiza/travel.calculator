@@ -8,14 +8,21 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react()],
     define: {
-      "process.env": env,
+      "import.meta.env.VITE_BACKEND_URL": JSON.stringify(env.VITE_BACKEND_URL),
+      "import.meta.env.VITE_GOOGLE_MAPS_API_KEY": JSON.stringify(
+        env.VITE_GOOGLE_MAPS_API_KEY
+      ),
+      "import.meta.env.VITE_MAP_ID": JSON.stringify(env.VITE_MAP_ID),
+      "import.meta.env.VITE_OPENWEATHERMAP_API_KEY": JSON.stringify(
+        env.VITE_OPENWEATHERMAP_API_KEY
+      ),
     },
     server: {
       proxy: {
-        "/api/carsxe": {
-          target: "https://api.carsxe.com",
+        "/api": {
+          target: env.VITE_BACKEND_URL,
           changeOrigin: true,
-          rewrite: (path) => path.replace(/^\/api\/carsxe/, ""),
+          secure: false,
         },
       },
     },

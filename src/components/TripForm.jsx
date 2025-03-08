@@ -50,6 +50,22 @@ const TripForm = ({
         classNamePrefix="custom-select"
       />
 
+      <label htmlFor="year">Vehicle Year</label>
+      <select
+        id="year"
+        name="year"
+        value={formData.year}
+        onChange={(e) => handleChange(e)}
+        className="custom-input"
+      >
+        <option value="">Select year</option>
+        {Array.from({ length: 35 }, (_, i) => 2025 - i).map((year) => (
+          <option key={year} value={year}>
+            {year}
+          </option>
+        ))}
+      </select>
+
       {/* Selector de tipo de gasolina */}
       <label htmlFor="fuelType">Octane rating</label>
       <Select

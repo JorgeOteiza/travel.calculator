@@ -21,14 +21,14 @@ def create_app():
     app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('SQLALCHEMY_DATABASE_URI')
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
     app.config['DEBUG'] = True
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = os.getenv('SQLALCHEMY_TRACK_MODIFICATIONS') == 'True'
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
     db.init_app(app)
     migrate = Migrate(app, db)
 
     # ✅ Registrar Blueprints
-    app.register_blueprint(auth_bp)  # Rutas de autenticación
-    app.register_blueprint(main_bp)  # 👈 Asegurar que se registre correctamente
+    app.register_blueprint(auth_bp)
+    app.register_blueprint(main_bp) 
 
     return app
 
