@@ -80,10 +80,10 @@ const Home = () => {
     const fetchCarBrands = async () => {
       try {
         console.log(
-          `📡 Solicitando marcas para el año ${formData.year || 2022}...`
+          `📡 Solicitando marcas para el año ${formData.year || 2024}...`
         );
         const response = await axios.get(
-          `${VITE_BACKEND_URL}/api/carsxe/brands?year=${formData.year || 2022}`
+          `${VITE_BACKEND_URL}/api/carsxe/brands?year=${formData.year || 2024}`
         );
 
         if (!response.data || response.data.length === 0) {
@@ -104,16 +104,7 @@ const Home = () => {
           error.response?.status || error.message
         );
         setBrandOptions([]);
-
-        if (error.response?.status === 403) {
-          alert(
-            "🚨 Acceso prohibido a la API de vehículos. Intenta más tarde o revisa las credenciales."
-          );
-        } else {
-          alert(
-            "Error al obtener marcas. Verifica la conexión con el servidor."
-          );
-        }
+        alert("Error al obtener marcas. Verifica la conexión con el servidor.");
       }
     };
 
@@ -125,16 +116,11 @@ const Home = () => {
       if (!formData.brand) return;
 
       try {
-        console.log(
-          `📡 Solicitando modelos para ${formData.brand} en ${
-            formData.year || 2022
-          }...`
-        );
-
+        console.log(`📡 Solicitando modelos para la marca: ${formData.brand}`);
         const response = await axios.get(
           `${VITE_BACKEND_URL}/api/carsxe/models?make_id=${
             formData.brand
-          }&year=${formData.year || 2022}`
+          }&year=${formData.year || 2024}`
         );
 
         if (!response.data || response.data.length === 0) {
@@ -155,14 +141,7 @@ const Home = () => {
           error.response?.status || error.message
         );
         setModelOptions([]);
-
-        if (error.response?.status === 403) {
-          alert(
-            "🚨 Acceso prohibido a la API de modelos. Revisa las credenciales."
-          );
-        } else {
-          alert("Error al obtener modelos. Intenta nuevamente.");
-        }
+        alert("Error al obtener modelos. Intenta de nuevo.");
       }
     };
 

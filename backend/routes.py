@@ -27,19 +27,14 @@ def home():
 @main_bp.route('/api/carsxe/brands', methods=['GET'])
 @cross_origin()
 def get_car_brands():
-    
     try:
         headers = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36"
-}
-        year = request.args.get("year", default=2022, type=int)
-        print(f"📡 Obteniendo marcas para el año {year} desde CarQuery API...")
-        
-        params = {
-            "callback": "?",
-            "cmd": "getMakes",
-            "year": year,
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36"
         }
+        year = request.args.get("year", default=2024, type=int)
+        print(f"📡 Obteniendo marcas para el año {year} desde CarQuery API...")
+
+        params = {"cmd": "getMakes", "year": year, "callback": "?"}
         response = requests.get(CARQUERY_API_URL, params=params, headers=headers)
 
         print(f"🔍 Código de estado HTTP: {response.status_code}")
@@ -52,9 +47,9 @@ def get_car_brands():
         data = clean_jsonp(response.text)
 
         if not data or "Makes" not in data or not data["Makes"]:
-            print("🚨 No se encontraron marcas para el año seleccionado. Intentando sin año...")
-            params.pop("year")  # 🔄 Reintentar sin año
-            response = requests.get(CARQUERY_API_URL, params=params)
+            print("🚨 No se encontraron marcas para el año seleccionado. Probando sin año...")
+            params.pop("year")  # Reintentar sin año
+            response = requests.get(CARQUERY_API_URL, params=params, headers=headers)
             data = clean_jsonp(response.text)
 
             if not data or "Makes" not in data:
@@ -71,28 +66,40 @@ def get_car_brands():
         print(f"🚨 Error inesperado en get_car_brands: {e}")
         return jsonify({"error": f"Error inesperado: {str(e)}"}), 500
 
+
 @main_bp.route('/api/carsxe/models', methods=['GET'])
 @cross_origin()
 def get_car_models():
     try:
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36"
+        }
         make_id = request.args.get('make_id')
-        year = request.args.get("year", default=2022, type=int)
+        year = request.args.get("year", default=2024, type=int)
+
         if not make_id:
             return jsonify({"error": "El parámetro 'make_id' es obligatorio"}), 400
 
         print(f"📡 Obteniendo modelos de {make_id} para el año {year}...")
 
         params = {"cmd": "getModels", "make": make_id, "year": year, "callback": "?"}
+        response = requests.get(CARQUERY_API_URL, params=params, headers=headers)
 
-        response = requests.get(CARQUERY_API_URL, params=params)
+        print(f"🔍 Código de estado HTTP: {response.status_code}")
 
         if response.status_code != 200:
             return jsonify({"error": f"Error en la API de CarQuery: {response.status_code}"}), response.status_code
 
         data = clean_jsonp(response.text)
+        
         if not data or "Models" not in data or not data["Models"]:
-            print("🚨 No se encontraron modelos para la marca y año seleccionados.")
-            return jsonify([]), 200
+            print("🚨 No se encontraron modelos para la marca y año seleccionados. Probando sin año...")
+            params.pop("year")  # 🔄 Reintentar sin año
+            response = requests.get(CARQUERY_API_URL, params=params, headers=headers)
+            data = clean_jsonp(response.text)
+
+            if not data or "Models" not in data:
+                return jsonify([]), 200
 
         models = [{"label": model["model_name"], "value": model["model_name"]} for model in data["Models"]]
         return jsonify(models), 200
@@ -101,6 +108,7 @@ def get_car_models():
         return jsonify({"error": f"Error al conectar con CarQuery: {str(e)}"}), 500
     except Exception as e:
         return jsonify({"error": f"Error inesperado: {str(e)}"}), 500
+
 
 
 
