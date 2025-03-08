@@ -17,7 +17,7 @@ const Home = () => {
   const [formData, setFormData] = useState({
     brand: "",
     model: "",
-    year: "",
+    year: "2022",
     fuelType: "",
     fuelPrice: 0,
     passengers: 1,
@@ -79,13 +79,17 @@ const Home = () => {
   useEffect(() => {
     const fetchCarBrands = async () => {
       try {
-        console.log("📡 Solicitando marcas de vehículos...");
+        console.log(
+          `📡 Solicitando marcas para el año ${formData.year || 2022}...`
+        );
         const response = await axios.get(
-          `${VITE_BACKEND_URL}/api/carsxe/brands?year=${formData.year || 2024}`
+          `${VITE_BACKEND_URL}/api/carsxe/brands?year=${formData.year || 2022}`
         );
 
         if (!response.data || response.data.length === 0) {
-          throw new Error("No se recibieron marcas");
+          console.warn("🚨 No se encontraron marcas.");
+          setBrandOptions([]);
+          return;
         }
 
         setBrandOptions(
@@ -95,8 +99,21 @@ const Home = () => {
           }))
         );
       } catch (error) {
-        console.error("🚨 Error al obtener marcas:", error.message || error);
-        alert("Error al obtener marcas. Verifica la conexión con el servidor.");
+        console.error(
+          "🚨 Error al obtener marcas:",
+          error.response?.status || error.message
+        );
+        setBrandOptions([]);
+
+        if (error.response?.status === 403) {
+          alert(
+            "🚨 Acceso prohibido a la API de vehículos. Intenta más tarde o revisa las credenciales."
+          );
+        } else {
+          alert(
+            "Error al obtener marcas. Verifica la conexión con el servidor."
+          );
+        }
       }
     };
 
@@ -108,15 +125,22 @@ const Home = () => {
       if (!formData.brand) return;
 
       try {
-        console.log("📡 Solicitando modelos para la marca:", formData.brand);
+        console.log(
+          `📡 Solicitando modelos para ${formData.brand} en ${
+            formData.year || 2022
+          }...`
+        );
 
-        // 🔹 Ahora la petición se hace a Flask
         const response = await axios.get(
-          `${VITE_BACKEND_URL}/api/carsxe/models?make_id=${formData.brand}`
+          `${VITE_BACKEND_URL}/api/carsxe/models?make_id=${
+            formData.brand
+          }&year=${formData.year || 2022}`
         );
 
         if (!response.data || response.data.length === 0) {
-          throw new Error("No se recibieron modelos");
+          console.warn("🚨 No se encontraron modelos.");
+          setModelOptions([]);
+          return;
         }
 
         setModelOptions(
@@ -126,13 +150,24 @@ const Home = () => {
           }))
         );
       } catch (error) {
-        console.error("🚨 Error al obtener modelos:", error);
-        alert("Error al obtener modelos. Intenta de nuevo.");
+        console.error(
+          "🚨 Error al obtener modelos:",
+          error.response?.status || error.message
+        );
+        setModelOptions([]);
+
+        if (error.response?.status === 403) {
+          alert(
+            "🚨 Acceso prohibido a la API de modelos. Revisa las credenciales."
+          );
+        } else {
+          alert("Error al obtener modelos. Intenta nuevamente.");
+        }
       }
     };
 
     fetchCarModels();
-  }, [formData.brand]);
+  }, [formData.brand, formData.year]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });

@@ -7,17 +7,6 @@ from backend.auth_routes import token_required
 
 CARQUERY_API_URL = "https://www.carqueryapi.com/api/0.3/"
 
-main_bp = Blueprint("main_bp", __name__)
-
-import requests
-import json
-from flask_cors import cross_origin
-from flask import Blueprint, request, jsonify
-from backend.models import db, Trip, User, Vehicle
-from backend.auth_routes import token_required
-
-CARQUERY_API_URL = "https://www.carqueryapi.com/api/0.3/"
-
 def clean_jsonp(response_text):
     try:
         start = response_text.find("{")
@@ -34,20 +23,23 @@ main_bp = Blueprint("main_bp", __name__)
 def home():
     return jsonify({"message": "API Running"}), 200
 
+
 @main_bp.route('/api/carsxe/brands', methods=['GET'])
 @cross_origin()
 def get_car_brands():
     
     try:
         headers = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-    "Referer": "https://www.google.com/",
-    "Accept-Language": "en-US,en;q=0.9"
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36"
 }
-        year = request.args.get("year", default=2024, type=int)
+        year = request.args.get("year", default=2022, type=int)
         print(f"📡 Obteniendo marcas para el año {year} desde CarQuery API...")
         
-        params = {"cmd": "getMakes", "year": year}
+        params = {
+            "callback": "?",
+            "cmd": "getMakes",
+            "year": year,
+        }
         response = requests.get(CARQUERY_API_URL, params=params, headers=headers)
 
         print(f"🔍 Código de estado HTTP: {response.status_code}")
@@ -60,8 +52,13 @@ def get_car_brands():
         data = clean_jsonp(response.text)
 
         if not data or "Makes" not in data or not data["Makes"]:
-            print("🚨 No se encontraron marcas para el año seleccionado.")
-            return jsonify([]), 200
+            print("🚨 No se encontraron marcas para el año seleccionado. Intentando sin año...")
+            params.pop("year")  # 🔄 Reintentar sin año
+            response = requests.get(CARQUERY_API_URL, params=params)
+            data = clean_jsonp(response.text)
+
+            if not data or "Makes" not in data:
+                return jsonify([]), 200
 
         brands = [{"label": brand["make_display"], "value": brand["make_id"]} for brand in data["Makes"]]
         print(f"✅ Marcas obtenidas: {len(brands)}")
@@ -79,13 +76,14 @@ def get_car_brands():
 def get_car_models():
     try:
         make_id = request.args.get('make_id')
-        year = request.args.get("year", default=2024, type=int)
+        year = request.args.get("year", default=2022, type=int)
         if not make_id:
             return jsonify({"error": "El parámetro 'make_id' es obligatorio"}), 400
 
         print(f"📡 Obteniendo modelos de {make_id} para el año {year}...")
 
-        params = {"cmd": "getModels", "make": make_id, "year": year}
+        params = {"cmd": "getModels", "make": make_id, "year": year, "callback": "?"}
+
         response = requests.get(CARQUERY_API_URL, params=params)
 
         if response.status_code != 200:
