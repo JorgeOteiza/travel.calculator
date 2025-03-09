@@ -21,13 +21,10 @@ const Navbar = ({ user, setUser }) => {
       return;
     }
 
-    // ✅ Se usa AbortController para evitar llamadas innecesarias si el usuario cambia de página
-    const controller = new AbortController();
-
     axios
       .get(`${VITE_BACKEND_URL}/api/user`, {
         headers: { Authorization: `Bearer ${token}` },
-        signal: controller.signal,
+        withCredentials: true, // ✅ Permitir credenciales en CORS
       })
       .then((response) => {
         setUser(response.data);
@@ -38,12 +35,13 @@ const Navbar = ({ user, setUser }) => {
           "🚨 Error al obtener usuario:",
           error.response?.data || error.message
         );
-        localStorage.removeItem("token");
-        setIsAuthenticated(false);
-        setUser(null);
-      });
 
-    return () => controller.abort(); // ✅ Se limpia la petición si cambia de página
+        if (error.response?.status === 401 || error.response?.status === 403) {
+          localStorage.removeItem("token"); // Eliminar token solo si es inválido
+          setIsAuthenticated(false);
+          setUser(null);
+        }
+      });
   }, [setUser]);
 
   const handleLogout = () => {

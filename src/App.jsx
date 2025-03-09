@@ -23,6 +23,7 @@ function App() {
       try {
         const response = await axios.get(`${VITE_BACKEND_URL}/api/user`, {
           headers: { Authorization: `Bearer ${token}` },
+          withCredentials: true,
         });
         setUser(response.data);
       } catch (error) {

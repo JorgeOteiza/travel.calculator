@@ -14,22 +14,27 @@ load_dotenv()
 
 def create_app():
     app = Flask(__name__)
-    
+
     # ✅ Configuración de CORS para todas las rutas
-    CORS(app, supports_credentials=True)
+    CORS(
+        app,
+        resources={r"/*": {"origins": "http://localhost:5173"}},
+        supports_credentials=True,
+        allow_headers=["Content-Type", "Authorization"],
+        methods=["GET", "POST", "OPTIONS"],
+    )
 
     # Configuración de la base de datos
     app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('SQLALCHEMY_DATABASE_URI')
-    app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
-    app.config['DEBUG'] = True
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    app.config["JWT_SECRET_KEY"] = os.getenv('JWT_SECRET_KEY', 'super-secret-key')  # ✅ JWT
+    app.config["SECRET_KEY"] = os.getenv('SECRET_KEY')
+    app.config["JWT_SECRET_KEY"] = os.getenv('JWT_SECRET_KEY') 
 
     db.init_app(app)
     migrate = Migrate(app, db)
-    jwt = JWTManager(app)  # ✅ Inicializar JWT correctamente
+    jwt = JWTManager(app)
 
-    # ✅ Registrar Blueprints
+    # ✅ Registrar Blueprints (sin duplicar /api)
     app.register_blueprint(auth_bp, url_prefix="/api")
     app.register_blueprint(main_bp, url_prefix="/api")
 
@@ -37,4 +42,4 @@ def create_app():
 
 if __name__ == "__main__":
     app = create_app()
-    app.run(debug=app.config['DEBUG'])
+    app.run(debug=True)

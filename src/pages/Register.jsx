@@ -20,7 +20,8 @@ const Register = ({ setUser }) => {
     try {
       const response = await axios.post(
         "http://localhost:5000/api/register",
-        form
+        form,
+        { withCredentials: true } // ✅ Permitir autenticación con CORS
       );
 
       if (response.status === 201) {
@@ -35,31 +36,30 @@ const Register = ({ setUser }) => {
         console.log("✅ Usuario registrado con éxito");
         console.log("🔑 Token guardado en localStorage:", jwt);
 
-        // ✅ Esperar a que el token esté en localStorage y obtener el usuario
-        setTimeout(async () => {
-          try {
-            const userResponse = await axios.get(
-              "http://localhost:5000/api/user",
-              {
-                headers: { Authorization: `Bearer ${jwt}` },
-              }
-            );
-
-            if (userResponse.status === 200) {
-              setUser(userResponse.data);
-              console.log(
-                "✅ Usuario autenticado automáticamente:",
-                userResponse.data
-              );
-              navigate("/");
+        try {
+          const userResponse = await axios.get(
+            "http://localhost:5000/api/user",
+            {
+              headers: { Authorization: `Bearer ${jwt}` },
+              withCredentials: true, // ✅ Enviar credenciales en CORS
             }
-          } catch (error) {
-            console.error(
-              "🚨 Error al obtener usuario después del registro:",
-              error
+          );
+
+          if (userResponse.status === 200) {
+            setUser(userResponse.data);
+            console.log(
+              "✅ Usuario autenticado automáticamente:",
+              userResponse.data
             );
+            navigate("/");
           }
-        }, 500); // Esperamos 500ms para asegurarnos de que el token ya está guardado
+        } catch (error) {
+          console.error(
+            "🚨 Error al obtener usuario después del registro:",
+            error
+          );
+          setError("Hubo un problema al autenticar. Intenta iniciar sesión.");
+        }
       }
     } catch (error) {
       console.error(
