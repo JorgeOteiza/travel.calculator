@@ -24,7 +24,7 @@ def home():
     return jsonify({"message": "API Running"}), 200
 
 
-@main_bp.route('/api/carsxe/brands', methods=['GET'])
+@main_bp.route('/carsxe/brands', methods=['GET'])
 @cross_origin()
 def get_car_brands():
     try:
@@ -111,7 +111,6 @@ def get_car_models():
 
 
 
-
 # ✅ Obtener detalles de un modelo específico
 @main_bp.route("/api/carsxe/model_details", methods=["GET"])
 @cross_origin()
@@ -152,40 +151,70 @@ def get_model_details():
     except requests.exceptions.RequestException as e:
         return jsonify({"error": f"Error al conectar con CarQuery: {str(e)}"}), 500
 
-# ✅ Calcular el viaje basado en el vehículo seleccionado
+# ✅ Calcular el viaje basado en múltiples factores
 @main_bp.route("/api/calculate", methods=["POST"])
 @token_required
 def calculate_trip(current_user):
     try:
-        data = request.json
-        make = data.get("brand")
-        model = data.get("model")
-        year = data.get("year")
-        total_weight = data.get("totalWeight", 0)
+        data = request.get_json()
 
-        if not all([make, model, year]):
-            return jsonify({"error": "Todos los campos son requeridos"}), 400
+        # 🔹 1. Validar los datos recibidos
+        required_fields = ["brand", "model", "year", "totalWeight", "distance", "fuelPrice", "climate", "roadGrade"]
+        for field in required_fields:
+            if field not in data:
+                return jsonify({"error": f"El campo '{field}' es requerido"}), 400
 
+        make = data["brand"]
+        model = data["model"]
+        year = data["year"]
+        total_weight = data["totalWeight"]
+        distance_km = data["distance"]
+        fuel_price = data["fuelPrice"]
+        climate = data["climate"]
+        road_grade = data["roadGrade"]  # Inclinación de la carretera en porcentaje
+
+        # 🔹 2. Obtener detalles del vehículo desde la base de datos
         vehicle = Vehicle.query.filter_by(make=make, model=model, year=year).first()
         if not vehicle:
             return jsonify({"error": "No se encontraron detalles del vehículo"}), 404
 
-        base_fuel_consumption = vehicle.lkm_mixed if vehicle.lkm_mixed else 8
+        # 🔹 3. Calcular el consumo base de combustible
+        base_fuel_consumption = vehicle.lkm_mixed if vehicle.lkm_mixed else 8  # l/100km
         weight_factor = 1 + ((total_weight + (vehicle.weight_kg or 1500)) / 1500) * 0.1
-        fuel_consumption = base_fuel_consumption * weight_factor
+        adjusted_fuel_consumption = base_fuel_consumption * weight_factor
 
-        distance_km = 120.5
-        fuel_used = (distance_km * fuel_consumption) / 100
-        total_cost = fuel_used * 1.5
+        # 🔹 4. Ajuste por inclinación del camino
+        if road_grade > 0:
+            incline_factor = 1 + (road_grade / 10)  # Aumento del consumo por cada 10% de inclinación
+        else:
+            incline_factor = 1
+
+        adjusted_fuel_consumption *= incline_factor
+
+        # 🔹 5. Ajuste por clima (temperatura y viento)
+        if "cold" in climate.lower():
+            adjusted_fuel_consumption *= 1.1  # Aumento del 10% en clima frío
+        elif "hot" in climate.lower():
+            adjusted_fuel_consumption *= 1.05  # Aumento del 5% en clima caluroso
+        elif "windy" in climate.lower():
+            adjusted_fuel_consumption *= 1.08  # Aumento del 8% si hay viento fuerte
+
+        # 🔹 6. Cálculo de combustible total usado
+        fuel_used = (distance_km * adjusted_fuel_consumption) / 100
+
+        # 🔹 7. Cálculo del costo total del viaje
+        total_cost = fuel_used * fuel_price
 
         return jsonify({
             "distance": distance_km,
-            "fuelConsumed": fuel_used,
+            "fuelConsumptionPer100km": adjusted_fuel_consumption,
+            "fuelUsed": fuel_used,
             "totalCost": total_cost
         }), 200
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 # ✅ Obtener todos los viajes
 @main_bp.route("/api/trips", methods=["GET"])

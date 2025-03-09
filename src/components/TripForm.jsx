@@ -18,36 +18,28 @@ const TripForm = ({
 
   return (
     <form className="trip-form">
-      {/* Selector de marca */}
       <label htmlFor="brand">Vehicle Brand</label>
       <Select
         id="brand"
         name="brand"
         options={brandOptions}
-        getOptionLabel={(e) => e.label || "Unknown"}
-        getOptionValue={(e) => e.value || ""}
         value={brandOptions.find((option) => option.value === formData.brand)}
         onChange={handleBrandSelect}
         placeholder="Select a brand"
         isClearable
         className="custom-select"
-        classNamePrefix="custom-select"
       />
 
-      {/* Selector de modelo */}
       <label htmlFor="model">Vehicle Model</label>
       <Select
         id="model"
         name="model"
         options={modelOptions}
-        getOptionLabel={(e) => e.label || "Unknown"}
-        getOptionValue={(e) => e.value || ""}
         value={modelOptions.find((option) => option.value === formData.model)}
         onChange={handleModelSelect}
         placeholder="Select a model"
         isClearable
         className="custom-select"
-        classNamePrefix="custom-select"
       />
 
       <label htmlFor="year">Vehicle Year</label>
@@ -55,7 +47,7 @@ const TripForm = ({
         id="year"
         name="year"
         value={formData.year}
-        onChange={(e) => handleChange(e)}
+        onChange={handleChange}
         className="custom-input"
       >
         <option value="">Select year</option>
@@ -66,14 +58,11 @@ const TripForm = ({
         ))}
       </select>
 
-      {/* Selector de tipo de gasolina */}
       <label htmlFor="fuelType">Octane rating</label>
       <Select
         id="fuelType"
         name="fuelType"
         options={fuelTypeOptions}
-        getOptionLabel={(e) => e.label}
-        getOptionValue={(e) => e.value}
         value={fuelTypeOptions.find(
           (option) => option.value === formData.fuelType
         )}
@@ -85,10 +74,31 @@ const TripForm = ({
         placeholder="Select octane rating"
         isClearable
         className="custom-select"
-        classNamePrefix="custom-select"
       />
 
-      {/* Campo de peso total estimado */}
+      <label htmlFor="fuelPrice">Fuel Price (per liter)</label>
+      <input
+        type="number"
+        name="fuelPrice"
+        value={formData.fuelPrice}
+        onChange={handleChange}
+        placeholder="Fuel price per liter"
+        min="0"
+        step="0.01"
+        className="custom-input"
+      />
+
+      <label htmlFor="passengers">Number of Passengers</label>
+      <input
+        type="number"
+        name="passengers"
+        value={formData.passengers}
+        onChange={handleChange}
+        placeholder="Enter number of passengers"
+        min="1"
+        className="custom-input"
+      />
+
       <label htmlFor="totalWeight">Estimated Total Weight (kg)</label>
       <input
         type="number"

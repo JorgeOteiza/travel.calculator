@@ -5,11 +5,12 @@ const TripResults = ({ results }) => {
 
   return (
     <div className="results">
-      <h2>Results</h2>
-      <p>Distance: {results.distance} km</p>
-      <p>Fuel Consumed: {results.fuelConsumed} liters</p>
-      <p>Total Cost: ${results.totalCost}</p>
-      <p>Weather: {results.weather}</p>
+      <h2>Resultados del Viaje</h2>
+      <p>Distancia: {results.distance} km</p>
+      <p>Consumo de combustible: {results.fuelConsumed} litros</p>
+      <p>Costo total: ${results.totalCost}</p>
+      <p>Condiciones climáticas: {results.weather}</p>
+      <p>Pendiente del camino: {results.roadSlope}</p>
     </div>
   );
 };
@@ -20,6 +21,7 @@ TripResults.propTypes = {
     fuelConsumed: PropTypes.number,
     totalCost: PropTypes.number,
     weather: PropTypes.string,
+    roadSlope: PropTypes.string,
   }),
 };
 

@@ -8,33 +8,42 @@ const VITE_BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
 const Navbar = ({ user, setUser }) => {
   const navigate = useNavigate();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(
+    !!localStorage.getItem("token")
+  );
 
   useEffect(() => {
     const token = localStorage.getItem("token");
 
-    if (token) {
-      axios
-        .get(`${VITE_BACKEND_URL}/api/user`, {
-          headers: { Authorization: `Bearer ${token}` },
-        })
-        .then((response) => {
-          setUser(response.data);
-          setIsAuthenticated(true);
-        })
-        .catch((error) => {
-          console.error(
-            "Error al obtener usuario:",
-            error.response?.data || error.message
-          );
-          localStorage.removeItem("token"); // Eliminar solo si el token es inválido
-          setIsAuthenticated(false);
-          setUser(null);
-        });
-    } else {
+    if (!token) {
       setIsAuthenticated(false);
       setUser(null);
+      return;
     }
+
+    // ✅ Se usa AbortController para evitar llamadas innecesarias si el usuario cambia de página
+    const controller = new AbortController();
+
+    axios
+      .get(`${VITE_BACKEND_URL}/api/user`, {
+        headers: { Authorization: `Bearer ${token}` },
+        signal: controller.signal,
+      })
+      .then((response) => {
+        setUser(response.data);
+        setIsAuthenticated(true);
+      })
+      .catch((error) => {
+        console.error(
+          "🚨 Error al obtener usuario:",
+          error.response?.data || error.message
+        );
+        localStorage.removeItem("token");
+        setIsAuthenticated(false);
+        setUser(null);
+      });
+
+    return () => controller.abort(); // ✅ Se limpia la petición si cambia de página
   }, [setUser]);
 
   const handleLogout = () => {
@@ -84,7 +93,7 @@ const Navbar = ({ user, setUser }) => {
                   className="nav-link text-light fw-bold"
                   style={{ cursor: "pointer" }}
                 >
-                  👤 {user?.name}
+                  👤 {user?.name || "Perfil"}
                 </Link>
                 <button
                   className="btn btn-outline-danger"

@@ -2,6 +2,7 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from flask_migrate import Migrate
+from flask_jwt_extended import JWTManager
 import os
 from dotenv import load_dotenv
 from backend.models import db
@@ -14,21 +15,23 @@ load_dotenv()
 def create_app():
     app = Flask(__name__)
     
-    # ✅ Permitir CORS en todas las rutas
-    CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
+    # ✅ Configuración de CORS para todas las rutas
+    CORS(app, supports_credentials=True)
 
     # Configuración de la base de datos
     app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('SQLALCHEMY_DATABASE_URI')
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
     app.config['DEBUG'] = True
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    app.config["JWT_SECRET_KEY"] = os.getenv('JWT_SECRET_KEY', 'super-secret-key')  # ✅ JWT
 
     db.init_app(app)
     migrate = Migrate(app, db)
+    jwt = JWTManager(app)  # ✅ Inicializar JWT correctamente
 
     # ✅ Registrar Blueprints
-    app.register_blueprint(auth_bp)
-    app.register_blueprint(main_bp) 
+    app.register_blueprint(auth_bp, url_prefix="/api")
+    app.register_blueprint(main_bp, url_prefix="/api")
 
     return app
 

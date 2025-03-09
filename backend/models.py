@@ -1,8 +1,9 @@
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
-from werkzeug.security import generate_password_hash, check_password_hash
+from flask_bcrypt import Bcrypt 
 
 db = SQLAlchemy()
+bcrypt = Bcrypt()
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -12,11 +13,21 @@ class User(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     trips = db.relationship('Trip', back_populates="user", cascade="all, delete")
 
+    def __init__(self, name, email, password):
+        self.name = name
+        self.email = email
+        self.set_password(password) 
+
     def set_password(self, password):
-        self.password_hash = generate_password_hash(password)
+        """Genera el hash de la contraseña y lo almacena en password_hash"""
+        self.password_hash = bcrypt.generate_password_hash(password).decode('utf-8')
 
     def check_password(self, password):
-        return check_password_hash(self.password_hash, password)
+        """Verifica la contraseña con el hash almacenado"""
+        return bcrypt.check_password_hash(self.password_hash, password)
+
+    def to_dict(self):
+        return {"id": self.id, "name": self.name, "email": self.email}
 
 # ✅ Mueve `Vehicle` fuera de `User`
 class Vehicle(db.Model):

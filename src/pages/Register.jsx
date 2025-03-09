@@ -4,8 +4,6 @@ import axios from "axios";
 import "../styles/Register.css";
 import PropTypes from "prop-types";
 
-const VITE_BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
-
 const Register = ({ setUser }) => {
   const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [error, setError] = useState(null);
@@ -21,7 +19,7 @@ const Register = ({ setUser }) => {
 
     try {
       const response = await axios.post(
-        `${VITE_BACKEND_URL}/api/register`,
+        "http://localhost:5000/api/register",
         form
       );
 
@@ -34,27 +32,25 @@ const Register = ({ setUser }) => {
 
         // ✅ Guardar correctamente el token en localStorage
         localStorage.setItem("token", jwt);
-
         console.log("✅ Usuario registrado con éxito");
         console.log("🔑 Token guardado en localStorage:", jwt);
+
         // ✅ Esperar a que el token esté en localStorage y obtener el usuario
         setTimeout(async () => {
           try {
             const userResponse = await axios.get(
-              `${VITE_BACKEND_URL}/api/user`,
+              "http://localhost:5000/api/user",
               {
                 headers: { Authorization: `Bearer ${jwt}` },
               }
             );
 
             if (userResponse.status === 200) {
-              setUser(userResponse.data); // ✅ Ahora sí se actualiza correctamente
+              setUser(userResponse.data);
               console.log(
                 "✅ Usuario autenticado automáticamente:",
                 userResponse.data
               );
-
-              // ✅ Redirigir al home solo si el usuario se autenticó correctamente
               navigate("/");
             }
           } catch (error) {
