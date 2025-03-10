@@ -4,6 +4,8 @@ import axios from "axios";
 import "../styles/Login.css";
 import PropTypes from "prop-types";
 
+const VITE_BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+
 const Login = ({ setUser }) => {
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState(null);
@@ -18,10 +20,7 @@ const Login = ({ setUser }) => {
     setError(null);
 
     try {
-      const response = await axios.post(
-        "http://localhost:5000/api/login",
-        form
-      );
+      const response = await axios.post(`${VITE_BACKEND_URL}/api/login`, form);
 
       if (response.status === 200) {
         const { jwt, user } = response.data;

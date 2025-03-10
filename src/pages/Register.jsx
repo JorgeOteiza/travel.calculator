@@ -4,6 +4,8 @@ import axios from "axios";
 import "../styles/Register.css";
 import PropTypes from "prop-types";
 
+const VITE_BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+
 const Register = ({ setUser }) => {
   const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [error, setError] = useState(null);
@@ -19,53 +21,35 @@ const Register = ({ setUser }) => {
 
     try {
       const response = await axios.post(
-        "http://localhost:5000/api/register",
+        `${VITE_BACKEND_URL}/api/register`,
         form,
-        { withCredentials: true } // ✅ Permitir autenticación con CORS
+        {
+          withCredentials: true, // ✅ Permitir autenticación con CORS
+        }
       );
 
       if (response.status === 201) {
-        const { jwt } = response.data;
+        const { jwt, user } = response.data;
 
-        if (!jwt) {
-          throw new Error("No se recibió un token válido.");
+        if (!jwt || !user) {
+          throw new Error("No se recibió un token o usuario válido.");
         }
 
-        // ✅ Guardar correctamente el token en localStorage
+        // ✅ Guardar token en localStorage
         localStorage.setItem("token", jwt);
         console.log("✅ Usuario registrado con éxito");
         console.log("🔑 Token guardado en localStorage:", jwt);
 
-        try {
-          const userResponse = await axios.get(
-            "http://localhost:5000/api/user",
-            {
-              headers: { Authorization: `Bearer ${jwt}` },
-              withCredentials: true, // ✅ Enviar credenciales en CORS
-            }
-          );
-
-          if (userResponse.status === 200) {
-            setUser(userResponse.data);
-            console.log(
-              "✅ Usuario autenticado automáticamente:",
-              userResponse.data
-            );
-            navigate("/");
-          }
-        } catch (error) {
-          console.error(
-            "🚨 Error al obtener usuario después del registro:",
-            error
-          );
-          setError("Hubo un problema al autenticar. Intenta iniciar sesión.");
-        }
+        // ✅ Autenticar usuario y redirigir al home
+        setUser(user);
+        navigate("/");
       }
     } catch (error) {
       console.error(
         "🚨 Error al registrar:",
         error.response?.data || error.message
       );
+
       if (error.response?.status === 409) {
         setError("El correo ya está registrado. Intenta con otro.");
       } else {

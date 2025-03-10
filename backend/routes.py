@@ -1,6 +1,7 @@
 import requests
 import json
 from flask_cors import cross_origin
+from flask_jwt_extended import jwt_required
 from flask import Blueprint, request, jsonify
 from backend.models import db, Trip, User, Vehicle
 from backend.auth_routes import token_required
@@ -67,7 +68,7 @@ def get_car_brands():
         return jsonify({"error": f"Error inesperado: {str(e)}"}), 500
 
 
-@main_bp.route('/api/carsxe/models', methods=['GET'])
+@main_bp.route('/carsxe/models', methods=['GET'])
 @cross_origin()
 def get_car_models():
     try:
@@ -112,7 +113,7 @@ def get_car_models():
 
 
 # ✅ Obtener detalles de un modelo específico
-@main_bp.route("/api/carsxe/model_details", methods=["GET"])
+@main_bp.route("/carsxe/model_details", methods=["GET"])
 @cross_origin()
 def get_model_details():
     try:
@@ -152,7 +153,7 @@ def get_model_details():
         return jsonify({"error": f"Error al conectar con CarQuery: {str(e)}"}), 500
 
 # ✅ Calcular el viaje basado en múltiples factores
-@main_bp.route("/api/calculate", methods=["POST"])
+@main_bp.route("/calculate", methods=["POST"])
 @token_required
 def calculate_trip(current_user):
     try:
@@ -217,8 +218,9 @@ def calculate_trip(current_user):
 
 
 # ✅ Obtener todos los viajes
-@main_bp.route("/api/trips", methods=["GET"])
+@main_bp.route("/trips", methods=["GET"])
 @cross_origin()
+@jwt_required()
 def get_trips():
     try:
         trips = Trip.query.all()
@@ -227,8 +229,9 @@ def get_trips():
         return jsonify({"error": str(e)}), 500
 
 # ✅ Eliminar un viaje
-@main_bp.route("/api/trips/<int:trip_id>", methods=["DELETE"])
+@main_bp.route("/trips/<int:trip_id>", methods=["DELETE"])
 @cross_origin()
+@jwt_required()
 def delete_trip(trip_id):
     try:
         trip = Trip.query.get(trip_id)

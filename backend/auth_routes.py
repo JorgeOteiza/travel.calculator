@@ -45,7 +45,7 @@ def token_required(f):
 
 
 @auth_bp.route("/register", methods=["POST"])
-@cross_origin()
+@cross_origin(origins="http://localhost:5173", supports_credentials=True)
 def register():
     try:
         data = request.get_json()
@@ -60,14 +60,27 @@ def register():
         if existing_user:
             return jsonify({"error": "El correo ya está registrado"}), 409
 
-        # ✅ Se encripta la contraseña correctamente
-        hashed_password = generate_password_hash(password)
-        new_user = User(name=name, email=email, password=hashed_password)  
+        # ✅ Encriptar contraseña
+        hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+        new_user = User(name=name, email=email, password=hashed_password)
         db.session.add(new_user)
         db.session.commit()
 
+        # ✅ Generar token JWT
         token = create_access_token(identity=new_user.id)
-        return jsonify({"message": "Usuario registrado con éxito", "jwt": token}), 201
+
+        response = jsonify({
+            "message": "Usuario registrado con éxito",
+            "jwt": token,
+            "user": {
+                "id": new_user.id,
+                "name": new_user.name,
+                "email": new_user.email
+            }
+        })
+        response.headers.add("Access-Control-Allow-Credentials", "true")
+
+        return response, 201
 
     except Exception as e:
         return jsonify({"error": f"Error en registro: {str(e)}"}), 500
@@ -105,7 +118,8 @@ def login():
         return jsonify({"error": f"Error en login: {str(e)}"}), 500
 
 
-@auth_bp.route('/api/user', methods=['GET'])
+@auth_bp.route("/user", methods=["GET"])
+@cross_origin(origins="http://localhost:5173", supports_credentials=True)
 @jwt_required()
 def get_user():
     """Retorna la información del usuario autenticado."""
@@ -120,11 +134,14 @@ def get_user():
         if not user:
             return jsonify({"error": "Usuario no encontrado"}), 404
 
-        return jsonify({
+        response = jsonify({
             "id": user.id,
             "name": user.name,
             "email": user.email
-        }), 200
+        })
+        response.headers.add("Access-Control-Allow-Credentials", "true")
+
+        return response, 200
 
     except Exception as e:
         print(f"🚨 Error en /api/user: {e}")

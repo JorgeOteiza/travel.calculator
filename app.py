@@ -18,17 +18,17 @@ def create_app():
     # ✅ Configuración de CORS para todas las rutas
     CORS(
         app,
-        resources={r"/*": {"origins": "http://localhost:5173"}},
+        resources={r"/api/*": {"origins": "http://localhost:5173"}},
         supports_credentials=True,
-        allow_headers=["Content-Type", "Authorization"],
-        methods=["GET", "POST", "OPTIONS"],
     )
 
     # Configuración de la base de datos
     app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('SQLALCHEMY_DATABASE_URI')
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config["SECRET_KEY"] = os.getenv('SECRET_KEY')
-    app.config["JWT_SECRET_KEY"] = os.getenv('JWT_SECRET_KEY') 
+    app.config["JWT_SECRET_KEY"] = os.getenv('JWT_SECRET_KEY')
+    app.config["DEBUG"] = os.getenv('DEBUG', 'False') == 'True'
+
 
     db.init_app(app)
     migrate = Migrate(app, db)
