@@ -16,12 +16,18 @@ class User(db.Model):
     def __init__(self, name, email, password):
         self.name = name
         self.email = email
-        self.set_password(password) 
+        self.set_password(password)
 
     def set_password(self, password):
+        """Cifra la contraseña antes de guardarla"""
+        if not password:
+            raise ValueError("La contraseña no puede estar vacía")
         self.password = bcrypt.generate_password_hash(password).decode('utf-8')
 
     def check_password(self, password):
+        """Verifica la contraseña comparándola con el hash almacenado"""
+        if not self.password:
+            return False
         return bcrypt.check_password_hash(self.password, password)
 
     def to_dict(self):

@@ -13,39 +13,40 @@ const Navbar = ({ user, setUser }) => {
   );
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
+    const fetchUser = async () => {
+      const token = localStorage.getItem("token");
 
-    if (!token) {
-      setIsAuthenticated(false);
-      setUser(null);
-      return;
-    }
+      if (!token) {
+        setIsAuthenticated(false);
+        setUser(null);
+        return;
+      }
 
-    axios
-      .get(`${VITE_BACKEND_URL}/api/user`, {
-        headers: { Authorization: `Bearer ${token}` },
-        withCredentials: true, // ✅ Permitir credenciales en CORS
-      })
-      .then((response) => {
+      try {
+        const response = await axios.get(`${VITE_BACKEND_URL}/api/user`, {
+          headers: { Authorization: `Bearer ${token}` },
+          withCredentials: true,
+        });
+
         setUser(response.data);
         setIsAuthenticated(true);
-      })
-      .catch((error) => {
+      } catch (error) {
         console.error(
           "🚨 Error al obtener usuario:",
           error.response?.data || error.message
         );
+        localStorage.removeItem("token");
+        setUser(null);
+        setIsAuthenticated(false);
+      }
+    };
 
-        if (error.response?.status === 401 || error.response?.status === 403) {
-          localStorage.removeItem("token"); // Eliminar token solo si es inválido
-          setIsAuthenticated(false);
-          setUser(null);
-        }
-      });
+    fetchUser();
   }, [setUser]);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("user");
     setUser(null);
     setIsAuthenticated(false);
     navigate("/login");
@@ -85,7 +86,6 @@ const Navbar = ({ user, setUser }) => {
           <div className="d-flex gap-2 text-nowrap">
             {isAuthenticated ? (
               <>
-                {/* 🔹 Ahora el nombre del usuario es un enlace a "/profile" */}
                 <Link
                   to="/profile"
                   className="nav-link text-light fw-bold"

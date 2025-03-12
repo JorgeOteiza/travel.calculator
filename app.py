@@ -34,7 +34,7 @@ def create_app():
     migrate = Migrate(app, db)
     jwt = JWTManager(app)
 
-    # ✅ Registrar Blueprints (sin duplicar /api)
+    # ✅ Registrar Blueprints
     app.register_blueprint(auth_bp, url_prefix="/api")
     app.register_blueprint(main_bp, url_prefix="/api")
 

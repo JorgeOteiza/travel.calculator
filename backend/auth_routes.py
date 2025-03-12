@@ -45,7 +45,6 @@ def token_required(f):
 
 
 @auth_bp.route("/register", methods=["POST"])
-@cross_origin(origins="http://localhost:5173", supports_credentials=True)
 def register():
     try:
         data = request.get_json()
@@ -60,16 +59,18 @@ def register():
         if existing_user:
             return jsonify({"error": "El correo ya está registrado"}), 409
 
-        # ✅ Encriptar contraseña
+        # ✅ Encriptar contraseña ANTES de crear el usuario
         hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
         new_user = User(name=name, email=email, password=hashed_password)
+        
+        # ✅ Guardar usuario en la base de datos
         db.session.add(new_user)
         db.session.commit()
 
         # ✅ Generar token JWT
         token = create_access_token(identity=new_user.id)
 
-        response = jsonify({
+        return jsonify({
             "message": "Usuario registrado con éxito",
             "jwt": token,
             "user": {
@@ -77,17 +78,15 @@ def register():
                 "name": new_user.name,
                 "email": new_user.email
             }
-        })
-        response.headers.add("Access-Control-Allow-Credentials", "true")
-
-        return response, 201
+        }), 201
 
     except Exception as e:
+        db.session.rollback()  # ✅ Deshacer cambios si hay un error
         return jsonify({"error": f"Error en registro: {str(e)}"}), 500
 
 
+
 @auth_bp.route("/login", methods=["POST"])
-@cross_origin()
 def login():
     try:
         data = request.get_json()
@@ -99,7 +98,10 @@ def login():
 
         user = User.query.filter_by(email=email).first()
 
-        if not user or not check_password_hash(user.password, password):  
+        if not user or not user.password:  # ✅ Verificar que el usuario tiene una contraseña válida
+            return jsonify({"error": "Credenciales inválidas"}), 401
+
+        if not bcrypt.check_password_hash(user.password, password):
             return jsonify({"error": "Credenciales inválidas"}), 401
 
         token = create_access_token(identity=user.id)
@@ -116,6 +118,7 @@ def login():
 
     except Exception as e:
         return jsonify({"error": f"Error en login: {str(e)}"}), 500
+
 
 
 @auth_bp.route("/user", methods=["GET"])

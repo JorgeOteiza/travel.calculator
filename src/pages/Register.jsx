@@ -24,7 +24,7 @@ const Register = ({ setUser }) => {
         `${VITE_BACKEND_URL}/api/register`,
         form,
         {
-          withCredentials: true, // ✅ Permitir autenticación con CORS
+          withCredentials: true,
         }
       );
 
@@ -35,12 +35,11 @@ const Register = ({ setUser }) => {
           throw new Error("No se recibió un token o usuario válido.");
         }
 
-        // ✅ Guardar token en localStorage
+        // ✅ Guardar token y usuario en localStorage
         localStorage.setItem("token", jwt);
-        console.log("✅ Usuario registrado con éxito");
-        console.log("🔑 Token guardado en localStorage:", jwt);
+        localStorage.setItem("user", JSON.stringify(user));
 
-        // ✅ Autenticar usuario y redirigir al home
+        // ✅ Actualizar estado global y redirigir
         setUser(user);
         navigate("/");
       }

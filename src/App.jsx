@@ -25,9 +25,14 @@ function App() {
           headers: { Authorization: `Bearer ${token}` },
           withCredentials: true,
         });
-        setUser(response.data);
+        console.log("✅ Usuario obtenido:", response.data);
+        return response.data;
       } catch (error) {
-        console.error("Error al obtener usuario:", error);
+        console.error(
+          "🚨 Error al obtener usuario:",
+          error.response?.data || error.message
+        );
+        return null;
       }
     };
 

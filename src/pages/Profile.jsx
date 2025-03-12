@@ -21,7 +21,6 @@ const Profile = () => {
       }
 
       try {
-        console.log("📡 Solicitando datos del usuario...");
         const response = await axios.get(`${VITE_BACKEND_URL}/api/user`, {
           headers: { Authorization: `Bearer ${token}` },
           withCredentials: true,
@@ -29,7 +28,6 @@ const Profile = () => {
 
         if (response.data) {
           setUser(response.data);
-          console.log("✅ Datos del usuario obtenidos:", response.data);
         }
       } catch (error) {
         console.error(
