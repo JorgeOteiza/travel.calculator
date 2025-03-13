@@ -19,8 +19,14 @@ const Login = ({ setUser }) => {
     e.preventDefault();
     setError(null);
 
+    console.log("📡 Enviando credenciales:", form); // Debug
+
     try {
-      const response = await axios.post(`${VITE_BACKEND_URL}/api/login`, form);
+      const response = await axios.post(`${VITE_BACKEND_URL}/api/login`, form, {
+        withCredentials: true,
+      });
+
+      console.log("✅ Respuesta del servidor:", response.data);
 
       if (response.status === 200) {
         const { jwt, user } = response.data;
@@ -39,9 +45,10 @@ const Login = ({ setUser }) => {
         setTimeout(async () => {
           try {
             const userResponse = await axios.get(
-              "http://localhost:5000/api/user",
+              `${VITE_BACKEND_URL}/api/user`,
               {
                 headers: { Authorization: `Bearer ${jwt}` },
+                withCredentials: true,
               }
             );
 

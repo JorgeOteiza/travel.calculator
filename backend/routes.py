@@ -33,7 +33,6 @@ def get_car_brands():
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36"
         }
         year = request.args.get("year", default=2024, type=int)
-        print(f"📡 Obteniendo marcas para el año {year} desde CarQuery API...")
 
         params = {"cmd": "getMakes", "year": year, "callback": "?"}
         response = requests.get(CARQUERY_API_URL, params=params, headers=headers)
@@ -80,8 +79,6 @@ def get_car_models():
 
         if not make_id:
             return jsonify({"error": "El parámetro 'make_id' es obligatorio"}), 400
-
-        print(f"📡 Obteniendo modelos de {make_id} para el año {year}...")
 
         params = {"cmd": "getModels", "make": make_id, "year": year, "callback": "?"}
         response = requests.get(CARQUERY_API_URL, params=params, headers=headers)
