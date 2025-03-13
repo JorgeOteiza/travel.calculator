@@ -12,7 +12,7 @@ from functools import wraps
 bcrypt = Bcrypt()
 auth_bp = Blueprint('auth_bp', __name__)
 
-SECRET_KEY = os.getenv('JWT_SECRET_KEY', 'default_secret_key')
+JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY', 'default_secret_key')
 
 # ✅ Middleware para verificar el token en rutas protegidas
 def token_required(f):
@@ -25,9 +25,9 @@ def token_required(f):
 
         try:
             if "Bearer " in token:
-                token = token.split(" ")[1]  
+                token = token.split(" ")[1]
 
-            decoded = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+            decoded = jwt.decode(token, JWT_SECRET_KEY, algorithms=["HS256"])
             current_user = User.query.get(decoded['user_id'])
 
             if not current_user:
@@ -69,6 +69,7 @@ def register():
 
         # ✅ Generar token JWT
         token = create_access_token(identity=new_user.id)
+        print(f"✅ Usuario registrado: {new_user.email} | Token: {token}")  # 🛠 Verificar en consola
 
         return jsonify({
             "message": "Usuario registrado con éxito",
@@ -85,7 +86,6 @@ def register():
         return jsonify({"error": f"Error en registro: {str(e)}"}), 500
 
 
-
 @auth_bp.route("/login", methods=["POST"])
 def login():
     try:
@@ -98,13 +98,14 @@ def login():
 
         user = User.query.filter_by(email=email).first()
 
-        if not user or not user.password:  # ✅ Verificar que el usuario tiene una contraseña válida
+        if not user or not user.password:
             return jsonify({"error": "Credenciales inválidas"}), 401
 
         if not bcrypt.check_password_hash(user.password, password):
             return jsonify({"error": "Credenciales inválidas"}), 401
 
         token = create_access_token(identity=user.id)
+        print(f"✅ Usuario autenticado: {user.email} | Token: {token}")  # 🛠 Depuración
 
         return jsonify({
             "message": "Inicio de sesión exitoso",
@@ -120,7 +121,6 @@ def login():
         return jsonify({"error": f"Error en login: {str(e)}"}), 500
 
 
-
 @auth_bp.route("/user", methods=["GET"])
 @cross_origin(origins="http://localhost:5173", supports_credentials=True)
 @jwt_required()
@@ -128,6 +128,7 @@ def get_user():
     """Retorna la información del usuario autenticado."""
     try:
         user_id = get_jwt_identity()
+        print(f"🔍 ID de usuario obtenido del JWT: {user_id}")  # 🛠 Depurar en consola
 
         if not isinstance(user_id, int):
             return jsonify({"error": "Identidad de usuario inválida"}), 400
@@ -137,15 +138,25 @@ def get_user():
         if not user:
             return jsonify({"error": "Usuario no encontrado"}), 404
 
-        response = jsonify({
+        return jsonify({
             "id": user.id,
             "name": user.name,
             "email": user.email
-        })
-        response.headers.add("Access-Control-Allow-Credentials", "true")
-
-        return response, 200
+        }), 200
 
     except Exception as e:
         print(f"🚨 Error en /api/user: {e}")
         return jsonify({"error": "Error al obtener usuario"}), 500
+
+
+@auth_bp.route("/logout", methods=["POST"])
+@jwt_required()
+def logout():
+    """
+    ✅ Cerrar sesión del usuario eliminando el token.
+    Como JWT no permite invalidar tokens individuales, en el frontend se elimina el token.
+    """
+    try:
+        return jsonify({"message": "Sesión cerrada correctamente"}), 200
+    except Exception as e:
+        return jsonify({"error": f"Error en logout: {str(e)}"}), 500

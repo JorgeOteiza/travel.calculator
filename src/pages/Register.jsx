@@ -36,6 +36,7 @@ const Register = ({ setUser }) => {
         }
 
         // ✅ Guardar token y usuario en localStorage
+        console.log("🔑 Token recibido:", jwt);
         localStorage.setItem("token", jwt);
         localStorage.setItem("user", JSON.stringify(user));
 
