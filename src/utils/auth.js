@@ -8,17 +8,23 @@ export const getUser = async () => {
       {
         method: "GET",
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${localStorage.getItem("access_token")}`,
           "Content-Type": "application/json",
         },
+        credentials: "include",
       }
     );
 
-    if (!response.ok) throw new Error("No autorizado");
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({})); // Manejar respuesta no JSON
+      throw new Error(errorData.error || "No autorizado");
+    }
 
-    return await response.json();
+    const data = await response.json();
+    console.log("✅ Respuesta:", data);
+    return data;
   } catch (error) {
-    console.error("🚨 Error obteniendo usuario:", error);
+    console.error("🚨 Error obteniendo usuario:", error.message);
     return null;
   }
 };

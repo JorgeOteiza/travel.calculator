@@ -19,34 +19,28 @@ JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY', 'default_secret_key')
 
 
 # ✅ Middleware para verificar el token en rutas protegidas
+from flask_jwt_extended import verify_jwt_in_request, get_jwt_identity
+
 def token_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
-        token = request.headers.get("Authorization")
-
-        if not token:
-            return jsonify({"error": "Token faltante"}), 403
-
         try:
-            if "Bearer " in token:
-                token = token.split(" ")[1]  # Remover "Bearer " si está presente
+            verify_jwt_in_request()
+            current_user_id = get_jwt_identity()
+            if not current_user_id:
+                return jsonify({"error": "Token inválido o expirado"}), 403
 
-            decoded = jwt.decode(token, JWT_SECRET_KEY, algorithms=["HS256"])
-            current_user = User.query.get(decoded['user_id'])
-
+            current_user = User.query.get(current_user_id)
             if not current_user:
                 return jsonify({"error": "Usuario no encontrado"}), 403
 
-        except jwt.ExpiredSignatureError:
-            return jsonify({"error": "Token expirado"}), 403
-        except jwt.InvalidTokenError:
-            return jsonify({"error": "Token inválido"}), 403
-        except Exception as e:
-            return jsonify({"error": f"Error en token: {str(e)}"}), 403
+            return f(current_user, *args, **kwargs)
 
-        return f(current_user, *args, **kwargs)
+        except Exception as e:
+            return jsonify({"error": f"Error en autenticación: {str(e)}"}), 403
 
     return decorated
+
 
 @auth_bp.route("/user", methods=["GET"])
 @cross_origin(origins="http://localhost:5173", supports_credentials=True)
