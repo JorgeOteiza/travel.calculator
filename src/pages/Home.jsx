@@ -275,7 +275,7 @@ const Home = () => {
           handleChange={handleChange}
           errors={errors}
         />
-        <button className="calculate-btn" onClick={calculateTrip}>
+        <button className="calculate-btn mt-3" onClick={calculateTrip}>
           Calcular Viaje
         </button>
       </div>
