@@ -13,7 +13,7 @@ def clean_jsonp(response_text):
         start = response_text.find("{")
         end = response_text.rfind("}") + 1
         json_text = response_text[start:end]
-        return json.loads(json_text)
+        return json.loads(json_text) if json_text else None
     except Exception as e:
         print(f"🚨 Error al limpiar JSONP: {e}")
         return None

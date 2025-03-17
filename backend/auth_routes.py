@@ -94,7 +94,7 @@ def register():
         db.session.commit()
 
         # ✅ Generar token JWT
-        token = create_access_token(identity=new_user.id)
+        token = create_access_token(identity=str(new_user.id))
 
         return jsonify({
             "message": "Usuario registrado con éxito",
@@ -135,11 +135,12 @@ def login():
         print(f"🔍 Hash almacenado en BD: {user.password}")
         print(f"🔍 Intentando verificar contraseña con bcrypt")
         if not bcrypt.check_password_hash(user.password, password):
-            print("🚨 Contraseña incorrecta")
+            print("🚨 Contraseña incorrecta. Hashed en BD:", user.password, "Ingresada:", password)
             return jsonify({"error": "Credenciales inválidas"}), 401
 
 
-        token = create_access_token(identity=user.id)
+
+        token = create_access_token(identity=str(user.id))
         print(f"✅ Login exitoso para {user.email}")
 
         return jsonify({

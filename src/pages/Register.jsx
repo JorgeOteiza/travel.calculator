@@ -60,6 +60,7 @@ const Register = ({ setUser }) => {
       }
     }
   };
+  console.log("📡 Enviando datos de registro:", form);
 
   return (
     <div className="register-container">

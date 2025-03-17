@@ -19,29 +19,19 @@ const Login = ({ setUser }) => {
     e.preventDefault();
     setError(null);
 
-    console.log("📡 Enviando credenciales:", form); // Debug
-
     try {
       const response = await axios.post(`${VITE_BACKEND_URL}/api/login`, form, {
         withCredentials: true,
       });
 
-      console.log("✅ Respuesta del servidor:", response.data);
-
       if (response.status === 200) {
         const { jwt, user } = response.data;
 
-        if (!jwt) {
-          throw new Error("No se recibió un token válido.");
-        }
-
-        // ✅ Guardar el token en localStorage
-        localStorage.setItem("token", jwt);
+        // ✅ Guardar token en localStorage
+        localStorage.setItem("jwt", jwt);
         setUser(user);
 
-        console.log("✅ Usuario autenticado con éxito:", user);
-        console.log("🔑 Token guardado en localStorage:", jwt);
-
+        // ✅ Forzar actualización de usuario
         setTimeout(async () => {
           try {
             const userResponse = await axios.get(
@@ -60,6 +50,7 @@ const Login = ({ setUser }) => {
             console.error("🚨 Error al obtener usuario:", error);
           }
         }, 500);
+        console.log("🔑 Token recibido:", jwt);
       }
     } catch (error) {
       console.error(

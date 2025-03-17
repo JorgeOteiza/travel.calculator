@@ -1,9 +1,10 @@
+import os
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from flask_migrate import Migrate
 from flask_jwt_extended import JWTManager
-import os
+from flask_bcrypt import Bcrypt
 from dotenv import load_dotenv
 from backend.models import db
 from backend.auth_routes import auth_bp
@@ -11,9 +12,11 @@ from backend.routes import main_bp
 
 # Cargar variables de entorno
 load_dotenv()
+bcrypt = Bcrypt()
 
 def create_app():
     app = Flask(__name__)
+    bcrypt.init_app(app)
 
     CORS(
         app,

@@ -1,5 +1,5 @@
 export const getUser = async () => {
-  const token = localStorage.getItem("token"); // 🔹 Asegurar que usamos "token"
+  const token = localStorage.getItem("token");
   if (!token) return null;
 
   try {
@@ -8,7 +8,7 @@ export const getUser = async () => {
       {
         method: "GET",
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
         credentials: "include",
@@ -42,7 +42,7 @@ export const login = async (credentials) => {
 
     const data = await response.json();
     if (response.ok) {
-      localStorage.setItem("jwt", data.jwt);
+      localStorage.setItem("jwt");
       return data;
     } else {
       throw new Error(data.error || "Login failed");
