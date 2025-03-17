@@ -84,8 +84,10 @@ def register():
             return jsonify({"error": "El correo ya está registrado"}), 409
 
         # ✅ Hashear la contraseña correctamente antes de guardarla
+        print(f"🔑 Contraseña antes del hash: {password}")
         hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
         print(f"🔑 Contraseña hasheada: {hashed_password}")
+
 
         new_user = User(name=name, email=email, password=hashed_password)
         db.session.add(new_user)
@@ -130,9 +132,12 @@ def login():
         print(f"🔍 Contraseña almacenada (hasheada): {user.password}")
 
         # ✅ Comparar la contraseña ingresada con la hasheada
+        print(f"🔍 Hash almacenado en BD: {user.password}")
+        print(f"🔍 Intentando verificar contraseña con bcrypt")
         if not bcrypt.check_password_hash(user.password, password):
             print("🚨 Contraseña incorrecta")
             return jsonify({"error": "Credenciales inválidas"}), 401
+
 
         token = create_access_token(identity=user.id)
         print(f"✅ Login exitoso para {user.email}")
