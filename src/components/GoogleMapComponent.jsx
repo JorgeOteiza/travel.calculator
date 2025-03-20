@@ -8,7 +8,6 @@ import {
 import { useState, useEffect, useRef } from "react";
 import "../styles/map.css";
 
-const libraries = ["places"];
 const googleMapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
 
 const GoogleMapComponent = ({
@@ -21,13 +20,14 @@ const GoogleMapComponent = ({
   const searchBoxRefDestiny = useRef(null);
   const setMap = useState(null)[1];
 
+  // ✅ Cargar Google Maps API UNA SOLA VEZ
   const { isLoaded, loadError } = useLoadScript({
     googleMapsApiKey,
-    libraries,
+    libraries: ["places"],
   });
 
   useEffect(() => {
-    if (!import.meta.env.VITE_GOOGLE_MAPS_API_KEY) {
+    if (!googleMapsApiKey) {
       console.error("🚨 No se encontró VITE_GOOGLE_MAPS_API_KEY en .env");
     }
   }, []);
@@ -38,20 +38,20 @@ const GoogleMapComponent = ({
   }
 
   if (!isLoaded) {
-    return <div>Loading Google Maps...</div>;
+    return <div className="loading-maps">Loading Google Maps...</div>;
   }
 
   const onPlacesChanged = (searchBox, type) => {
-    if (!searchBox || !searchBox.getPlaces) return;
+    if (!searchBox?.getPlaces) return;
     const places = searchBox.getPlaces();
 
-    if (places.length === 0) {
+    if (!places || places.length === 0) {
       console.warn("⚠️ No se encontró ninguna ubicación.");
       return;
     }
 
     const place = places[0];
-    if (!place.geometry || !place.geometry.location) {
+    if (!place.geometry?.location) {
       console.error(
         "🚨 Error: La ubicación seleccionada no tiene coordenadas."
       );

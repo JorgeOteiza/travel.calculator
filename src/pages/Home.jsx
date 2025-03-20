@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
 import axios from "axios";
+import { useState, useEffect } from "react";
 import { useJsApiLoader } from "@react-google-maps/api";
 import TripForm from "../components/TripForm";
 import TripResults from "../components/TripResults";
@@ -8,11 +8,17 @@ import "../styles/home.css";
 
 const VITE_BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 const VITE_GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
-const VITE_MAP_ID = import.meta.env.VITE_MAP_ID;
-
-const libraries = ["places"];
 
 const Home = () => {
+  const { isLoaded, loadError } = useJsApiLoader({
+    googleMapsApiKey: VITE_GOOGLE_MAPS_API_KEY,
+    libraries: ["places"],
+  });
+
+  if (loadError) {
+    console.error("🚨 Error cargando Google Maps API:", loadError);
+  }
+
   const [user, setUser] = useState(null);
   const [formData, setFormData] = useState({
     brand: "",
@@ -30,22 +36,9 @@ const Home = () => {
   const [results, setResults] = useState(null);
   const [mapCenter, setMapCenter] = useState({ lat: 37.7749, lng: -122.4194 });
   const [markers, setMarkers] = useState([]);
-  const [, setBrandOptions] = useState([]);
-  const [, setModelOptions] = useState([]);
+  const [brandOptions, setBrandOptions] = useState([]);
+  const [modelOptions, setModelOptions] = useState([]);
   const [errors, setErrors] = useState({});
-
-  // ✅ Evitar carga múltiple de Google Maps API
-  const { isLoaded } = useJsApiLoader({
-    googleMapsApiKey: VITE_GOOGLE_MAPS_API_KEY,
-    libraries,
-    mapIds: [VITE_MAP_ID],
-  });
-
-  useEffect(() => {
-    if (!VITE_GOOGLE_MAPS_API_KEY) {
-      console.error("🚨 No se encontró VITE_GOOGLE_MAPS_API_KEY en .env");
-    }
-  }, []);
 
   // ✅ Obtener usuario autenticado al cargar la página
   useEffect(() => {
@@ -194,6 +187,21 @@ const Home = () => {
     return Object.keys(newErrors).length === 0;
   };
 
+  const handleBrandSelect = (selectedBrand) => {
+    setFormData((prev) => ({
+      ...prev,
+      brand: selectedBrand?.value || "",
+      model: "",
+    }));
+  };
+
+  const handleModelSelect = (selectedModel) => {
+    setFormData((prev) => ({
+      ...prev,
+      model: selectedModel?.value || "",
+    }));
+  };
+
   const calculateTrip = async () => {
     if (!validateForm()) {
       alert("Por favor ingresa todos los datos correctamente.");
@@ -241,7 +249,13 @@ const Home = () => {
     <div className="home-container">
       <TripForm
         formData={formData}
-        handleChange={setFormData}
+        brandOptions={brandOptions || []}
+        modelOptions={modelOptions || []}
+        handleBrandSelect={handleBrandSelect}
+        handleModelSelect={handleModelSelect}
+        handleChange={(e) =>
+          setFormData({ ...formData, [e.target.name]: e.target.value })
+        }
         errors={errors}
       />
       <button className="calculate-btn mt-3" onClick={calculateTrip}>

@@ -4,8 +4,8 @@ import "../styles/TripForm.css";
 
 const TripForm = ({
   formData,
-  brandOptions,
-  modelOptions,
+  brandOptions = [],
+  modelOptions = [],
   handleBrandSelect,
   handleModelSelect,
   handleChange,
@@ -23,7 +23,10 @@ const TripForm = ({
         id="brand"
         name="brand"
         options={brandOptions}
-        value={brandOptions.find((option) => option.value === formData.brand)}
+        value={
+          brandOptions?.find((option) => option.value === formData.brand) ||
+          null
+        }
         onChange={handleBrandSelect}
         placeholder="Select a brand"
         isClearable
@@ -35,7 +38,10 @@ const TripForm = ({
         id="model"
         name="model"
         options={modelOptions}
-        value={modelOptions.find((option) => option.value === formData.model)}
+        value={
+          modelOptions?.find((option) => option.value === formData.model) ||
+          null
+        }
         onChange={handleModelSelect}
         placeholder="Select a model"
         isClearable
@@ -115,8 +121,8 @@ const TripForm = ({
 
 TripForm.propTypes = {
   formData: PropTypes.object.isRequired,
-  brandOptions: PropTypes.array.isRequired,
-  modelOptions: PropTypes.array.isRequired,
+  brandOptions: PropTypes.array,
+  modelOptions: PropTypes.array,
   handleBrandSelect: PropTypes.func.isRequired,
   handleModelSelect: PropTypes.func.isRequired,
   handleChange: PropTypes.func.isRequired,
