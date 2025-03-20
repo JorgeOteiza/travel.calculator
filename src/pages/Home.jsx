@@ -30,18 +30,24 @@ const Home = () => {
   const [results, setResults] = useState(null);
   const [mapCenter, setMapCenter] = useState({ lat: 37.7749, lng: -122.4194 });
   const [markers, setMarkers] = useState([]);
-  const [brandOptions, setBrandOptions] = useState([]);
-  const [modelOptions, setModelOptions] = useState([]);
+  const [, setBrandOptions] = useState([]);
+  const [, setModelOptions] = useState([]);
   const [errors, setErrors] = useState({});
 
-  const { isLoaded, loadError } = useJsApiLoader({
+  // ✅ Evitar carga múltiple de Google Maps API
+  const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: VITE_GOOGLE_MAPS_API_KEY,
     libraries,
     mapIds: [VITE_MAP_ID],
   });
 
-  console.log("✅ Google Maps Loaded:", isLoaded, "Error:", loadError);
+  useEffect(() => {
+    if (!VITE_GOOGLE_MAPS_API_KEY) {
+      console.error("🚨 No se encontró VITE_GOOGLE_MAPS_API_KEY en .env");
+    }
+  }, []);
 
+  // ✅ Obtener usuario autenticado al cargar la página
   useEffect(() => {
     const fetchUser = async () => {
       const token = localStorage.getItem("token");
@@ -70,6 +76,7 @@ const Home = () => {
     fetchUser();
   }, []);
 
+  // ✅ Obtener marcas de autos al cambiar el año
   useEffect(() => {
     const fetchCarBrands = async () => {
       try {
@@ -98,13 +105,13 @@ const Home = () => {
           error.response?.status || error.message
         );
         setBrandOptions([]);
-        alert("Error al obtener marcas. Verifica la conexión con el servidor.");
       }
     };
 
     fetchCarBrands();
   }, [formData.year]);
 
+  // ✅ Obtener modelos de autos al cambiar la marca
   useEffect(() => {
     const fetchCarModels = async () => {
       if (!formData.brand) return;
@@ -135,25 +142,26 @@ const Home = () => {
           error.response?.status || error.message
         );
         setModelOptions([]);
-        alert("Error al obtener modelos. Intenta de nuevo.");
       }
     };
 
     fetchCarModels();
   }, [formData.brand, formData.year]);
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleBrandSelect = (selectedBrand) => {
-    if (!selectedBrand) return;
-    setFormData({ ...formData, brand: selectedBrand.value, model: "" });
-  };
-
-  const handleModelSelect = (selectedModel) => {
-    if (!selectedModel) return;
-    setFormData({ ...formData, model: selectedModel.value });
+  const fetchWeather = async (lat, lng) => {
+    try {
+      const response = await axios.get(
+        `${VITE_BACKEND_URL}/api/weather?lat=${lat}&lng=${lng}`
+      );
+      if (response.data) {
+        setFormData((prev) => ({
+          ...prev,
+          climate: response.data.climate,
+        }));
+      }
+    } catch (error) {
+      console.error("🚨 Error al obtener el clima:", error);
+    }
   };
 
   const handleLocationChange = (field, newLocation) => {
@@ -186,35 +194,6 @@ const Home = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const fetchWeather = async (latitude, longitude) => {
-    try {
-      console.log(
-        "🔑 OpenWeather API Key:",
-        import.meta.env.VITE_OPENWEATHERMAP_API_KEY
-      );
-
-      const API_KEY = import.meta.env.VITE_OPENWEATHERMAP_API_KEY;
-      if (!API_KEY) {
-        console.error("🚨 ERROR: No se encontró la clave API de OpenWeather");
-        return;
-      }
-
-      const url = `https://api.openweathermap.org/data/3.0/onecall?lat=${latitude}&lon=${longitude}&exclude=minutely,hourly,daily,alerts&appid=${API_KEY}&units=metric&lang=es`;
-
-      console.log("🌍 Solicitando datos del clima a:", url);
-
-      const response = await axios.get(url);
-
-      if (response.data) {
-        const weather = response.data.current.weather[0].description;
-        console.log("🌤️ Clima actual:", weather);
-        setFormData((prev) => ({ ...prev, climate: weather }));
-      }
-    } catch (error) {
-      console.error("🚨 Error al obtener clima:", error);
-    }
-  };
-
   const calculateTrip = async () => {
     if (!validateForm()) {
       alert("Por favor ingresa todos los datos correctamente.");
@@ -230,13 +209,8 @@ const Home = () => {
       }
 
       const tripData = {
-        brand: formData.brand,
-        model: formData.model,
-        year: formData.year,
-        fuelType: formData.fuelType,
-        totalWeight: formData.totalWeight + formData.extraWeight,
-        location: formData.location,
-        destinity: formData.destinity,
+        ...formData,
+        totalWeight: Number(formData.totalWeight),
       };
 
       console.log("📡 Enviando datos al backend:", tripData);
@@ -259,41 +233,30 @@ const Home = () => {
         "🚨 Error al calcular el viaje:",
         error.response?.data || error.message
       );
-      alert("Error al calcular el viaje. Revisa la consola para más detalles.");
+      alert("Error al calcular el viaje.");
     }
   };
 
   return (
     <div className="home-container">
-      <div className="form-container">
-        <TripForm
-          formData={formData}
-          brandOptions={brandOptions}
-          modelOptions={modelOptions}
-          handleBrandSelect={handleBrandSelect}
-          handleModelSelect={handleModelSelect}
-          handleChange={handleChange}
-          errors={errors}
-        />
-        <button className="calculate-btn mt-3" onClick={calculateTrip}>
-          Calcular Viaje
-        </button>
-      </div>
+      <TripForm
+        formData={formData}
+        handleChange={setFormData}
+        errors={errors}
+      />
+      <button className="calculate-btn mt-3" onClick={calculateTrip}>
+        Calcular Viaje
+      </button>
 
-      <div className="map-wrapper">
-        {isLoaded ? (
-          <GoogleMapComponent
-            isLoaded={isLoaded}
-            loadError={loadError}
-            mapCenter={mapCenter}
-            markers={markers}
-            setMarkers={setMarkers}
-            handleLocationChange={handleLocationChange}
-          />
-        ) : (
-          <div className="map-loading">Cargando Google Maps...</div>
-        )}
-      </div>
+      {isLoaded && (
+        <GoogleMapComponent
+          mapCenter={mapCenter}
+          markers={markers}
+          setMarkers={setMarkers}
+          handleLocationChange={handleLocationChange}
+        />
+      )}
+
       {!user && (
         <p className="warning-message">
           🔒 Debes iniciar sesión para guardar tu viaje.

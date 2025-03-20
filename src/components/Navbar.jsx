@@ -15,7 +15,7 @@ const Navbar = ({ user, setUser }) => {
   useEffect(() => {
     const fetchUser = async () => {
       const token = localStorage.getItem("token");
-      console.log("📡 Enviando token en /api/user:", token); // 🛠 Verificar en consola
+      console.log("📡 Enviando token en /api/user:", token);
 
       if (!token) {
         setIsAuthenticated(false);
@@ -34,7 +34,7 @@ const Navbar = ({ user, setUser }) => {
         setIsAuthenticated(true);
       } catch (error) {
         console.error(
-          "🚨 Error al obtener usuario:",
+          "🚨 Error en autenticación:",
           error.response?.data || error.message
         );
         localStorage.removeItem("token");
@@ -85,14 +85,10 @@ const Navbar = ({ user, setUser }) => {
             </li>
           </ul>
 
-          <div className="d-flex gap-2 text-nowrap">
+          <div className="d-flex gap-2">
             {isAuthenticated ? (
               <>
-                <Link
-                  to="/profile"
-                  className="nav-link text-light fw-bold"
-                  style={{ cursor: "pointer" }}
-                >
+                <Link to="/profile" className="nav-link text-light fw-bold">
                   👤 {user?.name || "Cargando..."}
                 </Link>
                 <button

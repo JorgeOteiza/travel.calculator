@@ -55,6 +55,8 @@ const Profile = () => {
       <p>
         <strong>Email:</strong> {user.email}
       </p>
+
+      <h1 className="bg">Registro de Viajes</h1>
       <button onClick={() => navigate("/")}>Volver al Inicio</button>
     </div>
   );

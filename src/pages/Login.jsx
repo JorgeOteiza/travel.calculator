@@ -27,11 +27,10 @@ const Login = ({ setUser }) => {
       if (response.status === 200) {
         const { jwt, user } = response.data;
 
-        // ✅ Guardar token en localStorage
-        localStorage.setItem("jwt", jwt);
+        localStorage.setItem("token", jwt);
+        localStorage.setItem("user", JSON.stringify(user));
         setUser(user);
 
-        // ✅ Forzar actualización de usuario
         setTimeout(async () => {
           try {
             const userResponse = await axios.get(
@@ -50,7 +49,6 @@ const Login = ({ setUser }) => {
             console.error("🚨 Error al obtener usuario:", error);
           }
         }, 500);
-        console.log("🔑 Token recibido:", jwt);
       }
     } catch (error) {
       console.error(

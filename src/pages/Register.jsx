@@ -23,24 +23,20 @@ const Register = ({ setUser }) => {
       const response = await axios.post(
         `${VITE_BACKEND_URL}/api/register`,
         form,
-        {
-          withCredentials: true,
-        }
+        { withCredentials: true }
       );
 
       if (response.status === 201) {
         const { jwt, user } = response.data;
 
         if (!jwt || !user) {
-          throw new Error("No se recibió un token o usuario válido.");
+          throw new Error("⚠️ No se recibió un token o usuario válido.");
         }
 
-        // ✅ Guardar token y usuario en localStorage
         console.log("🔑 Token recibido:", jwt);
         localStorage.setItem("token", jwt);
         localStorage.setItem("user", JSON.stringify(user));
 
-        // ✅ Actualizar estado global y redirigir
         setUser(user);
         navigate("/");
       }
@@ -51,16 +47,15 @@ const Register = ({ setUser }) => {
       );
 
       if (error.response?.status === 409) {
-        setError("El correo ya está registrado. Intenta con otro.");
+        setError("❌ El correo ya está registrado. Intenta con otro.");
       } else {
         setError(
           error.response?.data?.error ||
-            "Error al registrarse. Intenta nuevamente."
+            "⚠️ Error al registrarse. Intenta nuevamente."
         );
       }
     }
   };
-  console.log("📡 Enviando datos de registro:", form);
 
   return (
     <div className="register-container">

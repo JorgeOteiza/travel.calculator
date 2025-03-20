@@ -1,12 +1,11 @@
-import jwt
-import datetime
 import os
 from flask import Blueprint, request, jsonify
 from flask_bcrypt import Bcrypt
 from flask_jwt_extended import (
     create_access_token,
     jwt_required,
-    get_jwt_identity
+    get_jwt_identity,
+    verify_jwt_in_request
 )
 from flask_cors import cross_origin
 from backend.models import db, User
@@ -15,12 +14,13 @@ from functools import wraps
 bcrypt = Bcrypt()
 auth_bp = Blueprint('auth_bp', __name__)
 
+def init_app(app):
+    """Inicializar bcrypt con la app Flask."""
+    bcrypt.init_app(app)
+
 JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY', 'default_secret_key')
 
-
 # ✅ Middleware para verificar el token en rutas protegidas
-from flask_jwt_extended import verify_jwt_in_request, get_jwt_identity
-
 def token_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
@@ -41,7 +41,7 @@ def token_required(f):
 
     return decorated
 
-
+# ✅ Obtener usuario autenticado
 @auth_bp.route("/user", methods=["GET"])
 @cross_origin(origins="http://localhost:5173", supports_credentials=True)
 @jwt_required()
@@ -68,6 +68,7 @@ def get_user():
         print(f"🚨 Error en /api/user: {e}")
         return jsonify({"error": "Error al obtener usuario"}), 500
 
+# ✅ Registro de usuario
 @auth_bp.route("/register", methods=["POST"])
 def register():
     try:
@@ -84,10 +85,7 @@ def register():
             return jsonify({"error": "El correo ya está registrado"}), 409
 
         # ✅ Hashear la contraseña correctamente antes de guardarla
-        print(f"🔑 Contraseña antes del hash: {password}")
         hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
-        print(f"🔑 Contraseña hasheada: {hashed_password}")
-
 
         new_user = User(name=name, email=email, password=hashed_password)
         db.session.add(new_user)
@@ -110,8 +108,7 @@ def register():
         db.session.rollback()
         return jsonify({"error": f"Error en registro: {str(e)}"}), 500
 
-
-
+# ✅ Inicio de sesión
 @auth_bp.route("/login", methods=["POST"])
 def login():
     try:
@@ -123,23 +120,12 @@ def login():
             return jsonify({"error": "Correo y contraseña son requeridos"}), 400
 
         user = User.query.filter_by(email=email).first()
-        if not user:
-            print("🚨 Usuario no encontrado en la base de datos")
+
+        if not user or not bcrypt.check_password_hash(user.password, password):
+            print("🚨 Credenciales inválidas.")
             return jsonify({"error": "Credenciales inválidas"}), 401
 
-        print(f"🔍 Intento de login: {email}")
-        print(f"🔍 Contraseña ingresada: {password}")
-        print(f"🔍 Contraseña almacenada (hasheada): {user.password}")
-
-        # ✅ Comparar la contraseña ingresada con la hasheada
-        print(f"🔍 Hash almacenado en BD: {user.password}")
-        print(f"🔍 Intentando verificar contraseña con bcrypt")
-        if not bcrypt.check_password_hash(user.password, password):
-            print("🚨 Contraseña incorrecta. Hashed en BD:", user.password, "Ingresada:", password)
-            return jsonify({"error": "Credenciales inválidas"}), 401
-
-
-
+        # ✅ Generar token JWT
         token = create_access_token(identity=str(user.id))
         print(f"✅ Login exitoso para {user.email}")
 
@@ -156,7 +142,7 @@ def login():
     except Exception as e:
         return jsonify({"error": f"Error en login: {str(e)}"}), 500
 
-
+# ✅ Cierre de sesión
 @auth_bp.route("/logout", methods=["POST"])
 @jwt_required()
 def logout():

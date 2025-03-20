@@ -10,6 +10,9 @@ CARQUERY_API_URL = "https://www.carqueryapi.com/api/0.3/"
 
 def clean_jsonp(response_text):
     try:
+        if "{" not in response_text or "}" not in response_text:
+            print("🚨 JSONP no tiene datos válidos.")
+            return None
         start = response_text.find("{")
         end = response_text.rfind("}") + 1
         json_text = response_text[start:end]
@@ -151,7 +154,7 @@ def get_model_details():
 
 # ✅ Calcular el viaje basado en múltiples factores
 @main_bp.route("/calculate", methods=["POST"])
-@token_required
+@jwt_required
 def calculate_trip(current_user):
     try:
         data = request.get_json()

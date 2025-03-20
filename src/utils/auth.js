@@ -42,17 +42,19 @@ export const login = async (credentials) => {
 
     const data = await response.json();
     if (response.ok) {
-      localStorage.setItem("jwt");
+      localStorage.setItem("token", data.jwt); // ✅ Guardar token correctamente
+      localStorage.setItem("user", JSON.stringify(data.user)); // ✅ Guardar usuario
       return data;
     } else {
       throw new Error(data.error || "Login failed");
     }
   } catch (error) {
-    console.error("Login error:", error);
+    console.error("🚨 Login error:", error);
     throw error;
   }
 };
 
 export const logout = () => {
-  localStorage.removeItem("jwt");
+  localStorage.removeItem("token"); // ✅ Asegurar eliminación del token
+  localStorage.removeItem("user"); // ✅ Eliminar datos del usuario
 };

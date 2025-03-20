@@ -1,11 +1,17 @@
 import PropTypes from "prop-types";
-import { GoogleMap, Marker, StandaloneSearchBox } from "@react-google-maps/api";
-import { useEffect, useRef, useState } from "react";
+import {
+  GoogleMap,
+  Marker,
+  StandaloneSearchBox,
+  useLoadScript,
+} from "@react-google-maps/api";
+import { useState, useEffect, useRef } from "react";
 import "../styles/map.css";
 
+const libraries = ["places"];
+const googleMapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
+
 const GoogleMapComponent = ({
-  isLoaded,
-  loadError,
   mapCenter,
   markers,
   setMarkers,
@@ -15,11 +21,16 @@ const GoogleMapComponent = ({
   const searchBoxRefDestiny = useRef(null);
   const setMap = useState(null)[1];
 
+  const { isLoaded, loadError } = useLoadScript({
+    googleMapsApiKey,
+    libraries,
+  });
+
   useEffect(() => {
-    if (!markers || markers.length === 0) {
-      setMarkers([mapCenter]);
+    if (!import.meta.env.VITE_GOOGLE_MAPS_API_KEY) {
+      console.error("🚨 No se encontró VITE_GOOGLE_MAPS_API_KEY en .env");
     }
-  }, [mapCenter, setMarkers, markers]);
+  }, []);
 
   if (loadError) {
     console.error("🚨 Error cargando Google Maps:", loadError);
@@ -115,8 +126,6 @@ const GoogleMapComponent = ({
 };
 
 GoogleMapComponent.propTypes = {
-  isLoaded: PropTypes.bool.isRequired,
-  loadError: PropTypes.object,
   mapCenter: PropTypes.object.isRequired,
   markers: PropTypes.array.isRequired,
   setMarkers: PropTypes.func.isRequired,
