@@ -247,20 +247,22 @@ const Home = () => {
 
   return (
     <div className="home-container">
-      <TripForm
-        formData={formData}
-        brandOptions={brandOptions || []}
-        modelOptions={modelOptions || []}
-        handleBrandSelect={handleBrandSelect}
-        handleModelSelect={handleModelSelect}
-        handleChange={(e) =>
-          setFormData({ ...formData, [e.target.name]: e.target.value })
-        }
-        errors={errors}
-      />
-      <button className="calculate-btn mt-3" onClick={calculateTrip}>
-        Calcular Viaje
-      </button>
+      <div className="form-container">
+        <TripForm
+          formData={formData}
+          brandOptions={brandOptions || []}
+          modelOptions={modelOptions || []}
+          handleBrandSelect={handleBrandSelect}
+          handleModelSelect={handleModelSelect}
+          handleChange={(e) =>
+            setFormData({ ...formData, [e.target.name]: e.target.value })
+          }
+          errors={errors}
+        />
+        <button className="calculate-btn mt-3" onClick={calculateTrip}>
+          Calcular Viaje
+        </button>
+      </div>
 
       {isLoaded && (
         <GoogleMapComponent

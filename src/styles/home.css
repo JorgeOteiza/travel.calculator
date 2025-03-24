@@ -19,6 +19,27 @@
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+/* Botón calcular viaje dentro del formulario */
+.form-container .calculate-btn {
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  transition: background-color 0.3s ease;
+  cursor: pointer;
+  margin-top: 12px;
+}
+
+.form-container .calculate-btn:hover {
+  background-color: #0056b3;
 }
 
 /* Contenedor del mapa */
@@ -29,26 +50,10 @@
   overflow: hidden;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   border: 2px solid #007bff;
+  position: relative;
   display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* Botón calcular viaje */
-.calculate-btn {
-  width: 100%;
-  padding: 12px;
-  font-size: 16px;
-  background-color: #007bff;
-  color: white;
-  border: none;
-  border-radius: 12px;
-  transition: background-color 0.3s ease;
-  cursor: pointer;
-}
-
-.calculate-btn:hover {
-  background-color: #0056b3;
+  flex-direction: column;
+  justify-content: flex-start;
 }
 
 /* Tablets y pantallas medianas */
@@ -98,7 +103,7 @@
     padding: 8px;
   }
 
-  .calculate-btn {
+  .form-container .calculate-btn {
     font-size: 14px;
     padding: 10px;
   }
