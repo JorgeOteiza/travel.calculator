@@ -1,10 +1,16 @@
 import PropTypes from "prop-types";
-import { GoogleMap, Marker, StandaloneSearchBox } from "@react-google-maps/api";
-import { useRef, useState } from "react";
+import {
+  GoogleMap,
+  Marker,
+  StandaloneSearchBox,
+  useLoadScript,
+} from "@react-google-maps/api";
+import { useState, useRef, useEffect } from "react";
 import "../styles/map.css";
 
-const GoogleMapComponent = ({
-  isLoaded,
+const googleMapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
+
+const GoogleMapSection = ({
   mapCenter,
   markers,
   setMarkers,
@@ -14,8 +20,24 @@ const GoogleMapComponent = ({
   const searchBoxRefDestiny = useRef(null);
   const setMap = useState(null)[1];
 
+  const { isLoaded, loadError } = useLoadScript({
+    googleMapsApiKey,
+    libraries: ["places"],
+  });
+
+  useEffect(() => {
+    if (!googleMapsApiKey) {
+      console.error("🚨 No se encontró VITE_GOOGLE_MAPS_API_KEY en .env");
+    }
+  }, []);
+
+  if (loadError) {
+    console.error("🚨 Error cargando Google Maps:", loadError);
+    return <div>Error cargando Google Maps</div>;
+  }
+
   if (!isLoaded) {
-    return <div className="loading-maps">Loading Google Maps...</div>;
+    return <div className="loading-maps">Cargando Google Maps...</div>;
   }
 
   const onPlacesChanged = (searchBox, type) => {
@@ -29,9 +51,7 @@ const GoogleMapComponent = ({
 
     const place = places[0];
     if (!place.geometry?.location) {
-      console.error(
-        "🚨 Error: La ubicación seleccionada no tiene coordenadas."
-      );
+      console.error("🚨 La ubicación seleccionada no tiene coordenadas.");
       return;
     }
 
@@ -40,14 +60,10 @@ const GoogleMapComponent = ({
       lng: place.geometry.location.lng(),
     };
 
-    console.log(`📍 Nueva ubicación (${type}):`, newLocation);
-
-    if (type === "origin") {
-      handleLocationChange("location", newLocation);
-    } else if (type === "destiny") {
-      handleLocationChange("destinity", newLocation);
-    }
-
+    handleLocationChange(
+      type === "origin" ? "location" : "destinity",
+      newLocation
+    );
     setMarkers([newLocation]);
   };
 
@@ -63,7 +79,7 @@ const GoogleMapComponent = ({
           <input
             type="text"
             className="search-box"
-            placeholder="Choose start location..."
+            placeholder="Ubicación de inicio"
           />
         </StandaloneSearchBox>
 
@@ -73,11 +89,7 @@ const GoogleMapComponent = ({
             onPlacesChanged(searchBoxRefDestiny.current, "destiny")
           }
         >
-          <input
-            type="text"
-            className="search-box"
-            placeholder="Choose destination..."
-          />
+          <input type="text" className="search-box" placeholder="Destino" />
         </StandaloneSearchBox>
       </div>
 
@@ -102,12 +114,11 @@ const GoogleMapComponent = ({
   );
 };
 
-GoogleMapComponent.propTypes = {
-  isLoaded: PropTypes.bool.isRequired,
+GoogleMapSection.propTypes = {
   mapCenter: PropTypes.object.isRequired,
   markers: PropTypes.array.isRequired,
   setMarkers: PropTypes.func.isRequired,
   handleLocationChange: PropTypes.func.isRequired,
 };
 
-export default GoogleMapComponent;
+export default GoogleMapSection;

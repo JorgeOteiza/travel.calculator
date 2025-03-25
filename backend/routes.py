@@ -151,11 +151,27 @@ def get_model_details():
 
     except requests.exceptions.RequestException as e:
         return jsonify({"error": f"Error al conectar con CarQuery: {str(e)}"}), 500
+    
+@main_bp.route("/weather", methods=["GET"])
+@cross_origin()
+def get_weather():
+    lat = request.args.get("lat")
+    lng = request.args.get("lng")
+
+    if not lat or not lng:
+        return jsonify({"error": "Faltan parámetros de latitud o longitud"}), 400
+
+    # Ejemplo de simulación (puedes usar una API real como OpenWeatherMap)
+    simulated_weather = {
+        "climate": "mild"  # valores posibles: mild, cold, hot, windy...
+    }
+    return jsonify(simulated_weather), 200
 
 # ✅ Calcular el viaje basado en múltiples factores
 @main_bp.route("/calculate", methods=["POST"])
-@jwt_required
+@jwt_required()
 def calculate_trip(current_user):
+    print(data)
     try:
         data = request.get_json()
 

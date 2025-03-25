@@ -1,8 +1,15 @@
-# This is the __init__.py file for the travelcalculator backend package.
-# It can be used to initialize the package and import necessary modules.
+from flask import Blueprint
+from .car_routes import car_bp
+from .trip_routes import trip_bp
+from .weather_routes import weather_bp
 
-# Example of importing a module within the package
-# from .module_name import ClassName
+main_bp = Blueprint("main_bp", __name__)
 
-# You can also define package-level variables or functions here
-__version__ = "0.1.0"
+# Registrar blueprints secundarios en el principal
+main_bp.register_blueprint(car_bp, url_prefix="/carsxe")
+main_bp.register_blueprint(trip_bp)
+main_bp.register_blueprint(weather_bp)
+
+@main_bp.route("/", methods=["GET"])
+def home():
+    return {"message": "API Running"}, 200
