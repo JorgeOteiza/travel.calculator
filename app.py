@@ -7,7 +7,7 @@ from flask_jwt_extended import JWTManager
 from flask_bcrypt import Bcrypt
 from dotenv import load_dotenv
 from backend.models import db
-from backend.auth_routes import auth_bp
+from backend.routes.auth_routes import auth_bp
 from backend.routes import main_bp
 
 # Cargar variables de entorno

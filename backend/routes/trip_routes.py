@@ -1,20 +1,19 @@
 from flask import Blueprint, request, jsonify
-from flask_cors import cross_origin
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask_cors import cross_origin
 from backend.models import db, Trip, Vehicle
 
 trip_bp = Blueprint("trip_bp", __name__)
 
 @trip_bp.route("/calculate", methods=["POST"])
+@cross_origin()
 @jwt_required()
 def calculate_trip():
     try:
         data = request.get_json()
+        user_id = get_jwt_identity()
 
-        required_fields = [
-            "brand", "model", "year", "totalWeight", "distance",
-            "fuelPrice", "climate", "roadGrade"
-        ]
+        required_fields = ["brand", "model", "year", "totalWeight", "distance", "fuelPrice", "climate", "roadGrade"]
         for field in required_fields:
             if field not in data:
                 return jsonify({"error": f"El campo '{field}' es requerido"}), 400
@@ -36,7 +35,10 @@ def calculate_trip():
         weight_factor = 1 + ((total_weight + (vehicle.weight_kg or 1500)) / 1500) * 0.1
         adjusted_fuel_consumption = base_fuel_consumption * weight_factor
 
-        incline_factor = 1 + (road_grade / 10) if road_grade > 0 else 1
+        if road_grade > 0:
+            incline_factor = 1 + (road_grade / 10)
+        else:
+            incline_factor = 1
         adjusted_fuel_consumption *= incline_factor
 
         if "cold" in climate.lower():

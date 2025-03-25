@@ -10,12 +10,13 @@ car_bp = Blueprint("car_bp", __name__)
 
 def clean_jsonp(response_text):
     try:
+        if "{" not in response_text or "}" not in response_text:
+            return None
         start = response_text.find("{")
         end = response_text.rfind("}") + 1
         json_text = response_text[start:end]
         return json.loads(json_text) if json_text else None
-    except Exception as e:
-        print(f"🚨 Error al limpiar JSONP: {e}")
+    except Exception:
         return None
 
 @car_bp.route("/brands", methods=["GET"])
@@ -30,10 +31,9 @@ def get_car_brands():
         response = requests.get(CARQUERY_API_URL, params=params, headers=headers)
 
         if response.status_code != 200:
-            return jsonify({"error": f"Error en CarQuery: {response.status_code}"}), response.status_code
+            return jsonify({"error": f"CarQuery API error: {response.status_code}"}), response.status_code
 
         data = clean_jsonp(response.text)
-
         if not data or "Makes" not in data or not data["Makes"]:
             params.pop("year")
             response = requests.get(CARQUERY_API_URL, params=params, headers=headers)
@@ -41,20 +41,18 @@ def get_car_brands():
             if not data or "Makes" not in data:
                 return jsonify([]), 200
 
-        brands = [{"label": b["make_display"], "value": b["make_id"]} for b in data["Makes"]]
+        brands = [{"label": brand["make_display"], "value": brand["make_id"]} for brand in data["Makes"]]
         return jsonify(brands), 200
 
     except Exception as e:
-        return jsonify({"error": f"Error inesperado: {str(e)}"}), 500
+        return jsonify({"error": str(e)}), 500
 
 @car_bp.route("/models", methods=["GET"])
 @cross_origin()
 def get_car_models():
     try:
-        headers = {
-            "User-Agent": "Mozilla/5.0"
-        }
-        make_id = request.args.get('make_id')
+        headers = {"User-Agent": "Mozilla/5.0"}
+        make_id = request.args.get("make_id")
         year = request.args.get("year", default=2024, type=int)
 
         if not make_id:
@@ -64,10 +62,9 @@ def get_car_models():
         response = requests.get(CARQUERY_API_URL, params=params, headers=headers)
 
         if response.status_code != 200:
-            return jsonify({"error": f"Error en CarQuery: {response.status_code}"}), response.status_code
+            return jsonify({"error": f"CarQuery API error: {response.status_code}"}), response.status_code
 
         data = clean_jsonp(response.text)
-
         if not data or "Models" not in data or not data["Models"]:
             params.pop("year")
             response = requests.get(CARQUERY_API_URL, params=params, headers=headers)
@@ -75,11 +72,11 @@ def get_car_models():
             if not data or "Models" not in data:
                 return jsonify([]), 200
 
-        models = [{"label": m["model_name"], "value": m["model_name"]} for m in data["Models"]]
+        models = [{"label": model["model_name"], "value": model["model_name"]} for model in data["Models"]]
         return jsonify(models), 200
 
     except Exception as e:
-        return jsonify({"error": f"Error inesperado: {str(e)}"}), 500
+        return jsonify({"error": str(e)}), 500
 
 @car_bp.route("/model_details", methods=["GET"])
 @cross_origin()
@@ -119,4 +116,4 @@ def get_model_details():
         return jsonify(new_vehicle.to_dict()), 200
 
     except Exception as e:
-        return jsonify({"error": f"Error: {str(e)}"}), 500
+        return jsonify({"error": str(e)}), 500
