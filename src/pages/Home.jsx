@@ -29,6 +29,7 @@ const Home = () => {
     location: "",
     destinity: "",
     climate: "",
+    roadGrade: 0,
   });
 
   const [results, setResults] = useState(null);
@@ -53,6 +54,7 @@ const Home = () => {
   } = useTripFormHandlers(formData, setFormData, setMapCenter, fetchWeather);
 
   const handleSubmit = () => {
+    console.log(formData)
     const validationErrors = validateTripForm(formData);
     setErrors(validationErrors);
     if (Object.keys(validationErrors).length === 0) {

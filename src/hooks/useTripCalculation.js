@@ -18,7 +18,7 @@ export const useTripCalculation = (formData, setResults) => {
         .split(",")
         .map((coord) => parseFloat(coord.trim()));
 
-      // ✅ Llamar a tu backend para calcular la distancia
+      // ✅ Obtener distancia desde backend
       const distanceResponse = await axios.get(
         `${VITE_BACKEND_URL}/api/distance?origin=${originLat},${originLng}&destination=${destLat},${destLng}`
       );
@@ -29,13 +29,18 @@ export const useTripCalculation = (formData, setResults) => {
         return;
       }
 
+      // ✅ Calcular el viaje
       const tripData = {
         ...formData,
+        brand: formData.brand.trim().toLowerCase(),
+        model: formData.model.trim().toLowerCase(),
         totalWeight: Number(formData.totalWeight),
+        roadGrade: Number(formData.roadGrade),
         distance: distanceKm,
       };
 
-      const response = await axios.post(
+      console.log(tripData);
+      const calcResponse = await axios.post(
         `${VITE_BACKEND_URL}/api/calculate`,
         tripData,
         {
@@ -46,18 +51,43 @@ export const useTripCalculation = (formData, setResults) => {
         }
       );
 
-      console.log("✅ Resultados del viaje:", response.data);
+      console.log("✅ Resultados del viaje:", calcResponse.data);
       setResults({
-        ...response.data,
+        ...calcResponse.data,
         weather: formData.climate,
         roadSlope: formData.roadGrade.toString() + "%",
       });
+
+      // ✅ Guardar viaje en la base de datos
+      const saveTripPayload = {
+        brand: formData.brand,
+        model: formData.model,
+        fuel_type: formData.fuelType,
+        location: formData.location,
+        distance: calcResponse.data.distance,
+        fuel_consumed: calcResponse.data.fuelUsed,
+        total_cost: calcResponse.data.totalCost,
+      };
+
+      console.log(tripData);
+      const saveResponse = await axios.post(
+        `${VITE_BACKEND_URL}/api/trips`,
+        saveTripPayload,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      console.log("💾 Viaje guardado:", saveResponse.data);
     } catch (error) {
       console.error(
-        "🚨 Error al calcular el viaje:",
+        "🚨 Error al calcular o guardar el viaje:",
         error.response?.data || error.message
       );
-      alert("Error al calcular el viaje.");
+      alert("Error al calcular o guardar el viaje.");
     }
   };
 

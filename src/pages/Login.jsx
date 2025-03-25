@@ -36,7 +36,9 @@ const Login = ({ setUser }) => {
             const userResponse = await axios.get(
               `${VITE_BACKEND_URL}/api/user`,
               {
-                headers: { Authorization: `Bearer ${jwt}` },
+                headers: {
+                  Authorization: `Bearer ${localStorage.getItem("token")}`,
+                },
                 withCredentials: true,
               }
             );

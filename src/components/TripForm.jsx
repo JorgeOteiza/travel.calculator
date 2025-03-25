@@ -115,6 +115,18 @@ const TripForm = ({
         min="0"
         className="custom-input"
       />
+
+      <label htmlFor="roadGrade">Pendiente del Camino (%)</label>
+      <input
+        type="number"
+        name="roadGrade"
+        value={formData.roadGrade}
+        onChange={handleChange}
+        placeholder="Por ejemplo: 5 para una pendiente del 5%"
+        min="0"
+        step="0.1"
+        className="custom-input"
+      />
     </form>
   );
 };

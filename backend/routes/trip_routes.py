@@ -18,16 +18,20 @@ def calculate_trip():
             if field not in data:
                 return jsonify({"error": f"El campo '{field}' es requerido"}), 400
 
-        make = data["brand"]
-        model = data["model"]
-        year = data["year"]
+        make = data["brand"].strip().lower()
+        model = data["model"].strip().lower()
+        vehicle = Vehicle.query.filter(
+            db.func.lower(Vehicle.make) == make,
+            db.func.lower(Vehicle.model) == model,
+            Vehicle.year == data["year"]
+        ).first()
+
         total_weight = data["totalWeight"]
         distance_km = data["distance"]
         fuel_price = data["fuelPrice"]
         climate = data["climate"]
         road_grade = data["roadGrade"]
-
-        vehicle = Vehicle.query.filter_by(make=make, model=model, year=year).first()
+        
         if not vehicle:
             return jsonify({"error": "No se encontraron detalles del vehículo"}), 404
 
@@ -69,6 +73,42 @@ def get_trips():
     try:
         trips = Trip.query.all()
         return jsonify([trip.to_dict() for trip in trips]), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@trip_bp.route("/trips", methods=["POST"])
+@cross_origin()
+@jwt_required()
+def save_trip():
+    try:
+        user_id = get_jwt_identity()
+        data = request.get_json()
+
+        required_fields = [
+            "brand", "model", "fuel_type", "location",
+            "distance", "fuel_consumed", "total_cost"
+        ]
+        for field in required_fields:
+            if field not in data:
+                return jsonify({"error": f"Falta el campo '{field}'"}), 400
+
+        new_trip = Trip(
+            user_id=user_id,
+            brand=data["brand"],
+            model=data["model"],
+            fuel_type=data["fuel_type"],
+            location=data["location"],
+            distance=data["distance"],
+            fuel_consumed=data["fuel_consumed"],
+            total_cost=data["total_cost"]
+        )
+
+        db.session.add(new_trip)
+        db.session.commit()
+
+        return jsonify({"message": "✅ Viaje guardado exitosamente.", "trip": new_trip.to_dict()}), 201
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

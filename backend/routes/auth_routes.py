@@ -84,10 +84,8 @@ def register():
         if existing_user:
             return jsonify({"error": "El correo ya está registrado"}), 409
 
-        # ✅ Hashear la contraseña correctamente antes de guardarla
-        hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
-
-        new_user = User(name=name, email=email, password=hashed_password)
+        # ✅ Usar directamente la lógica de User para setear el hash
+        new_user = User(name=name, email=email, password=password)
         db.session.add(new_user)
         db.session.commit()
 
@@ -107,6 +105,7 @@ def register():
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": f"Error en registro: {str(e)}"}), 500
+
 
 # ✅ Inicio de sesión
 @auth_bp.route("/login", methods=["POST"])

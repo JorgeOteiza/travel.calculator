@@ -19,19 +19,18 @@ class User(db.Model):
         self.set_password(password)
 
     def set_password(self, password):
-        """Cifra la contraseña antes de guardarla"""
         if not password:
             raise ValueError("La contraseña no puede estar vacía")
         self.password = bcrypt.generate_password_hash(password).decode('utf-8')
 
     def check_password(self, password):
-        """Verifica la contraseña comparándola con el hash almacenado"""
         if not self.password:
             return False
         return bcrypt.check_password_hash(self.password, password)
 
     def to_dict(self):
         return {"id": self.id, "name": self.name, "email": self.email}
+
 
 class Vehicle(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -42,8 +41,8 @@ class Vehicle(db.Model):
     engine_cc = db.Column(db.Integer, nullable=True)
     engine_cylinders = db.Column(db.Integer, nullable=True)
     weight_kg = db.Column(db.Integer, nullable=True)
-    lkm_mixed = db.Column(db.Float, nullable=True)  # Consumo en litros cada 100 km
-    mpg_mixed = db.Column(db.Float, nullable=True)  # Consumo en millas por galón
+    lkm_mixed = db.Column(db.Float, nullable=True)
+    mpg_mixed = db.Column(db.Float, nullable=True)
 
     def to_dict(self):
         return {
@@ -59,17 +58,28 @@ class Vehicle(db.Model):
             "mpg_mixed": self.mpg_mixed
         }
 
+
 class Trip(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     user = db.relationship('User', back_populates="trips")
+
     brand = db.Column(db.String(80), nullable=False)
     model = db.Column(db.String(80), nullable=False)
+    year = db.Column(db.Integer, nullable=False)
     fuel_type = db.Column(db.String(20), nullable=False)
+    fuel_price = db.Column(db.Float, nullable=True)
+    total_weight = db.Column(db.Float, nullable=True)
+    passengers = db.Column(db.Integer, nullable=True)
+
     location = db.Column(db.String(120), nullable=False)
     distance = db.Column(db.Float, nullable=False)
     fuel_consumed = db.Column(db.Float, nullable=False)
     total_cost = db.Column(db.Float, nullable=False)
+
+    road_grade = db.Column(db.Float, nullable=True)
+    weather = db.Column(db.String(50), nullable=True)
+
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def to_dict(self):
@@ -78,11 +88,17 @@ class Trip(db.Model):
             "user_id": self.user_id,
             "brand": self.brand,
             "model": self.model,
+            "year": self.year,
             "fuel_type": self.fuel_type,
+            "fuel_price": self.fuel_price,
+            "total_weight": self.total_weight,
+            "passengers": self.passengers,
             "location": self.location,
             "distance": self.distance,
             "fuel_consumed": self.fuel_consumed,
             "total_cost": self.total_cost,
+            "road_grade": self.road_grade,
+            "weather": self.weather,
             "created_at": self.created_at.isoformat()
         }
 
