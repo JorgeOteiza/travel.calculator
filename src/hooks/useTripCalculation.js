@@ -11,9 +11,28 @@ export const useTripCalculation = (formData, setResults) => {
     }
 
     try {
+      const [originLat, originLng] = formData.location
+        .split(",")
+        .map((coord) => parseFloat(coord.trim()));
+      const [destLat, destLng] = formData.destinity
+        .split(",")
+        .map((coord) => parseFloat(coord.trim()));
+
+      // ✅ Llamar a tu backend para calcular la distancia
+      const distanceResponse = await axios.get(
+        `${VITE_BACKEND_URL}/api/distance?origin=${originLat},${originLng}&destination=${destLat},${destLng}`
+      );
+
+      const distanceKm = distanceResponse.data.distance_km;
+      if (!distanceKm) {
+        alert("No se pudo calcular la distancia.");
+        return;
+      }
+
       const tripData = {
         ...formData,
         totalWeight: Number(formData.totalWeight),
+        distance: distanceKm,
       };
 
       const response = await axios.post(
@@ -28,7 +47,11 @@ export const useTripCalculation = (formData, setResults) => {
       );
 
       console.log("✅ Resultados del viaje:", response.data);
-      setResults(response.data);
+      setResults({
+        ...response.data,
+        weather: formData.climate,
+        roadSlope: formData.roadGrade.toString() + "%",
+      });
     } catch (error) {
       console.error(
         "🚨 Error al calcular el viaje:",

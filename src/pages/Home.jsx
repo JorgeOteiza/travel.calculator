@@ -35,10 +35,16 @@ const Home = () => {
   const [mapCenter, setMapCenter] = useState({ lat: 37.7749, lng: -122.4194 });
   const [markers, setMarkers] = useState([]);
   const [errors, setErrors] = useState({});
+  const [routePolyline, setRoutePolyline] = useState(""); // ✅ Nuevo estado opcional para compatibilidad futura
 
   const { user, brandOptions, modelOptions } = useTripData(formData);
   const { fetchWeather } = useWeather(setFormData);
-  const { calculateTrip } = useTripCalculation(formData, setResults);
+
+  const { calculateTrip } = useTripCalculation(formData, (data) => {
+    setResults(data);
+    if (data.routePolyline) setRoutePolyline(data.routePolyline); // ✅ Captura la ruta si está disponible
+  });
+
   const {
     handleChange,
     handleBrandSelect,
@@ -82,6 +88,7 @@ const Home = () => {
           markers={markers}
           setMarkers={setMarkers}
           handleLocationChange={handleLocationChange}
+          routePolyline={routePolyline} // ✅ Compatible si lo deseas usar desde backend
         />
       )}
 
