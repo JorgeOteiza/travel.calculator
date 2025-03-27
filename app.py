@@ -9,6 +9,7 @@ from datetime import timedelta
 from dotenv import load_dotenv
 from backend.models import db
 from backend.routes.auth_routes import auth_bp
+from backend.routes.car_routes import car_bp
 from backend.routes import main_bp
 
 # Cargar variables de entorno
@@ -37,6 +38,7 @@ def create_app():
 
     app.register_blueprint(auth_bp, url_prefix="/api")
     app.register_blueprint(main_bp, url_prefix="/api")
+    app.register_blueprint(car_bp, url_prefix="/api/cars")
 
     print("🚀 Servidor Flask iniciado en modo:", "Debug" if app.config["DEBUG"] else "Producción")
 

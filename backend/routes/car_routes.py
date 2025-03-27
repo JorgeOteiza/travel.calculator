@@ -2,47 +2,51 @@ import requests
 import json
 from flask import Blueprint, request, jsonify
 from flask_cors import cross_origin
-from backend.models import Vehicle
-
-CARQUERY_API_URL = "https://www.carqueryapi.com/api/0.3/"
+from backend.models import Vehicle, db
 
 car_bp = Blueprint("car_bp", __name__)
 
+NHTSA_API_BASE = "https://vpic.nhtsa.dot.gov/api/vehicles"
+
 def clean_jsonp(response_text):
     try:
-        if "{" not in response_text or "}" not in response_text:
-            return None
-        start = response_text.find("{")
-        end = response_text.rfind("}") + 1
-        json_text = response_text[start:end]
-        return json.loads(json_text) if json_text else None
-    except Exception:
+        return json.loads(response_text)
+    except json.JSONDecodeError:
         return None
+
+TOP_100_BRANDS = {
+    "Acura", "Aiways", "Alfa Romeo", "Aston Martin", "Audi", "BMW", "BYD", "Baojun", "Bentley", "Bugatti",
+    "Buick", "Cadillac", "Changan", "Chery", "Chevrolet", "Chrysler", "Citroën", "Daewoo", "Daihatsu", "Dodge",
+    "Dongfeng", "Eagle", "FAW", "Ferrari", "Fiat", "Fisker", "Ford", "GMC", "Geely", "Genesis",
+    "Geo", "Great Wall", "Haval", "Holden", "Honda", "Hummer", "Hyundai", "Infiniti", "Isuzu", "JAC",
+    "Jaguar", "Jeep", "Kia", "Koenigsegg", "Lamborghini", "Lancia", "Land Rover", "Leapmotor", "Lexus", "Lincoln",
+    "Lucid", "MG", "Mahindra", "MarcaExtra100", "MarcaExtra99", "Maruti Suzuki", "Maxus", "Maybach", "Mazda", "McLaren",
+    "Mercedes-Benz", "Mini", "Mitsubishi", "Nio", "Nissan", "Oldsmobile", "Opel", "Pagani", "Perodua", "Peugeot",
+    "Plymouth", "Polestar", "Pontiac", "Porsche", "Proton", "Ram", "Renault", "Rivian", "Roewe", "Rolls-Royce",
+    "SEAT", "Saab", "Saturn", "Scion", "Seres", "Skoda", "Skywell", "Smart", "Subaru", "Suzuki",
+    "Tata", "Tesla", "Toyota", "VinFast", "Volkswagen", "Volvo", "Voyah", "Wuling", "XPeng", "Zotye"
+}
 
 @car_bp.route("/brands", methods=["GET"])
 @cross_origin()
 def get_car_brands():
     try:
-        headers = {
-            "User-Agent": "Mozilla/5.0"
-        }
-        year = request.args.get("year", default=2024, type=int)
-        params = {"cmd": "getMakes", "year": year, "callback": "?"}
-        response = requests.get(CARQUERY_API_URL, params=params, headers=headers)
-
+        response = requests.get(f"{NHTSA_API_BASE}/getallmakes?format=json")
         if response.status_code != 200:
-            return jsonify({"error": f"CarQuery API error: {response.status_code}"}), response.status_code
+            return jsonify({"error": f"NHTSA API error: {response.status_code}"}), response.status_code
 
         data = clean_jsonp(response.text)
-        if not data or "Makes" not in data or not data["Makes"]:
-            params.pop("year")
-            response = requests.get(CARQUERY_API_URL, params=params, headers=headers)
-            data = clean_jsonp(response.text)
-            if not data or "Makes" not in data:
-                return jsonify([]), 200
+        if not data or "Results" not in data or not data["Results"]:
+            return jsonify([]), 200
 
-        brands = [{"label": brand["make_display"], "value": brand["make_id"]} for brand in data["Makes"]]
-        return jsonify(brands), 200
+        top_brands_lower = {b.lower() for b in TOP_100_BRANDS}
+
+        brands = [
+            {"label": brand["Make_Name"], "value": brand["Make_Name"]}
+            for brand in data["Results"]
+            if brand["Make_Name"].lower() in top_brands_lower
+        ]
+        return jsonify(sorted(brands, key=lambda x: x["label"])), 200
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -51,28 +55,33 @@ def get_car_brands():
 @cross_origin()
 def get_car_models():
     try:
-        headers = {"User-Agent": "Mozilla/5.0"}
         make_id = request.args.get("make_id")
-        year = request.args.get("year", default=2024, type=int)
+        year = request.args.get("year", default=None, type=int)
 
         if not make_id:
             return jsonify({"error": "El parámetro 'make_id' es obligatorio"}), 400
 
-        params = {"cmd": "getModels", "make": make_id, "year": year, "callback": "?"}
-        response = requests.get(CARQUERY_API_URL, params=params, headers=headers)
+        if year:
+            response = requests.get(f"{NHTSA_API_BASE}/GetModelsForMakeYear/make/{make_id}/modelyear/{year}?format=json")
+            if response.status_code != 200:
+                return jsonify({"error": f"NHTSA API error: {response.status_code}"}), response.status_code
 
-        if response.status_code != 200:
-            return jsonify({"error": f"CarQuery API error: {response.status_code}"}), response.status_code
-
-        data = clean_jsonp(response.text)
-        if not data or "Models" not in data or not data["Models"]:
-            params.pop("year")
-            response = requests.get(CARQUERY_API_URL, params=params, headers=headers)
             data = clean_jsonp(response.text)
-            if not data or "Models" not in data:
+            if not data or "Results" not in data or not data["Results"]:
+                response = requests.get(f"{NHTSA_API_BASE}/GetModelsForMake/{make_id}?format=json")
+                data = clean_jsonp(response.text)
+                if not data or "Results" not in data:
+                    return jsonify([]), 200
+        else:
+            response = requests.get(f"{NHTSA_API_BASE}/GetModelsForMake/{make_id}?format=json")
+            if response.status_code != 200:
+                return jsonify({"error": f"NHTSA API error: {response.status_code}"}), response.status_code
+
+            data = clean_jsonp(response.text)
+            if not data or "Results" not in data or not data["Results"]:
                 return jsonify([]), 200
 
-        models = [{"label": model["model_name"], "value": model["model_name"]} for model in data["Models"]]
+        models = [{"label": model["Model_Name"], "value": model["Model_Name"]} for model in data["Results"]]
         return jsonify(models), 200
 
     except Exception as e:
@@ -82,34 +91,47 @@ def get_car_models():
 @cross_origin()
 def get_model_details():
     try:
-        model_name = request.args.get("model")
-        if not model_name:
-            return jsonify({"error": "El parámetro 'model' es obligatorio"}), 400
+        make = request.args.get("make")
+        model = request.args.get("model")
+        year = request.args.get("year", type=int)
 
-        vehicle = Vehicle.query.filter_by(model=model_name).first()
+        if not all([make, model, year]):
+            return jsonify({"error": "Los parámetros 'make', 'model' y 'year' son obligatorios"}), 400
+
+        vehicle = Vehicle.query.filter(
+            db.func.lower(Vehicle.make) == make.lower(),
+            db.func.lower(Vehicle.model) == model.lower(),
+            Vehicle.year == year
+        ).first()
         if vehicle:
             return jsonify(vehicle.to_dict()), 200
 
-        params = {"cmd": "getTrims", "model": model_name, "full_results": 1}
-        response = requests.get(CARQUERY_API_URL, params=params)
-        data = clean_jsonp(response.text)
+        response = requests.get(
+            f"{NHTSA_API_BASE}/GetModelsForMakeYear/make/{make}/modelyear/{year}?format=json"
+        )
 
-        if not data or "Trims" not in data:
+        if response.status_code != 200:
+            return jsonify({"error": f"NHTSA API error: {response.status_code}"}), response.status_code
+
+        data = response.json()
+        results = data.get("Results", [])
+        match = next((item for item in results if item["Model_Name"].lower() == model.lower()), None)
+
+        if not match:
             return jsonify({"error": "No se encontraron detalles para este modelo"}), 404
 
-        model_details = data["Trims"][0]
         new_vehicle = Vehicle(
-            make=model_details.get("make_display"),
-            model=model_details.get("model_name"),
-            year=model_details.get("model_year"),
-            fuel_type=model_details.get("model_engine_fuel"),
-            engine_cc=model_details.get("model_engine_cc"),
-            engine_cylinders=model_details.get("model_engine_cyl"),
-            weight_kg=model_details.get("model_weight_kg"),
-            lkm_mixed=model_details.get("model_lkm_mixed"),
-            mpg_mixed=model_details.get("model_mpg_mixed"),
+            make=make,
+            model=model,
+            year=year,
+            fuel_type=None,
+            engine_cc=None,
+            engine_cylinders=None,
+            weight_kg=None,
+            lkm_mixed=None,
+            mpg_mixed=None,
         )
-        from backend.models import db
+
         db.session.add(new_vehicle)
         db.session.commit()
 

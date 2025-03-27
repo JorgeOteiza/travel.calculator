@@ -6,8 +6,10 @@ const TripFormSection = ({
   formData,
   brandOptions,
   modelOptions,
+  vehicleDetails,
   handleBrandSelect,
   handleModelSelect,
+  handleYearSelect,
   handleChange,
   calculateTrip,
   errors,
@@ -26,9 +28,21 @@ const TripFormSection = ({
           modelOptions={modelOptions}
           handleBrandSelect={handleBrandSelect}
           handleModelSelect={handleModelSelect}
+          handleYearSelect={handleYearSelect}
           handleChange={handleChange}
           errors={errors}
         />
+        {vehicleDetails && (
+          <div className="vehicle-details">
+            <h3>Detalles del Vehículo</h3>
+            <p>Marca: {vehicleDetails.make}</p>
+            <p>Modelo: {vehicleDetails.model}</p>
+            <p>Año: {vehicleDetails.year}</p>
+            <p>Tipo de combustible: {vehicleDetails.fuel_type}</p>
+            <p>Consumo mixto: {vehicleDetails.lkm_mixed} L/100km</p>
+            {/* Otros detalles según sea necesario */}
+          </div>
+        )}
         <button className="calculate-btn mt-3" onClick={calculateTrip}>
           Calcular Viaje
         </button>
@@ -50,8 +64,10 @@ TripFormSection.propTypes = {
   formData: PropTypes.object.isRequired,
   brandOptions: PropTypes.array.isRequired,
   modelOptions: PropTypes.array.isRequired,
+  vehicleDetails: PropTypes.object,
   handleBrandSelect: PropTypes.func.isRequired,
   handleModelSelect: PropTypes.func.isRequired,
+  handleYearSelect: PropTypes.func.isRequired,
   handleChange: PropTypes.func.isRequired,
   calculateTrip: PropTypes.func.isRequired,
   errors: PropTypes.object.isRequired,

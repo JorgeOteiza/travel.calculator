@@ -26,14 +26,14 @@ def calculate_trip():
             Vehicle.year == data["year"]
         ).first()
 
+        if not vehicle:
+            return jsonify({"error": "No se encontraron detalles del vehículo"}), 404
+
         total_weight = data["totalWeight"]
         distance_km = data["distance"]
         fuel_price = data["fuelPrice"]
         climate = data["climate"]
         road_grade = data["roadGrade"]
-        
-        if not vehicle:
-            return jsonify({"error": "No se encontraron detalles del vehículo"}), 404
 
         base_fuel_consumption = vehicle.lkm_mixed if vehicle.lkm_mixed else 8
         weight_factor = 1 + ((total_weight + (vehicle.weight_kg or 1500)) / 1500) * 0.1
@@ -55,11 +55,25 @@ def calculate_trip():
         fuel_used = (distance_km * adjusted_fuel_consumption) / 100
         total_cost = fuel_used * fuel_price
 
+        vehicle_details = {
+            "make": vehicle.make,
+            "model": vehicle.model,
+            "year": vehicle.year,
+            "fuel_type": vehicle.fuel_type,
+            "engine_cc": vehicle.engine_cc,
+            "engine_cylinders": vehicle.engine_cylinders,
+            "weight_kg": vehicle.weight_kg,
+            "lkm_mixed": vehicle.lkm_mixed,
+        }
+
         return jsonify({
             "distance": distance_km,
             "fuelConsumptionPer100km": adjusted_fuel_consumption,
             "fuelUsed": fuel_used,
-            "totalCost": total_cost
+            "totalCost": total_cost,
+            "weather": climate,
+            "roadSlope": f"{road_grade}%",
+            "vehicleDetails": vehicle_details
         }), 200
 
     except Exception as e:
@@ -86,9 +100,11 @@ def save_trip():
         data = request.get_json()
 
         required_fields = [
-            "brand", "model", "fuel_type", "location",
-            "distance", "fuel_consumed", "total_cost"
+            "brand", "model", "year", "fuel_type", "fuel_price",
+            "total_weight", "passengers", "location", "distance",
+            "fuel_consumed", "total_cost", "road_grade", "weather"
         ]
+
         for field in required_fields:
             if field not in data:
                 return jsonify({"error": f"Falta el campo '{field}'"}), 400
@@ -97,20 +113,30 @@ def save_trip():
             user_id=user_id,
             brand=data["brand"],
             model=data["model"],
+            year=data["year"],
             fuel_type=data["fuel_type"],
+            fuel_price=data["fuel_price"],
+            total_weight=data["total_weight"],
+            passengers=data["passengers"],
             location=data["location"],
             distance=data["distance"],
             fuel_consumed=data["fuel_consumed"],
-            total_cost=data["total_cost"]
+            total_cost=data["total_cost"],
+            road_grade=data["road_grade"],
+            weather=data["weather"]
         )
 
         db.session.add(new_trip)
         db.session.commit()
 
-        return jsonify({"message": "✅ Viaje guardado exitosamente.", "trip": new_trip.to_dict()}), 201
+        return jsonify({
+            "message": "✅ Viaje guardado exitosamente.",
+            "trip": new_trip.to_dict()
+        }), 201
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 
 @trip_bp.route("/trips/<int:trip_id>", methods=["DELETE"])

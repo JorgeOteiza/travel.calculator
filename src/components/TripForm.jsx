@@ -8,6 +8,7 @@ const TripForm = ({
   modelOptions = [],
   handleBrandSelect,
   handleModelSelect,
+  handleYearSelect,
   handleChange,
 }) => {
   const fuelTypeOptions = [
@@ -24,10 +25,9 @@ const TripForm = ({
         name="brand"
         options={brandOptions}
         value={
-          brandOptions?.find((option) => option.value === formData.brand) ||
-          null
+          brandOptions.find((option) => option.value === formData.brand) || null
         }
-        onChange={handleBrandSelect}
+        onChange={(selected) => handleBrandSelect(selected?.value || "")}
         placeholder="Select a brand"
         isClearable
         className="custom-select"
@@ -39,13 +39,13 @@ const TripForm = ({
         name="model"
         options={modelOptions}
         value={
-          modelOptions?.find((option) => option.value === formData.model) ||
-          null
+          modelOptions.find((option) => option.value === formData.model) || null
         }
-        onChange={handleModelSelect}
+        onChange={(selected) => handleModelSelect(selected?.value || "")}
         placeholder="Select a model"
         isClearable
         className="custom-select"
+        isDisabled={!formData.brand}
       />
 
       <label htmlFor="year">Vehicle Year</label>
@@ -53,8 +53,9 @@ const TripForm = ({
         id="year"
         name="year"
         value={formData.year}
-        onChange={handleChange}
+        onChange={(e) => handleYearSelect(e.target.value)}
         className="custom-input"
+        disabled={!formData.brand || !formData.model}
       >
         <option value="">Select year</option>
         {Array.from({ length: 35 }, (_, i) => 2025 - i).map((year) => (
@@ -74,7 +75,7 @@ const TripForm = ({
         )}
         onChange={(selectedOption) =>
           handleChange({
-            target: { name: "fuelType", value: selectedOption.value },
+            target: { name: "fuelType", value: selectedOption?.value || "" },
           })
         }
         placeholder="Select octane rating"
@@ -121,10 +122,8 @@ const TripForm = ({
         type="number"
         name="roadGrade"
         value={formData.roadGrade}
-        onChange={handleChange}
-        placeholder="Por ejemplo: 5 para una pendiente del 5%"
-        min="0"
-        step="0.1"
+        disabled
+        placeholder="Calculada automáticamente"
         className="custom-input"
       />
     </form>
@@ -133,10 +132,11 @@ const TripForm = ({
 
 TripForm.propTypes = {
   formData: PropTypes.object.isRequired,
-  brandOptions: PropTypes.array,
-  modelOptions: PropTypes.array,
+  brandOptions: PropTypes.array.isRequired,
+  modelOptions: PropTypes.array.isRequired,
   handleBrandSelect: PropTypes.func.isRequired,
   handleModelSelect: PropTypes.func.isRequired,
+  handleYearSelect: PropTypes.func.isRequired,
   handleChange: PropTypes.func.isRequired,
 };
 

@@ -3,7 +3,7 @@ import { useJsApiLoader } from "@react-google-maps/api";
 import TripForm from "../components/TripForm";
 import TripResults from "../components/TripResults";
 import GoogleMapComponent from "../components/GoogleMapComponent";
-import { useTripData } from "../hooks/useTripData";
+import useTripData from "../hooks/useTripData";
 import { useWeather } from "../hooks/useWeather";
 import { validateTripForm } from "../hooks/useTripValidation";
 import { useTripCalculation } from "../hooks/useTripCalculation";
@@ -18,6 +18,8 @@ const Home = () => {
     libraries: ["places"],
   });
 
+  const userFromStorage = JSON.parse(localStorage.getItem("user"));
+
   const [formData, setFormData] = useState({
     brand: "",
     model: "",
@@ -26,6 +28,7 @@ const Home = () => {
     fuelPrice: 0,
     passengers: 1,
     totalWeight: 0,
+    user: userFromStorage || null,
     location: "",
     destinity: "",
     climate: "",
@@ -36,25 +39,33 @@ const Home = () => {
   const [mapCenter, setMapCenter] = useState({ lat: 37.7749, lng: -122.4194 });
   const [markers, setMarkers] = useState([]);
   const [errors, setErrors] = useState({});
-  const [routePolyline, setRoutePolyline] = useState(""); // ✅ Nuevo estado opcional para compatibilidad futura
-
-  const { user, brandOptions, modelOptions } = useTripData(formData);
-  const { fetchWeather } = useWeather(setFormData);
-
-  const { calculateTrip } = useTripCalculation(formData, (data) => {
-    setResults(data);
-    if (data.routePolyline) setRoutePolyline(data.routePolyline); // ✅ Captura la ruta si está disponible
-  });
+  const [routePolyline] = useState("");
 
   const {
-    handleChange,
+    brandOptions,
+    modelOptions,
+    availableYears,
+    vehicleDetails,
     handleBrandSelect,
     handleModelSelect,
-    handleLocationChange,
-  } = useTripFormHandlers(formData, setFormData, setMapCenter, fetchWeather);
+    handleYearSelect,
+    handleChange,
+  } = useTripData(formData);
+
+  const { fetchWeather } = useWeather(setFormData);
+  const { calculateTrip } = useTripCalculation(
+    formData,
+    setResults,
+    vehicleDetails
+  );
+  const { handleLocationChange } = useTripFormHandlers(
+    formData,
+    setFormData,
+    setMapCenter,
+    fetchWeather
+  );
 
   const handleSubmit = () => {
-    console.log(formData)
     const validationErrors = validateTripForm(formData);
     setErrors(validationErrors);
     if (Object.keys(validationErrors).length === 0) {
@@ -71,10 +82,12 @@ const Home = () => {
       <div className="form-container">
         <TripForm
           formData={formData}
-          brandOptions={brandOptions || []}
-          modelOptions={modelOptions || []}
+          brandOptions={brandOptions}
+          modelOptions={modelOptions}
+          availableYears={availableYears}
           handleBrandSelect={handleBrandSelect}
           handleModelSelect={handleModelSelect}
+          handleYearSelect={handleYearSelect}
           handleChange={handleChange}
           errors={errors}
         />
@@ -90,11 +103,11 @@ const Home = () => {
           markers={markers}
           setMarkers={setMarkers}
           handleLocationChange={handleLocationChange}
-          routePolyline={routePolyline} // ✅ Compatible si lo deseas usar desde backend
+          routePolyline={routePolyline}
         />
       )}
 
-      {!user && (
+      {!formData.user && (
         <p className="warning-message">
           🔐 Debes iniciar sesión para guardar tu viaje.
         </p>

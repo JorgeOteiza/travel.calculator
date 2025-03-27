@@ -1,8 +1,13 @@
 import axios from "axios";
 
 const VITE_BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+const GOOGLE_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
-export const useTripCalculation = (formData, setResults) => {
+export const useTripCalculation = (
+  formData,
+  setResults,
+  vehicleDetails = null
+) => {
   const calculateTrip = async () => {
     const token = localStorage.getItem("token");
     if (!token) {
@@ -18,28 +23,49 @@ export const useTripCalculation = (formData, setResults) => {
         .split(",")
         .map((coord) => parseFloat(coord.trim()));
 
-      // ✅ Obtener distancia desde backend
+      // 1. Obtener distancia desde tu backend
       const distanceResponse = await axios.get(
         `${VITE_BACKEND_URL}/api/distance?origin=${originLat},${originLng}&destination=${destLat},${destLng}`
       );
-
       const distanceKm = distanceResponse.data.distance_km;
       if (!distanceKm) {
         alert("No se pudo calcular la distancia.");
         return;
       }
 
-      // ✅ Calcular el viaje
+      // 2. Obtener elevaciones usando la Google Elevation API
+      const elevationResponse = await axios.get(
+        `https://maps.googleapis.com/maps/api/elevation/json?locations=${originLat},${originLng}|${destLat},${destLng}&key=${GOOGLE_API_KEY}`
+      );
+      const elevationData = elevationResponse.data.results;
+      const elevOrigin = elevationData[0]?.elevation || 0;
+      const elevDest = elevationData[1]?.elevation || 0;
+
+      const elevationDiff = elevDest - elevOrigin;
+      const distanceMeters = distanceKm * 1000;
+      const slopePercent = Number(
+        ((elevationDiff / distanceMeters) * 100).toFixed(2)
+      );
+
+      // 3. Preparar datos del viaje
       const tripData = {
         ...formData,
         brand: formData.brand.trim().toLowerCase(),
         model: formData.model.trim().toLowerCase(),
         totalWeight: Number(formData.totalWeight),
-        roadGrade: Number(formData.roadGrade),
+        roadGrade: slopePercent,
         distance: distanceKm,
+        fuel_price: parseFloat(formData.fuelPrice),
+        passengers: parseInt(formData.passengers),
+        weather: formData.climate,
       };
 
-      console.log(tripData);
+      if (vehicleDetails) {
+        tripData.lkm_mixed = vehicleDetails.lkm_mixed;
+        tripData.weight_kg = vehicleDetails.weight_kg;
+      }
+
+      // 4. Cálculo de viaje
       const calcResponse = await axios.post(
         `${VITE_BACKEND_URL}/api/calculate`,
         tripData,
@@ -51,25 +77,30 @@ export const useTripCalculation = (formData, setResults) => {
         }
       );
 
-      console.log("✅ Resultados del viaje:", calcResponse.data);
+      // 5. Mostrar resultados
       setResults({
         ...calcResponse.data,
         weather: formData.climate,
-        roadSlope: formData.roadGrade.toString() + "%",
+        roadSlope: `${slopePercent}%`,
       });
 
-      // ✅ Guardar viaje en la base de datos
+      // 6. Guardar viaje
       const saveTripPayload = {
         brand: formData.brand,
         model: formData.model,
+        year: formData.year,
         fuel_type: formData.fuelType,
+        fuel_price: parseFloat(formData.fuelPrice),
+        total_weight: parseFloat(formData.totalWeight),
+        passengers: parseInt(formData.passengers),
         location: formData.location,
         distance: calcResponse.data.distance,
         fuel_consumed: calcResponse.data.fuelUsed,
         total_cost: calcResponse.data.totalCost,
+        road_grade: slopePercent,
+        weather: formData.climate,
       };
 
-      console.log(tripData);
       const saveResponse = await axios.post(
         `${VITE_BACKEND_URL}/api/trips`,
         saveTripPayload,
