@@ -6,6 +6,7 @@ const TripForm = ({
   formData,
   brandOptions = [],
   modelOptions = [],
+  availableYears = [],
   handleBrandSelect,
   handleModelSelect,
   handleYearSelect,
@@ -19,28 +20,26 @@ const TripForm = ({
 
   return (
     <form className="trip-form">
+      {/* Marca */}
       <label htmlFor="brand">Vehicle Brand</label>
       <Select
         id="brand"
         name="brand"
         options={brandOptions}
-        value={
-          brandOptions.find((option) => option.value === formData.brand) || null
-        }
+        value={brandOptions.find((opt) => opt.value === formData.brand) || null}
         onChange={(selected) => handleBrandSelect(selected?.value || "")}
         placeholder="Select a brand"
         isClearable
         className="custom-select"
       />
 
+      {/* Modelo */}
       <label htmlFor="model">Vehicle Model</label>
       <Select
         id="model"
         name="model"
         options={modelOptions}
-        value={
-          modelOptions.find((option) => option.value === formData.model) || null
-        }
+        value={modelOptions.find((opt) => opt.value === formData.model) || null}
         onChange={(selected) => handleModelSelect(selected?.value || "")}
         placeholder="Select a model"
         isClearable
@@ -48,6 +47,7 @@ const TripForm = ({
         isDisabled={!formData.brand}
       />
 
+      {/* Año */}
       <label htmlFor="year">Vehicle Year</label>
       <select
         id="year"
@@ -55,24 +55,23 @@ const TripForm = ({
         value={formData.year}
         onChange={(e) => handleYearSelect(e.target.value)}
         className="custom-input"
-        disabled={!formData.brand || !formData.model}
+        disabled={!availableYears.length}
       >
         <option value="">Select year</option>
-        {Array.from({ length: 35 }, (_, i) => 2025 - i).map((year) => (
+        {availableYears.map((year) => (
           <option key={year} value={year}>
             {year}
           </option>
         ))}
       </select>
 
+      {/* Tipo de combustible */}
       <label htmlFor="fuelType">Octane rating</label>
       <Select
         id="fuelType"
         name="fuelType"
         options={fuelTypeOptions}
-        value={fuelTypeOptions.find(
-          (option) => option.value === formData.fuelType
-        )}
+        value={fuelTypeOptions.find((opt) => opt.value === formData.fuelType)}
         onChange={(selectedOption) =>
           handleChange({
             target: { name: "fuelType", value: selectedOption?.value || "" },
@@ -83,6 +82,7 @@ const TripForm = ({
         className="custom-select"
       />
 
+      {/* Precio del combustible */}
       <label htmlFor="fuelPrice">Fuel Price (per liter)</label>
       <input
         type="number"
@@ -95,6 +95,7 @@ const TripForm = ({
         className="custom-input"
       />
 
+      {/* Pasajeros */}
       <label htmlFor="passengers">Number of Passengers</label>
       <input
         type="number"
@@ -106,6 +107,7 @@ const TripForm = ({
         className="custom-input"
       />
 
+      {/* Peso total */}
       <label htmlFor="totalWeight">Estimated Total Weight (kg)</label>
       <input
         type="number"
@@ -116,16 +118,6 @@ const TripForm = ({
         min="0"
         className="custom-input"
       />
-
-      <label htmlFor="roadGrade">Pendiente del Camino (%)</label>
-      <input
-        type="number"
-        name="roadGrade"
-        value={formData.roadGrade}
-        disabled
-        placeholder="Calculada automáticamente"
-        className="custom-input"
-      />
     </form>
   );
 };
@@ -134,6 +126,7 @@ TripForm.propTypes = {
   formData: PropTypes.object.isRequired,
   brandOptions: PropTypes.array.isRequired,
   modelOptions: PropTypes.array.isRequired,
+  availableYears: PropTypes.array.isRequired,
   handleBrandSelect: PropTypes.func.isRequired,
   handleModelSelect: PropTypes.func.isRequired,
   handleYearSelect: PropTypes.func.isRequired,

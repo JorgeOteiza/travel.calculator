@@ -1,8 +1,7 @@
-import { useState } from "react";
 import { useJsApiLoader } from "@react-google-maps/api";
-import TripForm from "../components/TripForm";
+import { useState } from "react";
+import TripFormSection from "../components/TripFormSection";
 import TripResults from "../components/TripResults";
-import GoogleMapComponent from "../components/GoogleMapComponent";
 import useTripData from "../hooks/useTripData";
 import { useWeather } from "../hooks/useWeather";
 import { validateTripForm } from "../hooks/useTripValidation";
@@ -20,10 +19,21 @@ const Home = () => {
 
   const userFromStorage = JSON.parse(localStorage.getItem("user"));
 
-  const [formData, setFormData] = useState({
+  const {
+    formData,
+    setFormData,
+    brandOptions,
+    modelOptions,
+    availableYears,
+    vehicleDetails,
+    handleBrandSelect,
+    handleModelSelect,
+    handleYearSelect,
+    handleChange,
+  } = useTripData({
     brand: "",
     model: "",
-    year: "2022",
+    year: "",
     fuelType: "",
     fuelPrice: 0,
     passengers: 1,
@@ -35,29 +45,19 @@ const Home = () => {
     roadGrade: 0,
   });
 
+  const { fetchWeather } = useWeather(setFormData);
+
   const [results, setResults] = useState(null);
   const [mapCenter, setMapCenter] = useState({ lat: 37.7749, lng: -122.4194 });
   const [markers, setMarkers] = useState([]);
   const [errors, setErrors] = useState({});
-  const [routePolyline] = useState("");
 
-  const {
-    brandOptions,
-    modelOptions,
-    availableYears,
-    vehicleDetails,
-    handleBrandSelect,
-    handleModelSelect,
-    handleYearSelect,
-    handleChange,
-  } = useTripData(formData);
-
-  const { fetchWeather } = useWeather(setFormData);
   const { calculateTrip } = useTripCalculation(
     formData,
     setResults,
     vehicleDetails
   );
+
   const { handleLocationChange } = useTripFormHandlers(
     formData,
     setFormData,
@@ -79,33 +79,24 @@ const Home = () => {
 
   return (
     <div className="home-container">
-      <div className="form-container">
-        <TripForm
-          formData={formData}
-          brandOptions={brandOptions}
-          modelOptions={modelOptions}
-          availableYears={availableYears}
-          handleBrandSelect={handleBrandSelect}
-          handleModelSelect={handleModelSelect}
-          handleYearSelect={handleYearSelect}
-          handleChange={handleChange}
-          errors={errors}
-        />
-        <button className="calculate-btn mt-3" onClick={handleSubmit}>
-          Calcular Viaje
-        </button>
-      </div>
-
-      {isLoaded && (
-        <GoogleMapComponent
-          isLoaded={isLoaded}
-          mapCenter={mapCenter}
-          markers={markers}
-          setMarkers={setMarkers}
-          handleLocationChange={handleLocationChange}
-          routePolyline={routePolyline}
-        />
-      )}
+      <TripFormSection
+        formData={formData}
+        brandOptions={brandOptions}
+        modelOptions={modelOptions}
+        availableYears={availableYears}
+        vehicleDetails={vehicleDetails}
+        handleBrandSelect={handleBrandSelect}
+        handleModelSelect={handleModelSelect}
+        handleYearSelect={handleYearSelect}
+        handleChange={handleChange}
+        calculateTrip={handleSubmit}
+        errors={errors}
+        isLoaded={isLoaded}
+        mapCenter={mapCenter}
+        markers={markers}
+        setMarkers={setMarkers}
+        handleLocationChange={handleLocationChange}
+      />
 
       {!formData.user && (
         <p className="warning-message">

@@ -1,7 +1,6 @@
 import axios from "axios";
 
 const VITE_BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
-const GOOGLE_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
 export const useTripCalculation = (
   formData,
@@ -23,7 +22,7 @@ export const useTripCalculation = (
         .split(",")
         .map((coord) => parseFloat(coord.trim()));
 
-      // 1. Obtener distancia desde tu backend
+      // 1. Obtener distancia y polilínea desde backend
       const distanceResponse = await axios.get(
         `${VITE_BACKEND_URL}/api/distance?origin=${originLat},${originLng}&destination=${destLat},${destLng}`
       );
@@ -33,9 +32,9 @@ export const useTripCalculation = (
         return;
       }
 
-      // 2. Obtener elevaciones usando la Google Elevation API
+      // 2. Obtener elevación desde backend
       const elevationResponse = await axios.get(
-        `https://maps.googleapis.com/maps/api/elevation/json?locations=${originLat},${originLng}|${destLat},${destLng}&key=${GOOGLE_API_KEY}`
+        `${VITE_BACKEND_URL}/api/elevation?origin=${originLat},${originLng}&destination=${destLat},${destLng}`
       );
       const elevationData = elevationResponse.data.results;
       const elevOrigin = elevationData[0]?.elevation || 0;
@@ -65,7 +64,7 @@ export const useTripCalculation = (
         tripData.weight_kg = vehicleDetails.weight_kg;
       }
 
-      // 4. Cálculo de viaje
+      // 4. Cálculo del viaje
       const calcResponse = await axios.post(
         `${VITE_BACKEND_URL}/api/calculate`,
         tripData,

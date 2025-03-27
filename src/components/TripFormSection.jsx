@@ -6,6 +6,7 @@ const TripFormSection = ({
   formData,
   brandOptions,
   modelOptions,
+  availableYears,
   vehicleDetails,
   handleBrandSelect,
   handleModelSelect,
@@ -26,12 +27,14 @@ const TripFormSection = ({
           formData={formData}
           brandOptions={brandOptions}
           modelOptions={modelOptions}
+          availableYears={availableYears}
           handleBrandSelect={handleBrandSelect}
           handleModelSelect={handleModelSelect}
           handleYearSelect={handleYearSelect}
           handleChange={handleChange}
           errors={errors}
         />
+
         {vehicleDetails && (
           <div className="vehicle-details">
             <h3>Detalles del Vehículo</h3>
@@ -40,9 +43,9 @@ const TripFormSection = ({
             <p>Año: {vehicleDetails.year}</p>
             <p>Tipo de combustible: {vehicleDetails.fuel_type}</p>
             <p>Consumo mixto: {vehicleDetails.lkm_mixed} L/100km</p>
-            {/* Otros detalles según sea necesario */}
           </div>
         )}
+
         <button className="calculate-btn mt-3" onClick={calculateTrip}>
           Calcular Viaje
         </button>
@@ -64,6 +67,7 @@ TripFormSection.propTypes = {
   formData: PropTypes.object.isRequired,
   brandOptions: PropTypes.array.isRequired,
   modelOptions: PropTypes.array.isRequired,
+  availableYears: PropTypes.array.isRequired,
   vehicleDetails: PropTypes.object,
   handleBrandSelect: PropTypes.func.isRequired,
   handleModelSelect: PropTypes.func.isRequired,

@@ -26,7 +26,10 @@ const useTripData = (initialFormData) => {
 
   // Obtener modelos cuando se seleccione una marca
   useEffect(() => {
-    if (!formData.brand) return;
+    if (!formData.brand) {
+      setModelOptions([]);
+      return;
+    }
 
     const fetchModels = async () => {
       try {
@@ -61,6 +64,12 @@ const useTripData = (initialFormData) => {
     fetchDetails();
   }, [formData.brand, formData.model, formData.year]);
 
+  // Años disponibles si marca y modelo están seleccionados
+  const availableYears =
+    formData.brand && formData.model
+      ? Array.from({ length: 35 }, (_, i) => 2025 - i)
+      : [];
+
   const handleBrandSelect = (brand) => {
     setFormData((prev) => ({ ...prev, brand, model: "", year: "" }));
     setModelOptions([]);
@@ -79,12 +88,9 @@ const useTripData = (initialFormData) => {
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    const parsedValue = [
-      "fuelPrice",
-      "passengers",
-      "totalWeight",
-      "roadGrade",
-    ].includes(name)
+    const parsedValue = ["fuelPrice", "passengers", "totalWeight"].includes(
+      name
+    )
       ? parseFloat(value)
       : value;
 
@@ -96,8 +102,10 @@ const useTripData = (initialFormData) => {
 
   return {
     formData,
+    setFormData,
     brandOptions,
     modelOptions,
+    availableYears,
     vehicleDetails,
     handleBrandSelect,
     handleModelSelect,
