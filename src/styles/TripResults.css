@@ -1,0 +1,39 @@
+.trip-results {
+  flex: 1;
+  max-width: 400px;
+  padding: 24px;
+  background-color: #ffffff;
+  border: 2px solid #28a745;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-sizing: border-box;
+  margin-left: 20px;
+  overflow-y: auto;
+}
+
+.trip-results h2,
+.trip-results h3 {
+  color: #28a745;
+  margin-bottom: 12px;
+}
+
+.trip-results p {
+  margin: 6px 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* Adaptación para pantallas pequeñas */
+@media screen and (max-width: 1024px) {
+  .trip-results {
+    width: 90%;
+    margin: 20px auto 0 auto;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .trip-results {
+    margin-left: 0;
+    max-width: 100%;
+  }
+}

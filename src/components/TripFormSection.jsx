@@ -1,13 +1,14 @@
 import PropTypes from "prop-types";
-import TripForm from "../components/TripForm";
-import GoogleMapSection from "../components/GoogleMapSection";
+import TripForm from "./TripForm";
+import GoogleMapSection from "./GoogleMapSection";
+import TripResults from "./TripResults";
+import "../styles/home.css";
 
 const TripFormSection = ({
   formData,
   brandOptions,
   modelOptions,
   availableYears,
-  vehicleDetails,
   handleBrandSelect,
   handleModelSelect,
   handleYearSelect,
@@ -19,46 +20,50 @@ const TripFormSection = ({
   markers,
   setMarkers,
   handleLocationChange,
+  results,
+  user,
 }) => {
   return (
     <>
-      <div className="form-container">
-        <TripForm
-          formData={formData}
-          brandOptions={brandOptions}
-          modelOptions={modelOptions}
-          availableYears={availableYears}
-          handleBrandSelect={handleBrandSelect}
-          handleModelSelect={handleModelSelect}
-          handleYearSelect={handleYearSelect}
-          handleChange={handleChange}
-          errors={errors}
-        />
+      <div className="form-map-container">
+        {/* Formulario */}
+        <div className="form-container">
+          <TripForm
+            formData={formData}
+            brandOptions={brandOptions}
+            modelOptions={modelOptions}
+            availableYears={availableYears}
+            handleBrandSelect={handleBrandSelect}
+            handleModelSelect={handleModelSelect}
+            handleYearSelect={handleYearSelect}
+            handleChange={handleChange}
+            errors={errors}
+          />
+          <button className="calculate-btn mt-3" onClick={calculateTrip}>
+            Calcular Viaje
+          </button>
+        </div>
 
-        {vehicleDetails && (
-          <div className="vehicle-details">
-            <h3>Detalles del Vehículo</h3>
-            <p>Marca: {vehicleDetails.make}</p>
-            <p>Modelo: {vehicleDetails.model}</p>
-            <p>Año: {vehicleDetails.year}</p>
-            <p>Tipo de combustible: {vehicleDetails.fuel_type}</p>
-            <p>Consumo mixto: {vehicleDetails.lkm_mixed} L/100km</p>
-          </div>
-        )}
+        {/* Mapa y resultados */}
+        <div className="map-results-wrapper">
+          {isLoaded && (
+            <GoogleMapSection
+              isLoaded={isLoaded}
+              mapCenter={mapCenter}
+              markers={markers}
+              setMarkers={setMarkers}
+              handleLocationChange={handleLocationChange}
+            />
+          )}
 
-        <button className="calculate-btn mt-3" onClick={calculateTrip}>
-          Calcular Viaje
-        </button>
+          {/* Resultados a la derecha del mapa */}
+          {user && results && (
+            <div className="results-panel">
+              <TripResults results={results} />
+            </div>
+          )}
+        </div>
       </div>
-
-      {isLoaded && (
-        <GoogleMapSection
-          mapCenter={mapCenter}
-          markers={markers}
-          setMarkers={setMarkers}
-          handleLocationChange={handleLocationChange}
-        />
-      )}
     </>
   );
 };
@@ -80,6 +85,8 @@ TripFormSection.propTypes = {
   markers: PropTypes.array.isRequired,
   setMarkers: PropTypes.func.isRequired,
   handleLocationChange: PropTypes.func.isRequired,
+  results: PropTypes.object,
+  user: PropTypes.object,
 };
 
 export default TripFormSection;

@@ -15,7 +15,6 @@ const GoogleMapComponent = ({
   setMarkers,
   handleLocationChange,
 }) => {
-  // Removed unused map state
   const [directions, setDirections] = useState(null);
   const [clickCount, setClickCount] = useState(0);
 
@@ -127,7 +126,6 @@ const GoogleMapComponent = ({
         mapContainerClassName="map-container"
         center={mapCenter}
         zoom={12}
-        // Removed onLoad handler as map state is unused
         onClick={handleMapClick}
       >
         {markers.map((marker, index) => (
@@ -157,7 +155,6 @@ GoogleMapComponent.propTypes = {
   markers: PropTypes.array.isRequired,
   setMarkers: PropTypes.func.isRequired,
   handleLocationChange: PropTypes.func.isRequired,
-  routePolyline: PropTypes.string, // Para uso futuro si deseas dibujar por coordenadas
 };
 
 export default GoogleMapComponent;

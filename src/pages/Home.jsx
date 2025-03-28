@@ -1,7 +1,6 @@
 import { useJsApiLoader } from "@react-google-maps/api";
 import { useState } from "react";
 import TripFormSection from "../components/TripFormSection";
-import TripResults from "../components/TripResults";
 import useTripData from "../hooks/useTripData";
 import { useWeather } from "../hooks/useWeather";
 import { validateTripForm } from "../hooks/useTripValidation";
@@ -79,6 +78,12 @@ const Home = () => {
 
   return (
     <div className="home-container">
+      {!formData.user && (
+        <div className="login-warning">
+          🔐 Debes iniciar sesión para guardar tu viaje.
+        </div>
+      )}
+
       <TripFormSection
         formData={formData}
         brandOptions={brandOptions}
@@ -96,15 +101,9 @@ const Home = () => {
         markers={markers}
         setMarkers={setMarkers}
         handleLocationChange={handleLocationChange}
+        results={results}
+        user={formData.user}
       />
-
-      {!formData.user && (
-        <p className="warning-message">
-          🔐 Debes iniciar sesión para guardar tu viaje.
-        </p>
-      )}
-
-      {results && <TripResults results={results} />}
     </div>
   );
 };

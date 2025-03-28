@@ -1,16 +1,10 @@
 import PropTypes from "prop-types";
-import {
-  GoogleMap,
-  Marker,
-  StandaloneSearchBox,
-  useLoadScript,
-} from "@react-google-maps/api";
+import { GoogleMap, Marker, StandaloneSearchBox } from "@react-google-maps/api";
 import { useState, useRef, useEffect } from "react";
 import "../styles/map.css";
 
-const googleMapsApiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
-
 const GoogleMapSection = ({
+  isLoaded,
   mapCenter,
   markers,
   setMarkers,
@@ -20,25 +14,11 @@ const GoogleMapSection = ({
   const searchBoxRefDestiny = useRef(null);
   const setMap = useState(null)[1];
 
-  const { isLoaded, loadError } = useLoadScript({
-    googleMapsApiKey,
-    libraries: ["places"],
-  });
-
   useEffect(() => {
-    if (!googleMapsApiKey) {
+    if (!import.meta.env.VITE_GOOGLE_MAPS_API_KEY) {
       console.error("🚨 No se encontró VITE_GOOGLE_MAPS_API_KEY en .env");
     }
   }, []);
-
-  if (loadError) {
-    console.error("🚨 Error cargando Google Maps:", loadError);
-    return <div>Error cargando Google Maps</div>;
-  }
-
-  if (!isLoaded) {
-    return <div className="loading-maps">Cargando Google Maps...</div>;
-  }
 
   const onPlacesChanged = (searchBox, type) => {
     if (!searchBox?.getPlaces) return;
@@ -66,6 +46,10 @@ const GoogleMapSection = ({
     );
     setMarkers([newLocation]);
   };
+
+  if (!isLoaded) {
+    return <div className="loading-maps">Cargando Google Maps...</div>;
+  }
 
   return (
     <div className="map-wrapper">
@@ -115,6 +99,7 @@ const GoogleMapSection = ({
 };
 
 GoogleMapSection.propTypes = {
+  isLoaded: PropTypes.bool.isRequired,
   mapCenter: PropTypes.object.isRequired,
   markers: PropTypes.array.isRequired,
   setMarkers: PropTypes.func.isRequired,

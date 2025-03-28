@@ -5,7 +5,7 @@ from backend.models import db, Trip, Vehicle
 
 trip_bp = Blueprint("trip_bp", __name__)
 
-@trip_bp.route("/calculate", methods=["POST"])
+@trip_bp.route("/api/calculate", methods=["POST"])
 @cross_origin()
 @jwt_required()
 def calculate_trip():

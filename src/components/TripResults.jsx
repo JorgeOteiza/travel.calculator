@@ -1,59 +1,67 @@
 import PropTypes from "prop-types";
+import "../styles/tripResults.css";
 
 const TripResults = ({ results }) => {
   if (!results) return null;
 
   return (
-    <div className="results">
-      <h2>Resultados del Viaje</h2>
-      <p>
-        <strong>Distancia:</strong> {results.distance} km
-      </p>
-      <p>
-        <strong>Consumo de combustible:</strong> {results.fuelUsed} litros
-      </p>
-      <p>
-        <strong>Costo total:</strong> ${results.totalCost}
-      </p>
-      <p>
-        <strong>Condiciones climáticas:</strong> {results.weather}
-      </p>
-      <p>
-        <strong>Pendiente del camino:</strong> {results.roadSlope}
-      </p>
+    <div className="trip-results-container">
+      <div className="trip-results-card">
+        <h2>Resultados del Viaje</h2>
+        <ul>
+          <li>
+            <strong>Distancia:</strong> {results.distance} km
+          </li>
+          <li>
+            <strong>Consumo de combustible:</strong> {results.fuelUsed} litros
+          </li>
+          <li>
+            <strong>Costo total:</strong> ${results.totalCost}
+          </li>
+          <li>
+            <strong>Condiciones climáticas:</strong> {results.weather}
+          </li>
+          <li>
+            <strong>Pendiente del camino:</strong> {results.roadSlope}
+          </li>
+        </ul>
 
-      {results.vehicleDetails && (
-        <>
-          <h3>Detalles del Vehículo</h3>
-          <p>
-            <strong>Marca:</strong> {results.vehicleDetails.make}
-          </p>
-          <p>
-            <strong>Modelo:</strong> {results.vehicleDetails.model}
-          </p>
-          <p>
-            <strong>Año:</strong> {results.vehicleDetails.year}
-          </p>
-          <p>
-            <strong>Tipo de Combustible:</strong>{" "}
-            {results.vehicleDetails.fuel_type}
-          </p>
-          <p>
-            <strong>Cilindrada:</strong> {results.vehicleDetails.engine_cc} cc
-          </p>
-          <p>
-            <strong>N° de Cilindros:</strong>{" "}
-            {results.vehicleDetails.engine_cylinders}
-          </p>
-          <p>
-            <strong>Peso:</strong> {results.vehicleDetails.weight_kg} kg
-          </p>
-          <p>
-            <strong>Consumo Mixto:</strong> {results.vehicleDetails.lkm_mixed}{" "}
-            l/100km
-          </p>
-        </>
-      )}
+        {results.vehicleDetails && (
+          <div className="vehicle-details">
+            <h3>Detalles del Vehículo</h3>
+            <ul>
+              <li>
+                <strong>Marca:</strong> {results.vehicleDetails.make}
+              </li>
+              <li>
+                <strong>Modelo:</strong> {results.vehicleDetails.model}
+              </li>
+              <li>
+                <strong>Año:</strong> {results.vehicleDetails.year}
+              </li>
+              <li>
+                <strong>Tipo de Combustible:</strong>{" "}
+                {results.vehicleDetails.fuel_type}
+              </li>
+              <li>
+                <strong>Cilindrada:</strong> {results.vehicleDetails.engine_cc}{" "}
+                cc
+              </li>
+              <li>
+                <strong>N° de Cilindros:</strong>{" "}
+                {results.vehicleDetails.engine_cylinders}
+              </li>
+              <li>
+                <strong>Peso:</strong> {results.vehicleDetails.weight_kg} kg
+              </li>
+              <li>
+                <strong>Consumo Mixto:</strong>{" "}
+                {results.vehicleDetails.lkm_mixed} l/100km
+              </li>
+            </ul>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

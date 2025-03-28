@@ -88,10 +88,15 @@ const useTripData = (initialFormData) => {
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    const parsedValue = ["fuelPrice", "passengers", "totalWeight"].includes(
-      name
-    )
-      ? parseFloat(value)
+    const parsedValue = [
+      "fuelPrice",
+      "passengers",
+      "totalWeight",
+      "roadGrade",
+    ].includes(name)
+      ? value === ""
+        ? ""
+        : parseFloat(value)
       : value;
 
     setFormData((prev) => ({
