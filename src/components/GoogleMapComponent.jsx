@@ -16,35 +16,29 @@ const GoogleMapComponent = ({
   handleLocationChange,
 }) => {
   const [directions, setDirections] = useState(null);
-  const [clickCount, setClickCount] = useState(0);
-
   const searchBoxRefOrigin = useRef(null);
   const searchBoxRefDestiny = useRef(null);
 
-  const drawRoute = (origin, destination) => {
-    if (!origin || !destination || !window.google) return;
-
-    const directionsService = new window.google.maps.DirectionsService();
-
-    directionsService.route(
-      {
-        origin,
-        destination,
-        travelMode: window.google.maps.TravelMode.DRIVING,
-      },
-      (result, status) => {
-        if (status === "OK") {
-          setDirections(result);
-        } else {
-          console.error("Error al trazar ruta:", status);
-        }
-      }
-    );
-  };
-
+  // Dibujar ruta cuando ambos marcadores estén presentes
   useEffect(() => {
-    if (markers.length === 2) {
-      drawRoute(markers[0], markers[1]);
+    if (markers.length === 2 && markers[0] && markers[1] && window.google) {
+      const directionsService = new window.google.maps.DirectionsService();
+      directionsService.route(
+        {
+          origin: markers[0],
+          destination: markers[1],
+          travelMode: window.google.maps.TravelMode.DRIVING,
+        },
+        (result, status) => {
+          if (status === "OK") {
+            setDirections(result);
+          } else {
+            console.error("No se pudo calcular la ruta:", status);
+          }
+        }
+      );
+    } else {
+      setDirections(null);
     }
   }, [markers]);
 
@@ -63,10 +57,10 @@ const GoogleMapComponent = ({
 
     if (type === "origin") {
       handleLocationChange("location", newLocation);
-      setMarkers((prev) => [newLocation, prev[1]].filter(Boolean));
+      setMarkers((prev) => [newLocation, prev[1] || null]);
     } else if (type === "destiny") {
       handleLocationChange("destinity", newLocation);
-      setMarkers((prev) => [prev[0], newLocation].filter(Boolean));
+      setMarkers((prev) => [prev[0] || null, newLocation]);
     }
   };
 
@@ -76,16 +70,19 @@ const GoogleMapComponent = ({
       lng: event.latLng.lng(),
     };
 
-    const field = clickCount % 2 === 0 ? "location" : "destinity";
-    handleLocationChange(field, clicked);
+    const [origin, destination] = markers;
 
-    if (clickCount % 2 === 0) {
-      setMarkers([clicked]);
+    if (!origin) {
+      handleLocationChange("location", clicked);
+      setMarkers([clicked, destination || null]);
+    } else if (!destination) {
+      handleLocationChange("destinity", clicked);
+      setMarkers([origin, clicked]);
     } else {
-      setMarkers((prev) => [prev[0], clicked]);
+      // Reset con nuevo origen
+      handleLocationChange("location", clicked);
+      setMarkers([clicked, null]);
     }
-
-    setClickCount((prev) => prev + 1);
   };
 
   if (!isLoaded) {
@@ -128,15 +125,13 @@ const GoogleMapComponent = ({
         zoom={12}
         onClick={handleMapClick}
       >
-        {markers.map((marker, index) => (
-          <Marker key={index} position={marker} />
-        ))}
-
+        {markers[0] && <Marker position={markers[0]} />}
+        {markers[1] && <Marker position={markers[1]} />}
         {directions && (
           <DirectionsRenderer
             directions={directions}
             options={{
-              suppressMarkers: true,
+              suppressMarkers: false,
               polylineOptions: {
                 strokeColor: "#4285F4",
                 strokeWeight: 5,

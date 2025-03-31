@@ -95,31 +95,20 @@ def get_model_details():
         model = request.args.get("model")
         year = request.args.get("year", type=int)
 
-        if not all([make, model, year]):
-            return jsonify({"error": "Los parámetros 'make', 'model' y 'year' son obligatorios"}), 400
+        if not make or not model or not year:
+            return jsonify({"error": "Faltan parámetros 'make', 'model' o 'year'"}), 400
 
+        # Verificar si el vehículo ya existe en la base de datos
         vehicle = Vehicle.query.filter(
             db.func.lower(Vehicle.make) == make.lower(),
             db.func.lower(Vehicle.model) == model.lower(),
             Vehicle.year == year
         ).first()
+
         if vehicle:
             return jsonify(vehicle.to_dict()), 200
 
-        response = requests.get(
-            f"{NHTSA_API_BASE}/GetModelsForMakeYear/make/{make}/modelyear/{year}?format=json"
-        )
-
-        if response.status_code != 200:
-            return jsonify({"error": f"NHTSA API error: {response.status_code}"}), response.status_code
-
-        data = response.json()
-        results = data.get("Results", [])
-        match = next((item for item in results if item["Model_Name"].lower() == model.lower()), None)
-
-        if not match:
-            return jsonify({"error": "No se encontraron detalles para este modelo"}), 404
-
+        # Si no existe, registrar vehículo como dummy
         new_vehicle = Vehicle(
             make=make,
             model=model,
@@ -131,7 +120,6 @@ def get_model_details():
             lkm_mixed=None,
             mpg_mixed=None,
         )
-
         db.session.add(new_vehicle)
         db.session.commit()
 

@@ -5,10 +5,13 @@ from backend.models import db, Trip, Vehicle
 
 trip_bp = Blueprint("trip_bp", __name__)
 
-@trip_bp.route("/api/calculate", methods=["POST"])
+@trip_bp.route("/calculate", methods=["POST", "OPTIONS"])
 @cross_origin()
 @jwt_required()
 def calculate_trip():
+    if request.method == "OPTIONS":
+        return '', 200
+
     try:
         data = request.get_json()
         user_id = get_jwt_identity()
@@ -20,30 +23,29 @@ def calculate_trip():
 
         make = data["brand"].strip().lower()
         model = data["model"].strip().lower()
+        year = int(data["year"])
+
         vehicle = Vehicle.query.filter(
             db.func.lower(Vehicle.make) == make,
             db.func.lower(Vehicle.model) == model,
-            Vehicle.year == data["year"]
+            Vehicle.year == year
         ).first()
 
         if not vehicle:
             return jsonify({"error": "No se encontraron detalles del vehículo"}), 404
 
-        total_weight = data["totalWeight"]
-        distance_km = data["distance"]
-        fuel_price = data["fuelPrice"]
+        total_weight = float(data["totalWeight"])
+        distance_km = float(data["distance"])
+        fuel_price = float(data["fuelPrice"])
         climate = data["climate"]
-        road_grade = data["roadGrade"]
+        road_grade = float(data["roadGrade"])
 
-        base_fuel_consumption = vehicle.lkm_mixed if vehicle.lkm_mixed else 8
+        base_fuel_consumption = vehicle.lkm_mixed if vehicle.lkm_mixed else 8.0
         weight_factor = 1 + ((total_weight + (vehicle.weight_kg or 1500)) / 1500) * 0.1
         adjusted_fuel_consumption = base_fuel_consumption * weight_factor
 
         if road_grade > 0:
-            incline_factor = 1 + (road_grade / 10)
-        else:
-            incline_factor = 1
-        adjusted_fuel_consumption *= incline_factor
+            adjusted_fuel_consumption *= 1 + (road_grade / 10)
 
         if "cold" in climate.lower():
             adjusted_fuel_consumption *= 1.1
@@ -113,16 +115,16 @@ def save_trip():
             user_id=user_id,
             brand=data["brand"],
             model=data["model"],
-            year=data["year"],
+            year=int(data["year"]),
             fuel_type=data["fuel_type"],
-            fuel_price=data["fuel_price"],
-            total_weight=data["total_weight"],
-            passengers=data["passengers"],
+            fuel_price=float(data["fuel_price"]),
+            total_weight=float(data["total_weight"]),
+            passengers=int(data["passengers"]),
             location=data["location"],
-            distance=data["distance"],
-            fuel_consumed=data["fuel_consumed"],
-            total_cost=data["total_cost"],
-            road_grade=data["road_grade"],
+            distance=float(data["distance"]),
+            fuel_consumed=float(data["fuel_consumed"]),
+            total_cost=float(data["total_cost"]),
+            road_grade=float(data["road_grade"]),
             weather=data["weather"]
         )
 
@@ -136,7 +138,6 @@ def save_trip():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
 
 
 @trip_bp.route("/trips/<int:trip_id>", methods=["DELETE"])

@@ -12,6 +12,7 @@ from backend.routes.auth_routes import auth_bp
 from backend.routes.car_routes import car_bp
 from backend.routes.elevation_routes import elevation_bp
 from backend.routes import main_bp
+from backend.routes.trip_routes import trip_bp
 
 # Cargar variables de entorno
 load_dotenv()
@@ -19,13 +20,7 @@ bcrypt = Bcrypt()
 
 def create_app():
     app = Flask(__name__)
-    bcrypt.init_app(app)
-
-    CORS(
-        app,
-        resources={r"/api/*": {"origins": "http://localhost:5173"}},
-        supports_credentials=True,
-    )
+    CORS(app, supports_credentials=True)
 
     app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('SQLALCHEMY_DATABASE_URI')
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -41,6 +36,8 @@ def create_app():
     app.register_blueprint(main_bp, url_prefix="/api")
     app.register_blueprint(car_bp, url_prefix="/api/cars")
     app.register_blueprint(elevation_bp, url_prefix="/api")
+    app.register_blueprint(trip_bp, url_prefix="/api")
+
 
 
     print("🚀 Servidor Flask iniciado en modo:", "Debug" if app.config["DEBUG"] else "Producción")
