@@ -87,7 +87,8 @@ def calculate_trip():
 @jwt_required()
 def get_trips():
     try:
-        trips = Trip.query.all()
+        user_id = get_jwt_identity()
+        trips = Trip.query.filter_by(user_id=user_id).all()
         return jsonify([trip.to_dict() for trip in trips]), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500

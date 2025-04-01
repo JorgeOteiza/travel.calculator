@@ -1,38 +1,90 @@
 .profile-container {
-  max-width: 600px;
+  max-width: 720px;
   margin: 50px auto;
-  padding: 20px;
+  padding: 24px;
   background-color: #fff;
-  border-radius: 8px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-  text-align: center;
+  border-radius: 12px;
+  box-shadow: 0 0 16px rgba(0, 0, 0, 0.08);
+  font-family: "Segoe UI", sans-serif;
+  box-sizing: border-box;
 }
 
 .profile-container h2 {
-  margin-bottom: 15px;
+  margin-bottom: 12px;
+  font-size: 1.5rem;
+  color: #333;
 }
 
 .profile-container p {
-  font-size: 18px;
-  margin-bottom: 10px;
+  font-size: 1rem;
+  margin-bottom: 8px;
+  color: #444;
 }
 
-.profile-container button {
-  padding: 10px 15px;
+.profile-subtitle {
+  font-size: 1.25rem;
+  margin-top: 24px;
+  margin-bottom: 16px;
+  color: #007bff;
+  text-align: left;
+}
+
+.profile-message {
+  font-size: 1rem;
+  color: #777;
+  margin-bottom: 16px;
+}
+
+.profile-loading {
+  text-align: center;
+  font-size: 18px;
+  color: #555;
+}
+
+.btn-back {
+  padding: 12px 20px;
   border: none;
   background-color: #007bff;
   color: white;
   cursor: pointer;
-  border-radius: 5px;
-  margin-top: 15px;
+  border-radius: 8px;
+  margin-top: 20px;
+  font-size: 16px;
+  transition: background-color 0.3s ease;
 }
 
-.profile-container button:hover {
+.btn-back:hover {
   background-color: #0056b3;
 }
 
-.loading {
-  text-align: center;
-  font-size: 18px;
-  color: #555;
+.trip-card {
+  text-align: left;
+  background-color: #f9f9f9;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+  transition: box-shadow 0.3s ease;
+}
+
+.trip-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.trip-header {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.trip-card ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.trip-card li {
+  margin-bottom: 4px;
 }
