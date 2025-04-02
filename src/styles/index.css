@@ -1,70 +1,26 @@
-@import "/node_modules/bootstrap/dist/css/bootstrap.min.css";
-
-html,
-body {
-  height: 100%;
-  margin: 0;
-  padding: 0;
-  font-family: Arial, sans-serif;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
-}
-
-#root {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  box-sizing: border-box;
-}
-
-form,
-ul,
-li,
-button {
-  all: unset;
-  box-sizing: border-box;
-}
-
+/* index.css */
+/* 🔁 Reset universal */
 *,
 *::before,
 *::after {
+  margin: 0;
+  padding: 0;
   box-sizing: border-box;
 }
 
-nav {
-  background-color: #333;
-  padding: 1rem;
+/* 🌐 Tipografía base */
+html,
+body {
+  font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background-color: #f7f9fc;
+  color: #222;
+  line-height: 1.6;
+  height: 100%;
+}
+
+/* 🎯 Root container */
+#root {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  box-sizing: border-box;
-  border-bottom: 4px solid lightseagreen;
-}
-
-.navbar-brand {
-  color: cadetblue;
-  font-size: 1.5rem;
-  font-weight: bold;
-}
-
-.nav-link {
-  color: white;
-  text-decoration: none;
-  padding: 0.5rem;
-}
-
-.nav-link:hover {
-  text-decoration: underline;
-}
-
-footer {
-  background-color: #333;
-  color: white;
-  text-align: center;
-  padding: 2rem;
-  border-top: 4px solid lightseagreen;
-  margin-top: auto;
-  box-sizing: border-box;
+  flex-direction: column;
+  min-height: 100vh;
 }

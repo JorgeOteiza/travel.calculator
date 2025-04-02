@@ -1,0 +1,30 @@
+/* src/components/Navbar.css */
+.navbar {
+  border-bottom: 4px solid lightseagreen;
+}
+
+.navbar-brand {
+  color: cadetblue !important;
+  font-weight: bold;
+  font-size: 1.5rem;
+}
+
+.nav-link {
+  color: white !important;
+  font-weight: 500;
+}
+
+.nav-link:hover {
+  text-decoration: underline;
+  color: #aad8ff !important;
+}
+
+.btn-outline-light:hover {
+  background-color: white;
+  color: #212529;
+}
+
+.btn-outline-danger:hover {
+  background-color: #dc3545;
+  color: white;
+}

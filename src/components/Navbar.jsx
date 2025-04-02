@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import PropTypes from "prop-types";
 import axios from "axios";
+import "../styles/Navbar.css";
 
 const VITE_BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 

@@ -1,35 +1,19 @@
+/* app.css */
+/* 🌐 Layout principal */
 .main-container {
-  margin: auto;
-  padding: 20px;
+  flex: 1;
+  padding: 24px;
   box-sizing: border-box;
-}
-
-nav {
-  background-color: #007bff;
-  padding: 1rem;
-  color: white;
-  font-size: 1.2rem;
-  border-bottom: 4px solid #0056b3;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
 }
 
-nav a {
-  color: white;
-  text-decoration: none;
-  margin: 0 10px;
+/* 🧭 Navbar global (uso preferente: .navbar-container en Navbar.css) */
+nav {
+  width: 100%;
 }
 
-nav a:hover {
-  text-decoration: underline;
-}
-
+/* 📌 Footer global (override si lo encapsulas en Footer.css) */
 footer {
-  background-color: #333;
-  color: white;
-  text-align: center;
-  padding: 2rem;
-  font-size: 1.2rem;
-  border-top: 4px solid #007bff;
+  width: 100%;
 }
