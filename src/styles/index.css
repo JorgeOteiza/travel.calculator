@@ -1,5 +1,9 @@
-/* index.css */
-/* 🔁 Reset universal */
+#root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
 *,
 *::before,
 *::after {
@@ -8,7 +12,6 @@
   box-sizing: border-box;
 }
 
-/* 🌐 Tipografía base */
 html,
 body {
   font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -18,9 +21,10 @@ body {
   height: 100%;
 }
 
-/* 🎯 Root container */
-#root {
+.main-container {
+  flex: 1;
+  padding: 24px;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
 }

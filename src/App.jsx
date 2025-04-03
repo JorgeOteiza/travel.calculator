@@ -13,6 +13,8 @@ import "./styles/app.css";
 
 const VITE_BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 const VITE_GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+const GOOGLE_MAPS_LIBRARIES = ["places"];
+
 
 function App() {
   const [user, setUser] = useState(null);
@@ -40,10 +42,12 @@ function App() {
     fetchUser();
   }, []);
 
+
   const { isLoaded, loadError } = useJsApiLoader({
     googleMapsApiKey: VITE_GOOGLE_MAPS_API_KEY,
-    libraries: ["places"],
+    libraries: GOOGLE_MAPS_LIBRARIES,
   });
+  
 
   if (loadError) return <div>Error al cargar Google Maps</div>;
 

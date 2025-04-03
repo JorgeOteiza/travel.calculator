@@ -1,19 +1,7 @@
-/* app.css */
-/* 🌐 Layout principal */
-.main-container {
-  flex: 1;
-  padding: 24px;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-}
-
-/* 🧭 Navbar global (uso preferente: .navbar-container en Navbar.css) */
 nav {
   width: 100%;
 }
 
-/* 📌 Footer global (override si lo encapsulas en Footer.css) */
 footer {
   width: 100%;
 }
