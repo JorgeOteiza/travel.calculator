@@ -6,14 +6,16 @@ import { useWeather } from "../hooks/useWeather";
 import { validateTripForm } from "../hooks/useTripValidation";
 import { useTripCalculation } from "../hooks/useTripCalculation";
 import { useTripFormHandlers } from "../hooks/useTripFormHandlers";
+import { GOOGLE_MAPS_LIBRARIES } from "../constants/googleMaps";
 import "../styles/home.css";
+import { DEFAULT_MAP_CENTER } from "../constants/googleMaps";
 
 const VITE_GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
 const Home = () => {
   const { isLoaded, loadError } = useJsApiLoader({
     googleMapsApiKey: VITE_GOOGLE_MAPS_API_KEY,
-    libraries: ["places"],
+    libraries: GOOGLE_MAPS_LIBRARIES,
   });
 
   const userFromStorage = JSON.parse(localStorage.getItem("user"));
@@ -47,7 +49,8 @@ const Home = () => {
   const { fetchWeather } = useWeather(setFormData);
 
   const [results, setResults] = useState(null);
-  const [mapCenter, setMapCenter] = useState({ lat: 37.7749, lng: -122.4194 });
+  const [mapCenter, setMapCenter] = useState(DEFAULT_MAP_CENTER);
+
   const [markers, setMarkers] = useState([]);
   const [errors, setErrors] = useState({});
 
@@ -98,6 +101,7 @@ const Home = () => {
         errors={errors}
         isLoaded={isLoaded}
         mapCenter={mapCenter}
+        setMapCenter={setMapCenter}
         markers={markers}
         setMarkers={setMarkers}
         handleLocationChange={handleLocationChange}

@@ -22,49 +22,49 @@ const TripFormSection = ({
   handleLocationChange,
   results,
   user,
+  setMapCenter,
 }) => {
   return (
-    <>
-      <div className="form-map-container">
-        {/* Formulario */}
-        <div className="form-container">
-          <TripForm
-            formData={formData}
-            brandOptions={brandOptions}
-            modelOptions={modelOptions}
-            availableYears={availableYears}
-            handleBrandSelect={handleBrandSelect}
-            handleModelSelect={handleModelSelect}
-            handleYearSelect={handleYearSelect}
-            handleChange={handleChange}
-            errors={errors}
-          />
-          <button className="calculate-btn mt-3" onClick={calculateTrip}>
-            Calcular Viaje
-          </button>
-        </div>
-
-        {/* Mapa y resultados */}
-        <div className="map-results-wrapper">
-          {isLoaded && (
-            <GoogleMapSection
-              isLoaded={isLoaded}
-              mapCenter={mapCenter}
-              markers={markers}
-              setMarkers={setMarkers}
-              handleLocationChange={handleLocationChange}
-            />
-          )}
-
-          {/* Resultados a la derecha del mapa */}
-          {user && results && (
-            <div className="results-panel">
-              <TripResults results={results} />
-            </div>
-          )}
-        </div>
+    <div className="form-map-container">
+      {/* Formulario */}
+      <div className="form-container">
+        <TripForm
+          formData={formData}
+          brandOptions={brandOptions}
+          modelOptions={modelOptions}
+          availableYears={availableYears}
+          handleBrandSelect={handleBrandSelect}
+          handleModelSelect={handleModelSelect}
+          handleYearSelect={handleYearSelect}
+          handleChange={handleChange}
+          errors={errors}
+        />
+        <button className="calculate-btn mt-3" onClick={calculateTrip}>
+          Calcular Viaje
+        </button>
       </div>
-    </>
+
+      {/* Mapa y resultados */}
+      <div className="map-results-wrapper">
+        {isLoaded && (
+          <GoogleMapSection
+            isLoaded={isLoaded}
+            mapCenter={mapCenter}
+            setMapCenter={setMapCenter}
+            markers={markers}
+            setMarkers={setMarkers}
+            handleLocationChange={handleLocationChange}
+          />
+        )}
+
+        {/* Resultados */}
+        {user && results && (
+          <div className="results-panel">
+            <TripResults results={results} />
+          </div>
+        )}
+      </div>
+    </div>
   );
 };
 
@@ -83,10 +83,12 @@ TripFormSection.propTypes = {
   isLoaded: PropTypes.bool.isRequired,
   mapCenter: PropTypes.object.isRequired,
   markers: PropTypes.array.isRequired,
-  setMarkers: PropTypes.func.isRequired,
   handleLocationChange: PropTypes.func.isRequired,
+  setMapCenter: PropTypes.func.isRequired,
   results: PropTypes.object,
   user: PropTypes.object,
+  setMarkers: PropTypes.func.isRequired,
 };
+
 
 export default TripFormSection;

@@ -2,16 +2,17 @@ import PropTypes from "prop-types";
 import {
   GoogleMap,
   Marker,
-  StandaloneSearchBox,
+  Autocomplete,
   DirectionsRenderer,
 } from "@react-google-maps/api";
-import { useRef, useState, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import "../styles/map.css";
 
-const GoogleMapComponent = ({
+const GoogleMapSection = ({
   isLoaded,
   mapCenter,
   markers,
+  setMapCenter,
   setMarkers,
   handleLocationChange,
 }) => {
@@ -19,7 +20,24 @@ const GoogleMapComponent = ({
   const searchBoxRefOrigin = useRef(null);
   const searchBoxRefDestiny = useRef(null);
 
-  // Dibujar ruta cuando ambos marcadores estén presentes
+  // Centrar en ubicación actual al iniciar
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        ({ coords }) => {
+          const userLocation = { lat: coords.latitude, lng: coords.longitude };
+          setMapCenter(userLocation);
+          handleLocationChange("location", userLocation);
+          setMarkers([userLocation, null]);
+        },
+        (error) => {
+          console.warn("No se pudo obtener la ubicación:", error.message);
+        }
+      );
+    }
+  }, [handleLocationChange, setMapCenter, setMarkers]);
+
+  // Dibujar ruta cuando ambos marcadores estén definidos
   useEffect(() => {
     if (markers.length === 2 && markers[0] && markers[1] && window.google) {
       const directionsService = new window.google.maps.DirectionsService();
@@ -57,10 +75,10 @@ const GoogleMapComponent = ({
 
     if (type === "origin") {
       handleLocationChange("location", newLocation);
-      setMarkers((prev) => [newLocation, prev[1] || null]);
+      setMarkers([newLocation, markers[1]]);
     } else if (type === "destiny") {
       handleLocationChange("destinity", newLocation);
-      setMarkers((prev) => [prev[0] || null, newLocation]);
+      setMarkers([markers[0], newLocation]);
     }
   };
 
@@ -71,7 +89,6 @@ const GoogleMapComponent = ({
     };
 
     const [origin, destination] = markers;
-
     if (!origin) {
       handleLocationChange("location", clicked);
       setMarkers([clicked, destination || null]);
@@ -79,20 +96,17 @@ const GoogleMapComponent = ({
       handleLocationChange("destinity", clicked);
       setMarkers([origin, clicked]);
     } else {
-      // Reset con nuevo origen
       handleLocationChange("location", clicked);
       setMarkers([clicked, null]);
     }
   };
 
-  if (!isLoaded) {
-    return <div className="loading-maps">Loading Google Maps...</div>;
-  }
+  if (!isLoaded) return <div className="loading-maps">Cargando mapa...</div>;
 
   return (
     <div className="map-wrapper">
       <div className="search-container">
-        <StandaloneSearchBox
+        <Autocomplete
           onLoad={(ref) => (searchBoxRefOrigin.current = ref)}
           onPlacesChanged={() =>
             onPlacesChanged(searchBoxRefOrigin.current, "origin")
@@ -101,22 +115,18 @@ const GoogleMapComponent = ({
           <input
             type="text"
             className="search-box"
-            placeholder="Choose start location..."
+            placeholder="Origen (inicio)"
           />
-        </StandaloneSearchBox>
+        </Autocomplete>
 
-        <StandaloneSearchBox
+        <Autocomplete
           onLoad={(ref) => (searchBoxRefDestiny.current = ref)}
           onPlacesChanged={() =>
             onPlacesChanged(searchBoxRefDestiny.current, "destiny")
           }
         >
-          <input
-            type="text"
-            className="search-box"
-            placeholder="Choose destination..."
-          />
-        </StandaloneSearchBox>
+          <input type="text" className="search-box" placeholder="Destino" />
+        </Autocomplete>
       </div>
 
       <GoogleMap
@@ -127,29 +137,19 @@ const GoogleMapComponent = ({
       >
         {markers[0] && <Marker position={markers[0]} />}
         {markers[1] && <Marker position={markers[1]} />}
-        {directions && (
-          <DirectionsRenderer
-            directions={directions}
-            options={{
-              suppressMarkers: false,
-              polylineOptions: {
-                strokeColor: "#4285F4",
-                strokeWeight: 5,
-              },
-            }}
-          />
-        )}
+        {directions && <DirectionsRenderer directions={directions} />}
       </GoogleMap>
     </div>
   );
 };
 
-GoogleMapComponent.propTypes = {
+GoogleMapSection.propTypes = {
   isLoaded: PropTypes.bool.isRequired,
   mapCenter: PropTypes.object.isRequired,
+  setMapCenter: PropTypes.func.isRequired,
   markers: PropTypes.array.isRequired,
   setMarkers: PropTypes.func.isRequired,
   handleLocationChange: PropTypes.func.isRequired,
 };
 
-export default GoogleMapComponent;
+export default GoogleMapSection;

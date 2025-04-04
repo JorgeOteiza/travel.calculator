@@ -93,7 +93,7 @@ const Navbar = ({ user, setUser }) => {
                   👤 {user?.name || "Cargando..."}
                 </Link>
                 <button
-                  className="btn btn-outline-danger w-auto"
+                  className="btn btn-outline-danger w-auto mt-0"
                   onClick={handleLogout}
                 >
                   Logout

@@ -1,98 +1,161 @@
 import PropTypes from "prop-types";
-import { GoogleMap, Marker, StandaloneSearchBox } from "@react-google-maps/api";
-import { useState, useRef, useEffect } from "react";
+import {
+  GoogleMap,
+  Marker,
+  StandaloneSearchBox,
+  DirectionsRenderer,
+} from "@react-google-maps/api";
+import { useState, useRef, useEffect, useCallback } from "react";
 import "../styles/map.css";
+
+const DEFAULT_CENTER = { lat: -33.4489, lng: -70.6693 }; // Santiago, Chile
 
 const GoogleMapSection = ({
   isLoaded,
   mapCenter,
+  setMapCenter,
   markers,
   setMarkers,
   handleLocationChange,
 }) => {
+  const [directions, setDirections] = useState(null);
+  const [locationDenied, setLocationDenied] = useState(false);
+
   const searchBoxRefOrigin = useRef(null);
   const searchBoxRefDestiny = useRef(null);
-  const setMap = useState(null)[1];
+
+  // ⚠️ Solicita ubicación solo al presionar el botón
+  const getCurrentLocation = useCallback(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const current = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          };
+          setMapCenter(current);
+          handleLocationChange("location", current);
+          setMarkers([current]);
+          setLocationDenied(false);
+        },
+        () => {
+          console.warn("📛 Usuario denegó acceso a ubicación.");
+          setLocationDenied(true);
+          setMapCenter(DEFAULT_CENTER);
+        }
+      );
+    } else {
+      console.warn("⚠️ Geolocalización no está disponible.");
+      setLocationDenied(true);
+    }
+  }, [handleLocationChange, setMapCenter, setMarkers]);
 
   useEffect(() => {
-    if (!import.meta.env.VITE_GOOGLE_MAPS_API_KEY) {
-      console.error("🚨 No se encontró VITE_GOOGLE_MAPS_API_KEY en .env");
+    if (markers.length === 2) {
+      const directionsService = new window.google.maps.DirectionsService();
+      directionsService.route(
+        {
+          origin: markers[0],
+          destination: markers[1],
+          travelMode: window.google.maps.TravelMode.DRIVING,
+        },
+        (result, status) => {
+          if (status === window.google.maps.DirectionsStatus.OK) {
+            setDirections(result);
+          } else {
+            console.error("Error al trazar ruta:", status);
+          }
+        }
+      );
+    } else {
+      setDirections(null);
     }
-  }, []);
+  }, [markers]);
 
-  const onPlacesChanged = (searchBox, type) => {
-    if (!searchBox?.getPlaces) return;
+  const handlePlaceChanged = (searchBox, type) => {
     const places = searchBox.getPlaces();
-
-    if (!places || places.length === 0) {
-      console.warn("⚠️ No se encontró ninguna ubicación.");
-      return;
-    }
+    if (!places || places.length === 0) return;
 
     const place = places[0];
-    if (!place.geometry?.location) {
-      console.error("🚨 La ubicación seleccionada no tiene coordenadas.");
-      return;
-    }
+    if (!place.geometry || !place.geometry.location) return;
 
-    const newLocation = {
+    const newCoords = {
       lat: place.geometry.location.lat(),
       lng: place.geometry.location.lng(),
     };
 
-    handleLocationChange(
-      type === "origin" ? "location" : "destinity",
-      newLocation
-    );
-    setMarkers([newLocation]);
+    if (type === "origin") {
+      handleLocationChange("location", newCoords);
+      setMarkers((prev) => [newCoords, prev[1]].filter(Boolean));
+      setMapCenter(newCoords);
+    } else {
+      handleLocationChange("destinity", newCoords);
+      setMarkers((prev) => [prev[0], newCoords].filter(Boolean));
+    }
   };
 
-  if (!isLoaded) {
+  if (!isLoaded)
     return <div className="loading-maps">Cargando Google Maps...</div>;
-  }
 
   return (
     <div className="map-wrapper">
       <div className="search-container">
-        <StandaloneSearchBox
-          onLoad={(ref) => (searchBoxRefOrigin.current = ref)}
-          onPlacesChanged={() =>
-            onPlacesChanged(searchBoxRefOrigin.current, "origin")
-          }
-        >
-          <input
-            type="text"
-            className="search-box"
-            placeholder="Ubicación de inicio"
-          />
-        </StandaloneSearchBox>
+        <div className="search-inputs">
+          <StandaloneSearchBox
+            onLoad={(ref) => (searchBoxRefOrigin.current = ref)}
+            onPlacesChanged={() =>
+              handlePlaceChanged(searchBoxRefOrigin.current, "origin")
+            }
+          >
+            <input
+              type="text"
+              className="search-box"
+              placeholder="Ubicación de inicio"
+            />
+          </StandaloneSearchBox>
 
-        <StandaloneSearchBox
-          onLoad={(ref) => (searchBoxRefDestiny.current = ref)}
-          onPlacesChanged={() =>
-            onPlacesChanged(searchBoxRefDestiny.current, "destiny")
-          }
+          <StandaloneSearchBox
+            onLoad={(ref) => (searchBoxRefDestiny.current = ref)}
+            onPlacesChanged={() =>
+              handlePlaceChanged(searchBoxRefDestiny.current, "destiny")
+            }
+          >
+            <input type="text" className="search-box" placeholder="Destino" />
+          </StandaloneSearchBox>
+        </div>
+
+        <button
+          className="gps-button"
+          onClick={getCurrentLocation}
+          title="Usar mi ubicación actual"
         >
-          <input type="text" className="search-box" placeholder="Destino" />
-        </StandaloneSearchBox>
+          📍
+        </button>
       </div>
+
+      {locationDenied && (
+        <div className="location-warning">
+          ⚠️ Acceso a ubicación denegado. Se mostrará Santiago por defecto.
+        </div>
+      )}
 
       <GoogleMap
         mapContainerClassName="map-container"
         center={mapCenter}
         zoom={12}
-        onLoad={(mapInstance) => setMap(mapInstance)}
         onClick={(event) => {
           const newMarker = {
             lat: event.latLng.lat(),
             lng: event.latLng.lng(),
           };
           setMarkers([newMarker]);
+          setMapCenter(newMarker);
         }}
       >
         {markers.map((marker, index) => (
           <Marker key={index} position={marker} />
         ))}
+        {directions && <DirectionsRenderer directions={directions} />}
       </GoogleMap>
     </div>
   );
@@ -101,6 +164,7 @@ const GoogleMapSection = ({
 GoogleMapSection.propTypes = {
   isLoaded: PropTypes.bool.isRequired,
   mapCenter: PropTypes.object.isRequired,
+  setMapCenter: PropTypes.func.isRequired,
   markers: PropTypes.array.isRequired,
   setMarkers: PropTypes.func.isRequired,
   handleLocationChange: PropTypes.func.isRequired,
