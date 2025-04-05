@@ -2,7 +2,7 @@ import PropTypes from "prop-types";
 import {
   GoogleMap,
   Marker,
-  StandaloneSearchBox,
+  Autocomplete,
   DirectionsRenderer,
 } from "@react-google-maps/api";
 import { useState, useRef, useEffect, useCallback } from "react";
@@ -23,16 +23,29 @@ const GoogleMapSection = ({
 
   const searchBoxRefOrigin = useRef(null);
   const searchBoxRefDestiny = useRef(null);
+  const originInputRef = useRef(null);
 
-  // ⚠️ Solicita ubicación solo al presionar el botón
   const getCurrentLocation = useCallback(() => {
-    if (navigator.geolocation) {
+    if (navigator.geolocation && window.google) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const current = {
             lat: position.coords.latitude,
             lng: position.coords.longitude,
           };
+
+          const geocoder = new window.google.maps.Geocoder();
+          geocoder.geocode({ location: current }, (results, status) => {
+            if (status === "OK" && results[0]) {
+              const address = results[0].formatted_address;
+              if (originInputRef.current) {
+                originInputRef.current.value = address;
+              }
+            } else {
+              console.warn("No se pudo obtener la dirección:", status);
+            }
+          });
+
           setMapCenter(current);
           handleLocationChange("location", current);
           setMarkers([current]);
@@ -73,11 +86,8 @@ const GoogleMapSection = ({
   }, [markers]);
 
   const handlePlaceChanged = (searchBox, type) => {
-    const places = searchBox.getPlaces();
-    if (!places || places.length === 0) return;
-
-    const place = places[0];
-    if (!place.geometry || !place.geometry.location) return;
+    const place = searchBox.getPlace?.();
+    if (!place?.geometry?.location) return;
 
     const newCoords = {
       lat: place.geometry.location.lat(),
@@ -101,27 +111,28 @@ const GoogleMapSection = ({
     <div className="map-wrapper">
       <div className="search-container">
         <div className="search-inputs">
-          <StandaloneSearchBox
+          <Autocomplete
             onLoad={(ref) => (searchBoxRefOrigin.current = ref)}
-            onPlacesChanged={() =>
+            onPlaceChanged={() =>
               handlePlaceChanged(searchBoxRefOrigin.current, "origin")
             }
           >
             <input
+              ref={originInputRef}
               type="text"
               className="search-box"
               placeholder="Ubicación de inicio"
             />
-          </StandaloneSearchBox>
+          </Autocomplete>
 
-          <StandaloneSearchBox
+          <Autocomplete
             onLoad={(ref) => (searchBoxRefDestiny.current = ref)}
-            onPlacesChanged={() =>
+            onPlaceChanged={() =>
               handlePlaceChanged(searchBoxRefDestiny.current, "destiny")
             }
           >
             <input type="text" className="search-box" placeholder="Destino" />
-          </StandaloneSearchBox>
+          </Autocomplete>
         </div>
 
         <button
