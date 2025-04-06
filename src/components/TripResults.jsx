@@ -13,10 +13,11 @@ const TripResults = ({ results }) => {
             <strong>Distancia:</strong> {results.distance} km
           </li>
           <li>
-            <strong>Consumo de combustible:</strong> {results.fuelUsed} litros
+            <strong>Consumo de combustible:</strong>{" "}
+            {results.fuelUsed?.toFixed(3)} litros
           </li>
           <li>
-            <strong>Costo total:</strong> ${results.totalCost}
+            <strong>Costo total:</strong> ${results.totalCost?.toFixed(3)}
           </li>
           <li>
             <strong>Condiciones climáticas:</strong> {results.weather}

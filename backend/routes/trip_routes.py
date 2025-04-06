@@ -56,6 +56,8 @@ def calculate_trip():
 
         fuel_used = (distance_km * adjusted_fuel_consumption) / 100
         total_cost = fuel_used * fuel_price
+        rounded_result = round(total_cost, 3)
+
 
         vehicle_details = {
             "make": vehicle.make,
