@@ -60,6 +60,7 @@ export const useTripCalculation = (
       };
 
       if (vehicleDetails) {
+        console.log("📦 Detalles del vehículo utilizados en el cálculo:", vehicleDetails);
         tripData.lkm_mixed = vehicleDetails.lkm_mixed;
         tripData.weight_kg = vehicleDetails.weight_kg;
       }

@@ -2,6 +2,7 @@ import PropTypes from "prop-types";
 import "../styles/tripResults.css";
 
 const TripResults = ({ results }) => {
+  console.log("🚗 Datos recibidos en resultados:", results.vehicleDetails);
   if (!results) return null;
 
   return (
