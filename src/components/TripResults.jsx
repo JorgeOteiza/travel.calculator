@@ -43,22 +43,23 @@ const TripResults = ({ results }) => {
               </li>
               <li>
                 <strong>Tipo de Combustible:</strong>{" "}
-                {results.vehicleDetails.fuel_type}
+                {results.vehicleDetails.fuel_type || "-"}
               </li>
               <li>
-                <strong>Cilindrada:</strong> {results.vehicleDetails.engine_cc}{" "}
-                cc
+                <strong>Cilindrada:</strong>{" "}
+                {results.vehicleDetails.engine_cc || "-"} cc
               </li>
               <li>
                 <strong>N° de Cilindros:</strong>{" "}
-                {results.vehicleDetails.engine_cylinders}
+                {results.vehicleDetails.engine_cylinders || "-"}
               </li>
               <li>
-                <strong>Peso:</strong> {results.vehicleDetails.weight_kg} kg
+                <strong>Peso:</strong> {results.vehicleDetails.weight_kg || "-"}{" "}
+                kg
               </li>
               <li>
                 <strong>Consumo Mixto:</strong>{" "}
-                {results.vehicleDetails.lkm_mixed} l/100km
+                {results.vehicleDetails.lkm_mixed || "-"} l/100km
               </li>
             </ul>
           </div>

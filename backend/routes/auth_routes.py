@@ -41,7 +41,6 @@ def token_required(f):
 
     return decorated
 
-# ✅ Obtener usuario autenticado
 @auth_bp.route("/user", methods=["GET"])
 @cross_origin(origins="http://localhost:5173", supports_credentials=True)
 @jwt_required()
@@ -89,7 +88,6 @@ def register():
         db.session.add(new_user)
         db.session.commit()
 
-        # ✅ Generar token JWT
         token = create_access_token(identity=str(new_user.id))
 
         return jsonify({
@@ -107,7 +105,6 @@ def register():
         return jsonify({"error": f"Error en registro: {str(e)}"}), 500
 
 
-# ✅ Inicio de sesión
 @auth_bp.route("/login", methods=["POST"])
 def login():
     try:
@@ -126,7 +123,6 @@ def login():
 
         # ✅ Generar token JWT
         token = create_access_token(identity=str(user.id))
-        print(f"✅ Login exitoso para {user.email}")
 
         return jsonify({
             "message": "Inicio de sesión exitoso",
@@ -141,7 +137,6 @@ def login():
     except Exception as e:
         return jsonify({"error": f"Error en login: {str(e)}"}), 500
 
-# ✅ Cierre de sesión
 @auth_bp.route("/logout", methods=["POST"])
 @jwt_required()
 def logout():

@@ -16,7 +16,6 @@ const Navbar = ({ user, setUser }) => {
   useEffect(() => {
     const fetchUser = async () => {
       const token = localStorage.getItem("token");
-      console.log("📡 Enviando token en /api/user:", token);
 
       if (!token) {
         setIsAuthenticated(false);
@@ -30,7 +29,6 @@ const Navbar = ({ user, setUser }) => {
           withCredentials: true,
         });
 
-        console.log("✅ Usuario autenticado:", response.data);
         setUser(response.data);
         setIsAuthenticated(true);
       } catch (error) {

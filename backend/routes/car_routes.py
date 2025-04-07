@@ -98,7 +98,6 @@ def get_model_details():
         if not make or not model or not year:
             return jsonify({"error": "Faltan parámetros 'make', 'model' o 'year'"}), 400
 
-        # Verificar si el vehículo ya existe en la base de datos
         vehicle = Vehicle.query.filter(
             db.func.lower(Vehicle.make) == make.lower(),
             db.func.lower(Vehicle.model) == model.lower(),
@@ -108,32 +107,41 @@ def get_model_details():
         if vehicle:
             return jsonify(vehicle.to_dict()), 200
 
-        # Buscar detalles desde NHTSA (VIN dummy generado)
-        query_url = f"https://vpic.nhtsa.dot.gov/api/vehicles/DecodeVinValuesBatch/"
-        vin_guess = f"{make[:3]}{model[:3]}{year}"[:17].upper().ljust(17, "0")
-        payload = f"format=json&data={vin_guess}"
+        # Buscar especificaciones en DecodeVinValuesExtended
+        vin_query = f"{make} {model} {year}"
+        url = f"https://vpic.nhtsa.dot.gov/api/vehicles/DecodeVinValuesExtended/{vin_query}?format=json"
+        response = requests.get(url)
+        data = clean_jsonp(response.text)
 
-        nhtsa_response = requests.post(query_url, headers={"Content-Type": "application/x-www-form-urlencoded"}, data=payload)
-        result = nhtsa_response.json()["Results"][0] if nhtsa_response.ok else {}
+        if not data or "Results" not in data or not data["Results"]:
+            raise Exception("No se pudo obtener información de NHTSA")
 
-        fuel_type = result.get("FuelTypePrimary") or None
-        engine_cc = int(result["DisplacementCC"]) if result.get("DisplacementCC") else None
-        engine_cylinders = int(result["EngineCylinders"]) if result.get("EngineCylinders") else None
-        weight_kg = int(result["GVWR"]) if result.get("GVWR") and result["GVWR"].isdigit() else None
-        lkm_mixed = round(235.214583 / float(result["FuelEconomyCombined"]), 2) if result.get("FuelEconomyCombined") and result["FuelEconomyCombined"].isdigit() else None
-        mpg_mixed = float(result["FuelEconomyCombined"]) if result.get("FuelEconomyCombined") and result["FuelEconomyCombined"].isdigit() else None
+        decoded = data["Results"][0]
+        fuel_type = decoded.get("FuelTypePrimary")
+        engine_cc = decoded.get("DisplacementCC")
+        engine_cylinders = decoded.get("EngineCylinders")
+        gvwr = decoded.get("GVWR")  # p. ej. "2000-3000 lbs"
+
+        weight_kg = None
+        if gvwr and "-" in gvwr:
+            try:
+                low, high = gvwr.replace("lbs", "").split("-")
+                weight_kg = int((int(low.strip()) + int(high.strip())) / 2 * 0.453592)
+            except:
+                pass
 
         new_vehicle = Vehicle(
             make=make,
             model=model,
             year=year,
-            fuel_type=fuel_type,
-            engine_cc=engine_cc,
-            engine_cylinders=engine_cylinders,
+            fuel_type=fuel_type or None,
+            engine_cc=int(float(engine_cc)) if engine_cc else None,
+            engine_cylinders=int(engine_cylinders) if engine_cylinders else None,
             weight_kg=weight_kg,
-            lkm_mixed=lkm_mixed,
-            mpg_mixed=mpg_mixed,
+            lkm_mixed=None,
+            mpg_mixed=None
         )
+
         db.session.add(new_vehicle)
         db.session.commit()
 
@@ -141,4 +149,3 @@ def get_model_details():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-

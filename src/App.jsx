@@ -9,7 +9,7 @@ import About from "./pages/About";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Profile from "./pages/Profile";
-import { GOOGLE_MAPS_LIBRARIES } from "./constants/googleMaps"; // ✅ Import correcto
+import { GOOGLE_MAPS_LIBRARIES } from "./constants/googleMaps";
 import "./styles/app.css";
 
 const VITE_BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
@@ -28,7 +28,6 @@ function App() {
           headers: { Authorization: `Bearer ${token}` },
           withCredentials: true,
         });
-        console.log("✅ Usuario obtenido:", response.data);
         setUser(response.data);
       } catch (error) {
         console.error(
