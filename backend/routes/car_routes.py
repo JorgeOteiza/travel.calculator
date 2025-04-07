@@ -108,17 +108,31 @@ def get_model_details():
         if vehicle:
             return jsonify(vehicle.to_dict()), 200
 
-        # Si no existe, registrar vehículo como dummy
+        # Buscar detalles desde NHTSA (VIN dummy generado)
+        query_url = f"https://vpic.nhtsa.dot.gov/api/vehicles/DecodeVinValuesBatch/"
+        vin_guess = f"{make[:3]}{model[:3]}{year}"[:17].upper().ljust(17, "0")
+        payload = f"format=json&data={vin_guess}"
+
+        nhtsa_response = requests.post(query_url, headers={"Content-Type": "application/x-www-form-urlencoded"}, data=payload)
+        result = nhtsa_response.json()["Results"][0] if nhtsa_response.ok else {}
+
+        fuel_type = result.get("FuelTypePrimary") or None
+        engine_cc = int(result["DisplacementCC"]) if result.get("DisplacementCC") else None
+        engine_cylinders = int(result["EngineCylinders"]) if result.get("EngineCylinders") else None
+        weight_kg = int(result["GVWR"]) if result.get("GVWR") and result["GVWR"].isdigit() else None
+        lkm_mixed = round(235.214583 / float(result["FuelEconomyCombined"]), 2) if result.get("FuelEconomyCombined") and result["FuelEconomyCombined"].isdigit() else None
+        mpg_mixed = float(result["FuelEconomyCombined"]) if result.get("FuelEconomyCombined") and result["FuelEconomyCombined"].isdigit() else None
+
         new_vehicle = Vehicle(
             make=make,
             model=model,
             year=year,
-            fuel_type=None,
-            engine_cc=None,
-            engine_cylinders=None,
-            weight_kg=None,
-            lkm_mixed=None,
-            mpg_mixed=None,
+            fuel_type=fuel_type,
+            engine_cc=engine_cc,
+            engine_cylinders=engine_cylinders,
+            weight_kg=weight_kg,
+            lkm_mixed=lkm_mixed,
+            mpg_mixed=mpg_mixed,
         )
         db.session.add(new_vehicle)
         db.session.commit()
@@ -127,3 +141,4 @@ def get_model_details():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
