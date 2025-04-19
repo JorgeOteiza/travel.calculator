@@ -22,7 +22,7 @@ export const useTripCalculation = (
         .split(",")
         .map((coord) => parseFloat(coord.trim()));
 
-      // 1. Obtener distancia y polilínea desde backend
+      // 1. Obtener distancia desde backend
       const distanceResponse = await axios.get(
         `${VITE_BACKEND_URL}/api/distance?origin=${originLat},${originLng}&destination=${destLat},${destLng}`
       );
@@ -46,26 +46,31 @@ export const useTripCalculation = (
         ((elevationDiff / distanceMeters) * 100).toFixed(2)
       );
 
-      // 3. Preparar datos del viaje
+      // 3. Determinar si es eléctrico
+      const isElectric = vehicleDetails?.fuel_type
+        ?.toLowerCase()
+        .includes("electric");
+
+      // 4. Preparar datos de cálculo
       const tripData = {
-        ...formData,
         brand: formData.brand.trim().toLowerCase(),
         model: formData.model.trim().toLowerCase(),
+        year: parseInt(formData.year),
         totalWeight: Number(formData.totalWeight),
-        roadGrade: slopePercent,
-        distance: distanceKm,
-        fuel_price: parseFloat(formData.fuelPrice),
         passengers: parseInt(formData.passengers),
+        distance: distanceKm,
+        roadGrade: slopePercent,
         weather: formData.climate,
+        ...(vehicleDetails && {
+          lkm_mixed: vehicleDetails.lkm_mixed,
+          weight_kg: vehicleDetails.weight_kg,
+        }),
+        ...(!isElectric && {
+          fuelPrice: parseFloat(formData.fuelPrice),
+        }),
       };
 
-      if (vehicleDetails) {
-        console.log("📦 Detalles del vehículo utilizados en el cálculo:", vehicleDetails);
-        tripData.lkm_mixed = vehicleDetails.lkm_mixed;
-        tripData.weight_kg = vehicleDetails.weight_kg;
-      }
-
-      // 4. Cálculo del viaje
+      // 5. Cálculo del viaje
       const calcResponse = await axios.post(
         `${VITE_BACKEND_URL}/api/calculate`,
         tripData,
@@ -77,7 +82,6 @@ export const useTripCalculation = (
         }
       );
 
-      // 5. Mostrar resultados
       setResults({
         ...calcResponse.data,
         weather: formData.climate,
@@ -85,12 +89,11 @@ export const useTripCalculation = (
       });
 
       // 6. Guardar viaje
-      const saveTripPayload = {
+      const savePayload = {
         brand: formData.brand,
         model: formData.model,
         year: formData.year,
-        fuel_type: formData.fuelType,
-        fuel_price: parseFloat(formData.fuelPrice),
+        fuel_type: vehicleDetails?.fuel_type || "unknown",
         total_weight: parseFloat(formData.totalWeight),
         passengers: parseInt(formData.passengers),
         location: formData.location,
@@ -99,11 +102,12 @@ export const useTripCalculation = (
         total_cost: calcResponse.data.totalCost,
         road_grade: slopePercent,
         weather: formData.climate,
+        ...(isElectric ? {} : { fuel_price: parseFloat(formData.fuelPrice) }),
       };
 
       const saveResponse = await axios.post(
         `${VITE_BACKEND_URL}/api/trips`,
-        saveTripPayload,
+        savePayload,
         {
           headers: {
             Authorization: `Bearer ${token}`,

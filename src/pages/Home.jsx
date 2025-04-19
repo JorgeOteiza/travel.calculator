@@ -62,10 +62,11 @@ const Home = () => {
   const handleSubmit = () => {
     const validationErrors = validateTripForm(formData);
     setErrors(validationErrors);
+
     if (Object.keys(validationErrors).length === 0) {
       calculateTrip();
     } else {
-      alert("Por favor ingresa todos los datos correctamente.");
+      alert("Por favor completa todos los campos requeridos correctamente.");
     }
   };
 
@@ -78,6 +79,7 @@ const Home = () => {
       )}
 
       <div className="form-map-container">
+        {/* Formulario */}
         <div className="form-container">
           <TripForm
             formData={formData}
@@ -93,9 +95,9 @@ const Home = () => {
           />
         </div>
 
+        {/* Mapa y resultados */}
         <div className="map-results-wrapper">
           <GoogleMapSection
-            isLoaded={true}
             mapCenter={mapCenter}
             setMapCenter={setMapCenter}
             markers={markers}

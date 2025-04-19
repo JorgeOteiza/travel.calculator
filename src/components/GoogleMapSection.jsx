@@ -15,7 +15,7 @@ const GoogleMapSection = ({
   const [directionsRenderer, setDirectionsRenderer] = useState(null);
   const [locationDenied, setLocationDenied] = useState(false);
 
-  // Inicializar mapa y servicios
+  // Inicializar el mapa y servicios
   useEffect(() => {
     if (!window.google || !window.google.maps) return;
 
@@ -29,21 +29,21 @@ const GoogleMapSection = ({
     );
 
     const renderer = new window.google.maps.DirectionsRenderer();
-    renderer.setMap(mapInstance);
+    const service = new window.google.maps.DirectionsService();
 
+    renderer.setMap(mapInstance);
     setMap(mapInstance);
     setDirectionsRenderer(renderer);
-    setDirectionsService(new window.google.maps.DirectionsService());
+    setDirectionsService(service);
   }, [mapCenter]);
 
-  // Dibujar ruta si ambos puntos están definidos
+  // Trazar ruta
   useEffect(() => {
     if (
+      markers.length === 2 &&
       directionsService &&
       directionsRenderer &&
-      markers.length === 2 &&
-      markers[0] &&
-      markers[1]
+      window.google?.maps
     ) {
       directionsService.route(
         {
@@ -72,7 +72,7 @@ const GoogleMapSection = ({
     }
   }, [map, mapCenter]);
 
-  // Obtener ubicación actual y rellenar input
+  // Obtener ubicación actual manualmente
   const getCurrentLocation = useCallback(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -84,10 +84,10 @@ const GoogleMapSection = ({
 
           setMapCenter(current);
           handleLocationChange("location", `${current.lat},${current.lng}`);
-          setMarkers([current]);
+          setMarkers((prev) => [current, prev[1]].filter(Boolean));
 
-          const originInput = document.getElementById("origin-autocomplete");
-          if (originInput) originInput.value = `${current.lat}, ${current.lng}`;
+          const input = document.getElementById("origin-autocomplete");
+          if (input) input.value = `${current.lat}, ${current.lng}`;
 
           setLocationDenied(false);
         },
@@ -100,14 +100,17 @@ const GoogleMapSection = ({
       setMapCenter(DEFAULT_MAP_CENTER);
       setLocationDenied(true);
     }
-  }, [setMapCenter, setMarkers, handleLocationChange]);
+  }, [handleLocationChange, setMapCenter, setMarkers]);
 
-  // Inicializar listeners en los campos de búsqueda
+  // Configurar autocomplete manualmente
   useEffect(() => {
-    const setupAutocompleteListener = (elementId, type) => {
+    const setupAutocomplete = (elementId, type) => {
       window.customElements.whenDefined("place-autocomplete").then(() => {
         const el = document.getElementById(elementId);
-        if (!el) return;
+        if (!el) {
+          console.warn(`No se encontró el elemento ${elementId}`);
+          return;
+        }
 
         el.addEventListener("gmp-placechange", (event) => {
           const place = event.detail;
@@ -120,18 +123,18 @@ const GoogleMapSection = ({
 
           if (type === "origin") {
             handleLocationChange("location", `${coords.lat},${coords.lng}`);
-            setMarkers(([, dest]) => [coords, dest].filter(Boolean));
+            setMarkers((prev) => [coords, prev[1]].filter(Boolean));
             setMapCenter(coords);
           } else {
             handleLocationChange("destinity", `${coords.lat},${coords.lng}`);
-            setMarkers(([orig]) => [orig, coords].filter(Boolean));
+            setMarkers((prev) => [prev[0], coords].filter(Boolean));
           }
         });
       });
     };
 
-    setupAutocompleteListener("origin-autocomplete", "origin");
-    setupAutocompleteListener("destiny-autocomplete", "destiny");
+    setupAutocomplete("origin-autocomplete", "origin");
+    setupAutocomplete("destiny-autocomplete", "destiny");
   }, [handleLocationChange, setMarkers, setMapCenter]);
 
   return (
@@ -141,13 +144,13 @@ const GoogleMapSection = ({
           <place-autocomplete
             id="origin-autocomplete"
             placeholder="Ubicación de inicio"
-            class="search-box"
+            className="search-box"
           ></place-autocomplete>
 
           <place-autocomplete
             id="destiny-autocomplete"
             placeholder="Destino"
-            class="search-box"
+            className="search-box"
           ></place-autocomplete>
         </div>
 

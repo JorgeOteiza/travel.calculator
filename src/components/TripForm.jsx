@@ -7,6 +7,7 @@ const TripForm = ({
   brandOptions,
   modelOptions,
   availableYears,
+  vehicleDetails,
   handleBrandSelect,
   handleModelSelect,
   handleYearSelect,
@@ -19,6 +20,10 @@ const TripForm = ({
     { label: "Gasoline 95", value: "gasoline_95" },
     { label: "Gasoline 97", value: "gasoline_97" },
   ];
+
+  const isElectric = vehicleDetails?.fuel_type
+    ?.toLowerCase()
+    .includes("electric");
 
   return (
     <form
@@ -74,36 +79,51 @@ const TripForm = ({
       </select>
       {errors.year && <span className="error-text">{errors.year}</span>}
 
-      {/* Tipo de combustible */}
-      <label htmlFor="fuelType">Octane Rating</label>
-      <Select
-        id="fuelType"
-        name="fuelType"
-        options={fuelTypeOptions}
-        value={fuelTypeOptions.find((opt) => opt.value === formData.fuelType)}
-        onChange={(selectedOption) =>
-          handleChange({
-            target: { name: "fuelType", value: selectedOption?.value || "" },
-          })
-        }
-        placeholder="Select octane rating"
-        isClearable
-        className="custom-select"
-      />
-      {errors.fuelType && <span className="error-text">{errors.fuelType}</span>}
+      {/* Tipo de combustible (solo si no es eléctrico) */}
+      {!isElectric && (
+        <>
+          <label htmlFor="fuelType">Octane Rating</label>
+          <Select
+            id="fuelType"
+            name="fuelType"
+            options={fuelTypeOptions}
+            value={fuelTypeOptions.find(
+              (opt) => opt.value === formData.fuelType
+            )}
+            onChange={(selectedOption) =>
+              handleChange({
+                target: {
+                  name: "fuelType",
+                  value: selectedOption?.value || "",
+                },
+              })
+            }
+            placeholder="Select octane rating"
+            isClearable
+            className="custom-select"
+          />
+          {errors.fuelType && (
+            <span className="error-text">{errors.fuelType}</span>
+          )}
+        </>
+      )}
 
-      {/* Precio del combustible */}
-      <label htmlFor="fuelPrice">Fuel Price (per liter)</label>
-      <input
-        type="number"
-        name="fuelPrice"
-        value={formData.fuelPrice}
-        onChange={handleChange}
-        placeholder="Fuel price per liter"
-        min="0"
-        step="0.01"
-        className="custom-input"
-      />
+      {/* Precio del combustible (solo si no es eléctrico) */}
+      {!isElectric && (
+        <>
+          <label htmlFor="fuelPrice">Fuel Price (per liter)</label>
+          <input
+            type="number"
+            name="fuelPrice"
+            value={formData.fuelPrice}
+            onChange={handleChange}
+            placeholder="Fuel price per liter"
+            min="0"
+            step="0.01"
+            className="custom-input"
+          />
+        </>
+      )}
 
       {/* Pasajeros */}
       <label htmlFor="passengers">Number of Passengers</label>
@@ -152,6 +172,7 @@ TripForm.propTypes = {
   brandOptions: PropTypes.array.isRequired,
   modelOptions: PropTypes.array.isRequired,
   availableYears: PropTypes.array.isRequired,
+  vehicleDetails: PropTypes.object,
   handleBrandSelect: PropTypes.func.isRequired,
   handleModelSelect: PropTypes.func.isRequired,
   handleYearSelect: PropTypes.func.isRequired,

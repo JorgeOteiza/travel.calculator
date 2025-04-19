@@ -9,7 +9,7 @@ from datetime import timedelta
 from dotenv import load_dotenv
 
 from backend.models import db
-from backend.routes import main_bp  # Se carga todo desde __init__.py de /routes
+from backend.routes import main_bp
 
 load_dotenv()
 bcrypt = Bcrypt()

@@ -73,7 +73,17 @@ const useTripData = (initialFormData) => {
         );
 
         if (response.status === 200 && response.data) {
-          setVehicleDetails(response.data);
+          const details = response.data;
+          setVehicleDetails(details);
+
+          // Si es eléctrico, limpiamos automáticamente fuelType y fuelPrice
+          if (details.fuel_type?.toLowerCase().includes("electric")) {
+            setFormData((prev) => ({
+              ...prev,
+              fuelType: "",
+              fuelPrice: "",
+            }));
+          }
         } else {
           console.warn("⚠️ No se recibieron detalles del vehículo.");
           setVehicleDetails(null);

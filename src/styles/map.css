@@ -46,6 +46,7 @@ place-autocomplete {
 
 .search-box {
   width: 220px;
+  min-height: 40px;
   font-size: 14px;
   padding: 10px 12px;
   border-radius: 8px;
@@ -53,6 +54,7 @@ place-autocomplete {
   background-color: #fff;
   transition: border-color 0.3s ease;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  z-index: 10;
 }
 
 .search-box:focus {
@@ -91,7 +93,7 @@ place-autocomplete {
   box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
 }
 
-/* Mensaje de advertencia */
+/* Mensaje de advertencia si no se accede a la ubicación */
 .location-warning {
   position: absolute;
   bottom: 10px;
@@ -125,7 +127,7 @@ place-autocomplete {
     padding: 10px;
   }
 
-  .search-box {
+  place-autocomplete.search-box {
     width: 100%;
     font-size: 13px;
     padding: 8px 10px;
