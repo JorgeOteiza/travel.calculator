@@ -4,13 +4,15 @@ import "../styles/TripForm.css";
 
 const TripForm = ({
   formData,
-  brandOptions = [],
-  modelOptions = [],
-  availableYears = [],
+  brandOptions,
+  modelOptions,
+  availableYears,
   handleBrandSelect,
   handleModelSelect,
   handleYearSelect,
   handleChange,
+  calculateTrip,
+  errors,
 }) => {
   const fuelTypeOptions = [
     { label: "Gasoline 93", value: "gasoline_93" },
@@ -19,7 +21,11 @@ const TripForm = ({
   ];
 
   return (
-    <form className="trip-form">
+    <form
+      className="trip-form"
+      onSubmit={(e) => e.preventDefault()}
+      autoComplete="off"
+    >
       {/* Marca */}
       <label htmlFor="brand">Vehicle Brand</label>
       <Select
@@ -32,6 +38,7 @@ const TripForm = ({
         isClearable
         className="custom-select"
       />
+      {errors.brand && <span className="error-text">{errors.brand}</span>}
 
       {/* Modelo */}
       <label htmlFor="model">Vehicle Model</label>
@@ -46,6 +53,7 @@ const TripForm = ({
         className="custom-select"
         isDisabled={!formData.brand}
       />
+      {errors.model && <span className="error-text">{errors.model}</span>}
 
       {/* Año */}
       <label htmlFor="year">Vehicle Year</label>
@@ -64,9 +72,10 @@ const TripForm = ({
           </option>
         ))}
       </select>
+      {errors.year && <span className="error-text">{errors.year}</span>}
 
       {/* Tipo de combustible */}
-      <label htmlFor="fuelType">Octane rating</label>
+      <label htmlFor="fuelType">Octane Rating</label>
       <Select
         id="fuelType"
         name="fuelType"
@@ -81,6 +90,7 @@ const TripForm = ({
         isClearable
         className="custom-select"
       />
+      {errors.fuelType && <span className="error-text">{errors.fuelType}</span>}
 
       {/* Precio del combustible */}
       <label htmlFor="fuelPrice">Fuel Price (per liter)</label>
@@ -106,6 +116,9 @@ const TripForm = ({
         min="1"
         className="custom-input"
       />
+      {errors.passengers && (
+        <span className="error-text">{errors.passengers}</span>
+      )}
 
       {/* Peso total */}
       <label htmlFor="totalWeight">Estimated Total Weight (kg)</label>
@@ -118,6 +131,18 @@ const TripForm = ({
         min="0"
         className="custom-input"
       />
+      {errors.totalWeight && (
+        <span className="error-text">{errors.totalWeight}</span>
+      )}
+
+      {/* Botón de cálculo */}
+      <button
+        type="button"
+        className="calculate-button"
+        onClick={calculateTrip}
+      >
+        Calculate Trip
+      </button>
     </form>
   );
 };
@@ -131,6 +156,8 @@ TripForm.propTypes = {
   handleModelSelect: PropTypes.func.isRequired,
   handleYearSelect: PropTypes.func.isRequired,
   handleChange: PropTypes.func.isRequired,
+  calculateTrip: PropTypes.func.isRequired,
+  errors: PropTypes.object.isRequired,
 };
 
 export default TripForm;

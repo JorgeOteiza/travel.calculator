@@ -7,24 +7,28 @@ const useTripData = (initialFormData) => {
   const [modelOptions, setModelOptions] = useState([]);
   const [vehicleDetails, setVehicleDetails] = useState(null);
 
-  // Obtener marcas disponibles
+  // Obtener marcas desde NHTSA
   useEffect(() => {
     const fetchBrands = async () => {
       try {
         const response = await axios.get("/api/cars/brands");
-        if (!Array.isArray(response.data) || response.data.length === 0) {
-          console.warn("La API no devolvió marcas válidas.");
+        if (response.data?.length) {
+          setBrandOptions(response.data);
+        } else {
+          console.warn("⚠️ No se recibieron marcas desde NHTSA.");
         }
-        setBrandOptions(response.data);
       } catch (error) {
-        console.error("Error al obtener marcas:", error);
+        console.error(
+          "❌ Error al obtener marcas:",
+          error.response?.data || error.message
+        );
       }
     };
 
     fetchBrands();
   }, []);
 
-  // Obtener modelos cuando se seleccione una marca
+  // Obtener modelos desde NHTSA
   useEffect(() => {
     if (!formData.brand) {
       setModelOptions([]);
@@ -34,11 +38,21 @@ const useTripData = (initialFormData) => {
     const fetchModels = async () => {
       try {
         const response = await axios.get(
-          `/api/cars/models?make_id=${formData.brand}`
+          `/api/cars/models?make_id=${encodeURIComponent(formData.brand)}`
         );
-        setModelOptions(response.data);
+        if (response.data?.length) {
+          setModelOptions(response.data);
+        } else {
+          console.warn(
+            "⚠️ No se encontraron modelos para la marca",
+            formData.brand
+          );
+        }
       } catch (error) {
-        console.error("Error al obtener modelos:", error);
+        console.error(
+          "❌ Error al obtener modelos:",
+          error.response?.data || error.message
+        );
         setModelOptions([]);
       }
     };
@@ -46,25 +60,36 @@ const useTripData = (initialFormData) => {
     fetchModels();
   }, [formData.brand]);
 
-  // Obtener detalles del vehículo
+  // Obtener detalles del vehículo desde NHTSA (consulta y guarda si no existe en DB)
   useEffect(() => {
     if (!formData.brand || !formData.model || !formData.year) return;
 
     const fetchDetails = async () => {
       try {
         const response = await axios.get(
-          `/api/cars/model_details?make=${formData.brand}&model=${formData.model}&year=${formData.year}`
+          `/api/cars/model_details?make=${encodeURIComponent(
+            formData.brand
+          )}&model=${encodeURIComponent(formData.model)}&year=${formData.year}`
         );
-        setVehicleDetails(response.data);
+
+        if (response.status === 200 && response.data) {
+          setVehicleDetails(response.data);
+        } else {
+          console.warn("⚠️ No se recibieron detalles del vehículo.");
+          setVehicleDetails(null);
+        }
       } catch (error) {
-        console.error("Error al obtener detalles del vehículo:", error);
+        console.error(
+          "❌ Error al obtener detalles del vehículo:",
+          error.response?.data || error.message
+        );
+        setVehicleDetails(null);
       }
     };
 
     fetchDetails();
   }, [formData.brand, formData.model, formData.year]);
 
-  // Años disponibles si marca y modelo están seleccionados
   const availableYears =
     formData.brand && formData.model
       ? Array.from({ length: 35 }, (_, i) => 2025 - i)

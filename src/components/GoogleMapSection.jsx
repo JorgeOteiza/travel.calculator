@@ -1,71 +1,50 @@
+import { useEffect, useState, useCallback } from "react";
 import PropTypes from "prop-types";
-import {
-  GoogleMap,
-  Marker,
-  Autocomplete,
-  DirectionsRenderer,
-} from "@react-google-maps/api";
-import { useState, useRef, useEffect, useCallback } from "react";
 import "../styles/map.css";
-
-const DEFAULT_CENTER = { lat: -33.4489, lng: -70.6693 }; // Santiago, Chile
+import { DEFAULT_MAP_CENTER } from "../constants/googleMaps";
 
 const GoogleMapSection = ({
-  isLoaded,
   mapCenter,
   setMapCenter,
   markers,
   setMarkers,
   handleLocationChange,
 }) => {
-  const [directions, setDirections] = useState(null);
+  const [map, setMap] = useState(null);
+  const [directionsService, setDirectionsService] = useState(null);
+  const [directionsRenderer, setDirectionsRenderer] = useState(null);
   const [locationDenied, setLocationDenied] = useState(false);
 
-  const searchBoxRefOrigin = useRef(null);
-  const searchBoxRefDestiny = useRef(null);
-  const originInputRef = useRef(null);
-
-  const getCurrentLocation = useCallback(() => {
-    if (navigator.geolocation && window.google) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const current = {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          };
-
-          const geocoder = new window.google.maps.Geocoder();
-          geocoder.geocode({ location: current }, (results, status) => {
-            if (status === "OK" && results[0]) {
-              const address = results[0].formatted_address;
-              if (originInputRef.current) {
-                originInputRef.current.value = address;
-              }
-            } else {
-              console.warn("No se pudo obtener la dirección:", status);
-            }
-          });
-
-          setMapCenter(current);
-          handleLocationChange("location", current);
-          setMarkers([current]);
-          setLocationDenied(false);
-        },
-        () => {
-          console.warn("📛 Usuario denegó acceso a ubicación.");
-          setLocationDenied(true);
-          setMapCenter(DEFAULT_CENTER);
-        }
-      );
-    } else {
-      console.warn("⚠️ Geolocalización no está disponible.");
-      setLocationDenied(true);
-    }
-  }, [handleLocationChange, setMapCenter, setMarkers]);
-
+  // Inicializar mapa y servicios
   useEffect(() => {
-    if (markers.length === 2) {
-      const directionsService = new window.google.maps.DirectionsService();
+    if (!window.google || !window.google.maps) return;
+
+    const mapInstance = new window.google.maps.Map(
+      document.getElementById("map"),
+      {
+        center: mapCenter,
+        zoom: 12,
+        mapId: import.meta.env.VITE_MAP_ID,
+      }
+    );
+
+    const renderer = new window.google.maps.DirectionsRenderer();
+    renderer.setMap(mapInstance);
+
+    setMap(mapInstance);
+    setDirectionsRenderer(renderer);
+    setDirectionsService(new window.google.maps.DirectionsService());
+  }, [mapCenter]);
+
+  // Dibujar ruta si ambos puntos están definidos
+  useEffect(() => {
+    if (
+      directionsService &&
+      directionsRenderer &&
+      markers.length === 2 &&
+      markers[0] &&
+      markers[1]
+    ) {
       directionsService.route(
         {
           origin: markers[0],
@@ -73,66 +52,103 @@ const GoogleMapSection = ({
           travelMode: window.google.maps.TravelMode.DRIVING,
         },
         (result, status) => {
-          if (status === window.google.maps.DirectionsStatus.OK) {
-            setDirections(result);
+          if (status === "OK") {
+            directionsRenderer.setDirections(result);
           } else {
-            console.error("Error al trazar ruta:", status);
+            console.error("Error al calcular ruta:", status);
+            directionsRenderer.setDirections({ routes: [] });
           }
         }
       );
-    } else {
-      setDirections(null);
+    } else if (directionsRenderer) {
+      directionsRenderer.setDirections({ routes: [] });
     }
-  }, [markers]);
+  }, [markers, directionsService, directionsRenderer]);
 
-  const handlePlaceChanged = (searchBox, type) => {
-    const place = searchBox.getPlace?.();
-    if (!place?.geometry?.location) return;
+  // Recentrar mapa si cambia el centro
+  useEffect(() => {
+    if (map && mapCenter) {
+      map.setCenter(mapCenter);
+    }
+  }, [map, mapCenter]);
 
-    const newCoords = {
-      lat: place.geometry.location.lat(),
-      lng: place.geometry.location.lng(),
+  // Obtener ubicación actual y rellenar input
+  const getCurrentLocation = useCallback(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const current = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          };
+
+          setMapCenter(current);
+          handleLocationChange("location", `${current.lat},${current.lng}`);
+          setMarkers([current]);
+
+          const originInput = document.getElementById("origin-autocomplete");
+          if (originInput) originInput.value = `${current.lat}, ${current.lng}`;
+
+          setLocationDenied(false);
+        },
+        () => {
+          setMapCenter(DEFAULT_MAP_CENTER);
+          setLocationDenied(true);
+        }
+      );
+    } else {
+      setMapCenter(DEFAULT_MAP_CENTER);
+      setLocationDenied(true);
+    }
+  }, [setMapCenter, setMarkers, handleLocationChange]);
+
+  // Inicializar listeners en los campos de búsqueda
+  useEffect(() => {
+    const setupAutocompleteListener = (elementId, type) => {
+      window.customElements.whenDefined("place-autocomplete").then(() => {
+        const el = document.getElementById(elementId);
+        if (!el) return;
+
+        el.addEventListener("gmp-placechange", (event) => {
+          const place = event.detail;
+          if (!place?.geometry?.location) return;
+
+          const coords = {
+            lat: place.geometry.location.lat,
+            lng: place.geometry.location.lng,
+          };
+
+          if (type === "origin") {
+            handleLocationChange("location", `${coords.lat},${coords.lng}`);
+            setMarkers(([, dest]) => [coords, dest].filter(Boolean));
+            setMapCenter(coords);
+          } else {
+            handleLocationChange("destinity", `${coords.lat},${coords.lng}`);
+            setMarkers(([orig]) => [orig, coords].filter(Boolean));
+          }
+        });
+      });
     };
 
-    if (type === "origin") {
-      handleLocationChange("location", newCoords);
-      setMarkers((prev) => [newCoords, prev[1]].filter(Boolean));
-      setMapCenter(newCoords);
-    } else {
-      handleLocationChange("destinity", newCoords);
-      setMarkers((prev) => [prev[0], newCoords].filter(Boolean));
-    }
-  };
-
-  if (!isLoaded)
-    return <div className="loading-maps">Cargando Google Maps...</div>;
+    setupAutocompleteListener("origin-autocomplete", "origin");
+    setupAutocompleteListener("destiny-autocomplete", "destiny");
+  }, [handleLocationChange, setMarkers, setMapCenter]);
 
   return (
     <div className="map-wrapper">
       <div className="search-container">
         <div className="search-inputs">
-          <Autocomplete
-            onLoad={(ref) => (searchBoxRefOrigin.current = ref)}
-            onPlaceChanged={() =>
-              handlePlaceChanged(searchBoxRefOrigin.current, "origin")
-            }
-          >
-            <input
-              ref={originInputRef}
-              type="text"
-              className="search-box"
-              placeholder="Ubicación de inicio"
-            />
-          </Autocomplete>
+          <place-autocomplete
+            id="origin-autocomplete"
+            placeholder="Ubicación de inicio"
+            class="search-box"
+          ></place-autocomplete>
 
-          <Autocomplete
-            onLoad={(ref) => (searchBoxRefDestiny.current = ref)}
-            onPlaceChanged={() =>
-              handlePlaceChanged(searchBoxRefDestiny.current, "destiny")
-            }
-          >
-            <input type="text" className="search-box" placeholder="Destino" />
-          </Autocomplete>
+          <place-autocomplete
+            id="destiny-autocomplete"
+            placeholder="Destino"
+            class="search-box"
+          ></place-autocomplete>
         </div>
 
         <button
@@ -150,30 +166,12 @@ const GoogleMapSection = ({
         </div>
       )}
 
-      <GoogleMap
-        mapContainerClassName="map-container"
-        center={mapCenter}
-        zoom={12}
-        onClick={(event) => {
-          const newMarker = {
-            lat: event.latLng.lat(),
-            lng: event.latLng.lng(),
-          };
-          setMarkers([newMarker]);
-          setMapCenter(newMarker);
-        }}
-      >
-        {markers.map((marker, index) => (
-          <Marker key={index} position={marker} />
-        ))}
-        {directions && <DirectionsRenderer directions={directions} />}
-      </GoogleMap>
+      <div id="map" className="map-container" />
     </div>
   );
 };
 
 GoogleMapSection.propTypes = {
-  isLoaded: PropTypes.bool.isRequired,
   mapCenter: PropTypes.object.isRequired,
   setMapCenter: PropTypes.func.isRequired,
   markers: PropTypes.array.isRequired,

@@ -7,14 +7,10 @@ from flask_jwt_extended import JWTManager
 from flask_bcrypt import Bcrypt
 from datetime import timedelta
 from dotenv import load_dotenv
-from backend.models import db
-from backend.routes.auth_routes import auth_bp
-from backend.routes.car_routes import car_bp
-from backend.routes.elevation_routes import elevation_bp
-from backend.routes import main_bp
-from backend.routes.trip_routes import trip_bp
 
-# Cargar variables de entorno
+from backend.models import db
+from backend.routes import main_bp  # Se carga todo desde __init__.py de /routes
+
 load_dotenv()
 bcrypt = Bcrypt()
 
@@ -29,19 +25,14 @@ def create_app():
     app.config["DEBUG"] = os.getenv('DEBUG', 'False') == 'True'
 
     db.init_app(app)
-    migrate = Migrate(app, db)
-    jwt = JWTManager(app)
+    Migrate(app, db)
+    JWTManager(app)
+    bcrypt.init_app(app)
 
-    app.register_blueprint(auth_bp, url_prefix="/api")
+    # Registrar todas las rutas agrupadas
     app.register_blueprint(main_bp, url_prefix="/api")
-    app.register_blueprint(car_bp, url_prefix="/api/cars")
-    app.register_blueprint(elevation_bp, url_prefix="/api")
-    app.register_blueprint(trip_bp, url_prefix="/api")
 
-
-
-    print("🚀 Servidor Flask iniciado en modo:", "Debug" if app.config["DEBUG"] else "Producción")
-
+    print("🚀 Flask iniciado en modo:", "Debug" if app.config["DEBUG"] else "Producción")
     return app
 
 if __name__ == "__main__":

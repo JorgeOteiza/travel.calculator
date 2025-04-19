@@ -23,6 +23,18 @@
   line-height: 1.5;
 }
 
+.trip-warning-snowy {
+  background-color: #ffe4c4;
+  border: 1px solid #e38c34;
+  color: #5c3906;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  margin-top: 16px;
+  line-height: 1.5;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
 /* Adaptación para pantallas pequeñas */
 @media screen and (max-width: 1024px) {
   .trip-results {

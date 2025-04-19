@@ -12,7 +12,7 @@ export default defineConfig(({ mode }) => {
       createHtmlPlugin({
         inject: {
           data: {
-            GOOGLE_MAPS_API_KEY: env.VITE_GOOGLE_MAPS_API_KEY,
+            VITE_GOOGLE_MAPS_API_KEY: env.VITE_GOOGLE_MAPS_API_KEY,
           },
         },
       }),

@@ -1,4 +1,4 @@
-let weatherTimeout = null; // variable externa para evitar múltiples llamadas
+let weatherTimeout = null;
 
 export const useTripFormHandlers = (
   formData,
@@ -26,15 +26,15 @@ export const useTripFormHandlers = (
   };
 
   const handleLocationChange = (field, newLocation) => {
+    if (!newLocation?.lat || !newLocation?.lng) return;
+
     const coordString = `${newLocation.lat}, ${newLocation.lng}`;
     setFormData((prev) => ({ ...prev, [field]: coordString }));
     setMapCenter(newLocation);
 
     if (field === "location") {
-      // Limpiar cualquier timeout anterior
       if (weatherTimeout) clearTimeout(weatherTimeout);
 
-      // Esperar 700ms antes de hacer la llamada
       weatherTimeout = setTimeout(() => {
         fetchWeather(newLocation.lat, newLocation.lng);
       }, 700);

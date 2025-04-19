@@ -1,65 +1,87 @@
 import PropTypes from "prop-types";
 import "../styles/tripResults.css";
 
+const formatValue = (value, unit = "") =>
+  value !== undefined && value !== null ? `${value} ${unit}`.trim() : "-";
+
 const TripResults = ({ results }) => {
-  console.log("🚗 Datos recibidos en resultados:", results.vehicleDetails);
   if (!results) return null;
+
+  const {
+    distance,
+    fuelUsed,
+    totalCost,
+    weather,
+    roadSlope,
+    vehicleDetails = {},
+  } = results;
+
+  const isSnowy = weather?.toLowerCase() === "snowy";
 
   return (
     <div className="trip-results-container">
       <div className="trip-results-card">
-        <h2>Resultados del Viaje</h2>
+        <h2>📊 Resultados del Viaje</h2>
         <ul>
           <li>
-            <strong>Distancia:</strong> {results.distance} km
+            <strong>Distancia:</strong> {formatValue(distance, "km")}
           </li>
           <li>
             <strong>Consumo de combustible:</strong>{" "}
-            {results.fuelUsed?.toFixed(3)} litros
+            {formatValue(fuelUsed?.toFixed(2), "litros")}
           </li>
           <li>
-            <strong>Costo total:</strong> ${results.totalCost?.toFixed(3)}
+            <strong>Costo total:</strong>{" "}
+            {formatValue(totalCost?.toFixed(2), "$")}
           </li>
           <li>
-            <strong>Condiciones climáticas:</strong> {results.weather}
+            <strong>Condiciones climáticas:</strong> {weather || "-"}
           </li>
           <li>
-            <strong>Pendiente del camino:</strong> {results.roadSlope}
+            <strong>Pendiente del camino:</strong> {roadSlope || "-"}
           </li>
         </ul>
 
-        {results.vehicleDetails && (
+        {isSnowy && (
+          <div className="trip-warning-snowy">
+            ⚠️ <strong>Advertencia:</strong> Se detectaron condiciones de nieve.
+            El consumo de combustible puede incrementarse considerablemente
+            debido al aumento en la resistencia y menor tracción.
+          </div>
+        )}
+
+        {vehicleDetails && (
           <div className="vehicle-details">
-            <h3>Detalles del Vehículo</h3>
+            <h3>🚘 Detalles del Vehículo</h3>
             <ul>
               <li>
-                <strong>Marca:</strong> {results.vehicleDetails.make}
+                <strong>Marca:</strong> {vehicleDetails.make || "-"}
               </li>
               <li>
-                <strong>Modelo:</strong> {results.vehicleDetails.model}
+                <strong>Modelo:</strong> {vehicleDetails.model || "-"}
               </li>
               <li>
-                <strong>Año:</strong> {results.vehicleDetails.year}
+                <strong>Año:</strong> {vehicleDetails.year || "-"}
               </li>
               <li>
                 <strong>Tipo de Combustible:</strong>{" "}
-                {results.vehicleDetails.fuel_type || "-"}
+                {vehicleDetails.fuel_type || "-"}
               </li>
               <li>
                 <strong>Cilindrada:</strong>{" "}
-                {results.vehicleDetails.engine_cc || "-"} cc
+                {formatValue(vehicleDetails.engine_cc, "cc")}
               </li>
               <li>
                 <strong>N° de Cilindros:</strong>{" "}
-                {results.vehicleDetails.engine_cylinders || "-"}
+                {vehicleDetails.engine_cylinders || "-"}
               </li>
               <li>
-                <strong>Peso:</strong> {results.vehicleDetails.weight_kg || "-"}{" "}
-                kg
+                <strong>Peso:</strong>{" "}
+                {formatValue(vehicleDetails.weight_kg, "kg")}
               </li>
               <li>
                 <strong>Consumo Mixto:</strong>{" "}
-                {results.vehicleDetails.lkm_mixed || "-"} l/100km
+                {formatValue(vehicleDetails.lkm_mixed, "l/100km")}
               </li>
             </ul>
           </div>
