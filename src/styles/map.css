@@ -1,4 +1,4 @@
-/* Contenedor del mapa */
+/* Contenedor principal del mapa */
 .map-wrapper {
   position: relative;
   width: 100%;
@@ -15,7 +15,7 @@
   top: 10px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 10;
+  z-index: 1000;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -25,46 +25,39 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
+/* Inputs de autocompletado */
 place-autocomplete {
-  display: block;
-  width: 100%;
+  position: relative !important;
+  z-index: 1001 !important;
+  cursor: text !important;
+  pointer-events: auto !important;
+  background: white !important;
+  color: black !important;
+  font-size: 14px !important;
   min-height: 40px;
+  padding: 8px 12px;
+  border-radius: 8px;
   border: 1px solid #ccc;
-  padding: 6px 10px;
-  font-size: 14px;
-  border-radius: 4px;
-  background: white;
-  color: black;
-  z-index: 10;
+  width: 220px;
+  box-sizing: border-box;
 }
 
+/* Personalización del input interno del shadow DOM */
+place-autocomplete::part(input) {
+  font-size: 14px;
+  padding: 8px;
+  cursor: text;
+}
+
+/* Contenedor de inputs */
 .search-inputs {
   display: flex;
   flex-direction: row;
   gap: 10px;
 }
 
-.search-box {
-  width: 220px;
-  min-height: 40px;
-  font-size: 14px;
-  padding: 10px 12px;
-  border-radius: 8px;
-  border: 1px solid #ccc;
-  background-color: #fff;
-  transition: border-color 0.3s ease;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  z-index: 10;
-}
-
-.search-box:focus {
-  border-color: #007bff;
-  outline: none;
-}
-
-/* Estilo para el botón de ubicación */
+/* Botón de ubicación actual */
 .gps-button {
-  margin-top: 0;
   height: 40px;
   width: 40px;
   border-radius: 50%;
@@ -84,7 +77,7 @@ place-autocomplete {
   background-color: #0056b3;
 }
 
-/* Contenedor del mapa de Google */
+/* Contenedor del mapa */
 .map-container {
   height: 100%;
   width: 100%;
@@ -93,7 +86,7 @@ place-autocomplete {
   box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
 }
 
-/* Mensaje de advertencia si no se accede a la ubicación */
+/* Advertencia de ubicación */
 .location-warning {
   position: absolute;
   bottom: 10px;
@@ -103,11 +96,11 @@ place-autocomplete {
   padding: 8px 12px;
   border-radius: 6px;
   font-size: 14px;
-  z-index: 10;
+  z-index: 1000;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
-/* Indicador de carga */
+/* Mensaje de carga */
 .loading-maps {
   text-align: center;
   padding: 20px;
@@ -116,7 +109,7 @@ place-autocomplete {
   color: #333;
 }
 
-/* Responsive (móvil) */
+/* Versión responsive para móviles */
 @media screen and (max-width: 768px) {
   .search-container {
     flex-direction: column;
@@ -127,17 +120,16 @@ place-autocomplete {
     padding: 10px;
   }
 
-  place-autocomplete.search-box {
-    width: 100%;
-    font-size: 13px;
-    padding: 8px 10px;
+  place-autocomplete {
+    width: 100% !important;
+    font-size: 13px !important;
+    padding: 8px 10px !important;
   }
 
   .gps-button {
     width: 36px;
     height: 36px;
     font-size: 16px;
-    margin-top: 0;
   }
 
   .location-warning {
