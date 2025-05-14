@@ -1,55 +1,77 @@
+/* === FORMULARIO DE VIAJE (MODERNO Y COHERENTE) === */
+
 form {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 12px;
 }
 
+/* Etiquetas */
 label {
-  font-size: 16px;
-  font-weight: bold;
+  font-size: 15px;
+  font-weight: 600;
   margin-bottom: 4px;
+  color: #333;
 }
 
-/* Ajuste de estilos en react-select */
+/* React-select */
 .custom-select .custom-select__control {
-  padding: 3px;
+  padding: 6px 12px;
   font-size: 14px;
-  border-radius: 12px;
+  border-radius: 16px;
   border: 1px solid #ccc;
-  margin-bottom: 1px;
   width: 100%;
+  background-color: #fff;
+  transition: border 0.3s ease;
 }
 
-/* Ajuste de bordes en input de número */
-.custom-input {
-  padding: 10px;
-  font-size: 14px;
-  border-radius: 12px;
-  border: 1px solid #ccc;
-  margin-bottom: 12px;
-  width: 100%;
+.custom-select .custom-select__control--is-focused {
+  border-color: #007bff;
+  box-shadow: none;
 }
 
-/* Botón de calcular */
+/* Inputs estándar (número, texto, select nativo) */
+.custom-input,
+select {
+  padding: 12px;
+  font-size: 14px;
+  border-radius: 16px;
+  border: 1px solid #ccc;
+  background-color: #fff;
+  color: #333;
+  margin-bottom: 6px;
+  width: 100%;
+  transition: border-color 0.3s ease;
+}
+
+.custom-input:focus,
+select:focus {
+  border-color: #007bff;
+  outline: none;
+}
+
+/* Botón de cálculo */
 button.calculate-button {
   width: 100%;
-  padding: 12px;
+  padding: 14px;
   font-size: 16px;
-  margin-top: 15px;
+  font-weight: 600;
   background-color: #007bff;
   color: white;
   border: none;
-  border-radius: 12px;
+  border-radius: 16px;
   transition: background-color 0.3s ease;
   cursor: pointer;
 }
 
-button:hover {
+button.calculate-button:hover {
   background-color: #0056b3;
 }
 
+/* Texto de error */
 .error-text {
   color: #d9534f;
   font-size: 13px;
-  margin-bottom: 10px;
+  margin-top: -4px;
+  margin-bottom: 6px;
 }
