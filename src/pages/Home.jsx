@@ -1,4 +1,5 @@
-import { useState } from "react";
+// src/pages/Home.jsx
+import { useState, useCallback } from "react";
 import TripForm from "../components/TripForm";
 import GoogleMapSection from "../components/GoogleMapSection";
 import TripResults from "../components/TripResults";
@@ -6,7 +7,6 @@ import useTripData from "../hooks/useTripData";
 import { useWeather } from "../hooks/useWeather";
 import { validateTripForm } from "../hooks/useTripValidation";
 import { useTripCalculation } from "../hooks/useTripCalculation";
-import { useTripFormHandlers } from "../hooks/useTripFormHandlers";
 import { DEFAULT_MAP_CENTER } from "../constants/googleMaps";
 import "../styles/home.css";
 
@@ -52,11 +52,21 @@ const Home = () => {
     vehicleDetails
   );
 
-  const { handleLocationChange } = useTripFormHandlers(
-    formData,
-    setFormData,
-    setMapCenter,
-    fetchWeather
+  const handleLocationChange = useCallback(
+    (field, coords) => {
+      if (!coords?.lat || !coords?.lng) return;
+
+      const newCoordStr = `${coords.lat}, ${coords.lng}`;
+      if (formData[field] === newCoordStr) return;
+
+      setFormData((prev) => ({ ...prev, [field]: newCoordStr }));
+
+      if (field === "location") {
+        setMapCenter(coords);
+        fetchWeather(coords.lat, coords.lng);
+      }
+    },
+    [formData, setFormData, setMapCenter, fetchWeather]
   );
 
   const handleSubmit = () => {
@@ -64,6 +74,12 @@ const Home = () => {
     setErrors(validationErrors);
 
     if (Object.keys(validationErrors).length === 0) {
+      if (!formData.climate) {
+        alert(
+          "El clima aún no ha sido cargado. Espera unos segundos e inténtalo nuevamente."
+        );
+        return;
+      }
       calculateTrip();
     } else {
       alert("Por favor completa todos los campos requeridos correctamente.");
@@ -79,13 +95,13 @@ const Home = () => {
       )}
 
       <div className="form-map-container">
-        {/* Formulario */}
         <div className="form-container">
           <TripForm
             formData={formData}
             brandOptions={brandOptions}
             modelOptions={modelOptions}
             availableYears={availableYears}
+            vehicleDetails={vehicleDetails}
             handleBrandSelect={handleBrandSelect}
             handleModelSelect={handleModelSelect}
             handleYearSelect={handleYearSelect}
@@ -95,7 +111,6 @@ const Home = () => {
           />
         </div>
 
-        {/* Mapa y resultados */}
         <div className="map-results-wrapper">
           <GoogleMapSection
             mapCenter={mapCenter}

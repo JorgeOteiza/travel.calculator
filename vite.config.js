@@ -1,22 +1,12 @@
 import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
-import { createHtmlPlugin } from "vite-plugin-html";
 import process from "node:process";
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
 
   return {
-    plugins: [
-      react(),
-      createHtmlPlugin({
-        inject: {
-          data: {
-            VITE_GOOGLE_MAPS_API_KEY: env.VITE_GOOGLE_MAPS_API_KEY,
-          },
-        },
-      }),
-    ],
+    plugins: [react()],
     define: {
       "import.meta.env.VITE_BACKEND_URL": JSON.stringify(env.VITE_BACKEND_URL),
       "import.meta.env.VITE_GOOGLE_MAPS_API_KEY": JSON.stringify(

@@ -1,17 +1,16 @@
-from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
-from flask_bcrypt import Bcrypt 
-
-db = SQLAlchemy()
-bcrypt = Bcrypt()
+from backend.extensions import db, bcrypt
 
 class User(db.Model):
+    __tablename__ = "user"
+
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(80), nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(256), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    trips = db.relationship('Trip', back_populates="user", cascade="all, delete")
+
+    trips = db.relationship("Trip", back_populates="user", cascade="all, delete", lazy=True)
 
     def __init__(self, name, email, password):
         self.name = name
@@ -21,7 +20,7 @@ class User(db.Model):
     def set_password(self, password):
         if not password:
             raise ValueError("La contraseña no puede estar vacía")
-        self.password = bcrypt.generate_password_hash(password).decode('utf-8')
+        self.password = bcrypt.generate_password_hash(password).decode("utf-8")
 
     def check_password(self, password):
         if not self.password:
@@ -60,29 +59,38 @@ class Vehicle(db.Model):
             "mpg_mixed": self.mpg_mixed,
         }
 
+class UserVehicle(db.Model):
+    __tablename__ = 'user_vehicle'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    vehicle_id = db.Column(db.Integer, db.ForeignKey('vehicle.id'), nullable=False)
 
 class Trip(db.Model):
+    __tablename__ = "trip"
+
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
-    user = db.relationship('User', back_populates="trips")
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
 
-    brand = db.Column(db.String(80), nullable=False)
-    model = db.Column(db.String(80), nullable=False)
+    brand = db.Column(db.String(100), nullable=False)
+    model = db.Column(db.String(100), nullable=False)
     year = db.Column(db.Integer, nullable=False)
-    fuel_type = db.Column(db.String(20), nullable=False)
+    fuel_type = db.Column(db.String(50), nullable=False)
     fuel_price = db.Column(db.Float, nullable=True)
-    total_weight = db.Column(db.Float, nullable=True)
-    passengers = db.Column(db.Integer, nullable=True)
 
-    location = db.Column(db.String(120), nullable=False)
+    total_weight = db.Column(db.Float, nullable=False)
+    passengers = db.Column(db.Integer, nullable=False)
+
+    location = db.Column(db.String(255), nullable=False)
     distance = db.Column(db.Float, nullable=False)
     fuel_consumed = db.Column(db.Float, nullable=False)
     total_cost = db.Column(db.Float, nullable=False)
-
-    road_grade = db.Column(db.Float, nullable=True)
-    weather = db.Column(db.String(50), nullable=True)
+    road_grade = db.Column(db.Float, nullable=False)
+    weather = db.Column(db.String(50), nullable=False)
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    user = db.relationship("User", back_populates="trips", lazy=True)
 
     def to_dict(self):
         return {
@@ -101,7 +109,7 @@ class Trip(db.Model):
             "total_cost": self.total_cost,
             "road_grade": self.road_grade,
             "weather": self.weather,
-            "created_at": self.created_at.isoformat()
+            "created_at": self.created_at.strftime("%Y-%m-%d %H:%M:%S") if self.created_at else None,
         }
 
     def __repr__(self):

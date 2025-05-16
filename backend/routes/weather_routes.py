@@ -4,7 +4,9 @@ from flask import Blueprint, request, jsonify
 from flask_cors import cross_origin
 from dotenv import load_dotenv
 
-load_dotenv()
+# 🔄 Cargar variables desde .env con ruta explícita si es necesario
+dotenv_path = os.path.join(os.path.dirname(__file__), "../../.env")
+load_dotenv(dotenv_path)
 
 weather_bp = Blueprint("weather_bp", __name__)
 OPENWEATHERMAP_API_KEY = os.getenv("VITE_OPENWEATHERMAP_API_KEY")
@@ -34,16 +36,26 @@ def get_weather():
         return jsonify({"error": "Faltan parámetros de latitud o longitud"}), 400
 
     if not OPENWEATHERMAP_API_KEY:
-        return jsonify({"error": "Falta la API KEY de OpenWeatherMap"}), 500
+        print("⚠️ [WARN] API KEY de OpenWeatherMap no encontrada. Usando clima 'mild'.")
+        return jsonify({
+            "climate": "mild",
+            "raw": None,
+            "source": "default_fallback"
+        }), 200
 
     try:
         url = (
-            f"https://api.openweathermap.org/data/2.5/weather?"
-            f"lat={lat}&lon={lng}&appid={OPENWEATHERMAP_API_KEY}&units=metric"
+            f"https://api.openweathermap.org/data/2.5/weather"
+            f"?lat={lat}&lon={lng}&appid={OPENWEATHERMAP_API_KEY}&units=metric"
         )
         response = requests.get(url)
         if response.status_code != 200:
-            return jsonify({"error": f"Error en OpenWeatherMap: {response.status_code}"}), 500
+            print(f"⚠️ [WARN] Fallo en OpenWeatherMap API: código {response.status_code}")
+            return jsonify({
+                "climate": "mild",
+                "raw": None,
+                "source": f"fallback_due_to_api_error_{response.status_code}"
+            }), 200
 
         data = response.json()
         temp = data["main"]["temp"]
@@ -58,8 +70,15 @@ def get_weather():
                 "temp_celsius": temp,
                 "wind_speed_mps": wind_speed,
                 "condition": condition_main
-            }
+            },
+            "source": "openweathermap"
         }), 200
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        print(f"❌ [ERROR] Excepción en /weather: {e}")
+        return jsonify({
+            "climate": "mild",
+            "raw": None,
+            "source": "fallback_due_to_exception",
+            "error": str(e)
+        }), 200

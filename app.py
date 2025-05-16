@@ -1,18 +1,14 @@
 import os
 from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
-from flask_migrate import Migrate
 from flask_jwt_extended import JWTManager
-from flask_bcrypt import Bcrypt
 from datetime import timedelta
 from dotenv import load_dotenv
 
-from backend.models import db
+from backend.extensions import db, bcrypt, migrate
 from backend.routes import main_bp
 
 load_dotenv()
-bcrypt = Bcrypt()
 
 def create_app():
     app = Flask(__name__)
@@ -24,12 +20,13 @@ def create_app():
     app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=12)
     app.config["DEBUG"] = os.getenv('DEBUG', 'False') == 'True'
 
+    # Inicializar extensiones
     db.init_app(app)
-    Migrate(app, db)
-    JWTManager(app)
+    migrate.init_app(app, db)
     bcrypt.init_app(app)
+    JWTManager(app)
 
-    # Registrar todas las rutas agrupadas
+    # Registrar rutas
     app.register_blueprint(main_bp, url_prefix="/api")
 
     print("🚀 Flask iniciado en modo:", "Debug" if app.config["DEBUG"] else "Producción")

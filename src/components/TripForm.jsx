@@ -38,7 +38,7 @@ const TripForm = ({
         name="brand"
         options={brandOptions}
         value={brandOptions.find((opt) => opt.value === formData.brand) || null}
-        onChange={(selected) => handleBrandSelect(selected?.value || "")}
+        onChange={handleBrandSelect}
         placeholder="Select a brand"
         isClearable
         className="custom-select"
@@ -52,7 +52,7 @@ const TripForm = ({
         name="model"
         options={modelOptions}
         value={modelOptions.find((opt) => opt.value === formData.model) || null}
-        onChange={(selected) => handleModelSelect(selected?.value || "")}
+        onChange={handleModelSelect}
         placeholder="Select a model"
         isClearable
         className="custom-select"
@@ -69,6 +69,7 @@ const TripForm = ({
         onChange={(e) => handleYearSelect(e.target.value)}
         className="custom-input"
         disabled={!availableYears.length}
+        required
       >
         <option value="">Select year</option>
         {availableYears.map((year) => (
@@ -108,7 +109,7 @@ const TripForm = ({
         </>
       )}
 
-      {/* Precio del combustible (solo si no es eléctrico) */}
+      {/* Precio del combustible */}
       {!isElectric && (
         <>
           <label htmlFor="fuelPrice">Fuel Price (per liter)</label>
@@ -121,6 +122,7 @@ const TripForm = ({
             min="0"
             step="0.01"
             className="custom-input"
+            required
           />
         </>
       )}
@@ -135,6 +137,7 @@ const TripForm = ({
         placeholder="Enter number of passengers"
         min="1"
         className="custom-input"
+        required
       />
       {errors.passengers && (
         <span className="error-text">{errors.passengers}</span>
@@ -150,6 +153,7 @@ const TripForm = ({
         placeholder="Passengers, luggage, cargo, etc."
         min="0"
         className="custom-input"
+        required
       />
       {errors.totalWeight && (
         <span className="error-text">{errors.totalWeight}</span>

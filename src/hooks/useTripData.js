@@ -1,118 +1,133 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import axios from "axios";
 
 const useTripData = (initialFormData) => {
-  const [formData, setFormData] = useState(initialFormData);
+  const [formData, setFormData] = useState({
+    ...initialFormData,
+    climate: initialFormData.climate || "mild",
+  });
   const [brandOptions, setBrandOptions] = useState([]);
   const [modelOptions, setModelOptions] = useState([]);
   const [vehicleDetails, setVehicleDetails] = useState(null);
 
-  // Obtener marcas desde NHTSA
+  const lastFetchRef = useRef({
+    brand: null,
+    model: null,
+    year: null,
+  });
+
+  const ignoreRef = useRef(false);
+
+  // 🔹 Obtener marcas permitidas desde el backend
   useEffect(() => {
     const fetchBrands = async () => {
       try {
         const response = await axios.get("/api/cars/brands");
-        if (response.data?.length) {
+        if (Array.isArray(response.data) && response.data.length) {
           setBrandOptions(response.data);
         } else {
           console.warn("⚠️ No se recibieron marcas desde NHTSA.");
         }
       } catch (error) {
-        console.error(
-          "❌ Error al obtener marcas:",
-          error.response?.data || error.message
-        );
+        console.error("❌ Error al obtener marcas:", error.message);
       }
     };
-
     fetchBrands();
   }, []);
 
-  // Obtener modelos desde NHTSA
+  // 🔹 Obtener modelos solo si cambia la marca
   useEffect(() => {
-    if (!formData.brand) {
-      setModelOptions([]);
+    if (!formData.brand || formData.brand === lastFetchRef.current.brand)
       return;
-    }
+
+    lastFetchRef.current.brand = formData.brand;
+    setModelOptions([]); // Limpia modelos previos
+    setVehicleDetails(null);
 
     const fetchModels = async () => {
       try {
-        const response = await axios.get(
+        const res = await axios.get(
           `/api/cars/models?make_id=${encodeURIComponent(formData.brand)}`
         );
-        if (response.data?.length) {
-          setModelOptions(response.data);
-        } else {
-          console.warn(
-            "⚠️ No se encontraron modelos para la marca",
-            formData.brand
-          );
-        }
+        setModelOptions(res.data || []);
       } catch (error) {
-        console.error(
-          "❌ Error al obtener modelos:",
-          error.response?.data || error.message
-        );
-        setModelOptions([]);
+        console.error("❌ Error al obtener modelos:", error.message);
       }
     };
 
     fetchModels();
   }, [formData.brand]);
 
-  // Obtener detalles del vehículo desde NHTSA (consulta y guarda si no existe en DB)
-  useEffect(() => {
-    if (!formData.brand || !formData.model || !formData.year) return;
+  // 🔹 Obtener detalles del vehículo solo cuando cambien marca + modelo + año
+  const fetchVehicleDetails = useCallback(async () => {
+    const { brand, model, year } = formData;
 
-    const fetchDetails = async () => {
-      try {
-        const response = await axios.get(
-          `/api/cars/model_details?make=${encodeURIComponent(
-            formData.brand
-          )}&model=${encodeURIComponent(formData.model)}&year=${formData.year}`
-        );
+    if (!brand || !model || !year) return;
 
-        if (response.status === 200 && response.data) {
-          const details = response.data;
-          setVehicleDetails(details);
+    const alreadyFetched =
+      brand === lastFetchRef.current.brand &&
+      model === lastFetchRef.current.model &&
+      year === lastFetchRef.current.year;
 
-          // Si es eléctrico, limpiamos automáticamente fuelType y fuelPrice
-          if (details.fuel_type?.toLowerCase().includes("electric")) {
-            setFormData((prev) => ({
-              ...prev,
-              fuelType: "",
-              fuelPrice: "",
-            }));
-          }
-        } else {
-          console.warn("⚠️ No se recibieron detalles del vehículo.");
-          setVehicleDetails(null);
+    if (alreadyFetched || ignoreRef.current) return;
+
+    lastFetchRef.current = { brand, model, year };
+    ignoreRef.current = true;
+
+    try {
+      const res = await axios.get(
+        `/api/cars/model_details?make=${encodeURIComponent(
+          brand
+        )}&model=${encodeURIComponent(model)}&year=${year}`
+      );
+
+      if (res.status === 200 && res.data) {
+        setVehicleDetails(res.data);
+
+        if (res.data.fuel_type?.toLowerCase().includes("electric")) {
+          setFormData((prev) => ({
+            ...prev,
+            fuelType: "",
+            fuelPrice: "",
+          }));
         }
-      } catch (error) {
-        console.error(
-          "❌ Error al obtener detalles del vehículo:",
-          error.response?.data || error.message
-        );
+      } else {
         setVehicleDetails(null);
       }
-    };
+    } catch (error) {
+      console.error("❌ Error en detalles:", error.message);
+      setVehicleDetails(null);
+    } finally {
+      setTimeout(() => {
+        ignoreRef.current = false;
+      }, 1000);
+    }
+  }, [formData]);
 
-    fetchDetails();
-  }, [formData.brand, formData.model, formData.year]);
+  useEffect(() => {
+    fetchVehicleDetails();
+  }, [fetchVehicleDetails]);
 
   const availableYears =
     formData.brand && formData.model
       ? Array.from({ length: 35 }, (_, i) => 2025 - i)
       : [];
 
-  const handleBrandSelect = (brand) => {
-    setFormData((prev) => ({ ...prev, brand, model: "", year: "" }));
+  const handleBrandSelect = (selectedOption) => {
+    const brandValue = selectedOption?.value || "";
+    setFormData((prev) => ({
+      ...prev,
+      brand: brandValue,
+      model: "",
+      year: "",
+    }));
     setModelOptions([]);
     setVehicleDetails(null);
   };
 
-  const handleModelSelect = (model) => {
-    setFormData((prev) => ({ ...prev, model, year: "" }));
+  const handleModelSelect = (selectedOption) => {
+    const modelValue = selectedOption?.value || "";
+    setFormData((prev) => ({ ...prev, model: modelValue, year: "" }));
     setVehicleDetails(null);
   };
 
@@ -134,10 +149,7 @@ const useTripData = (initialFormData) => {
         : parseFloat(value)
       : value;
 
-    setFormData((prev) => ({
-      ...prev,
-      [name]: parsedValue,
-    }));
+    setFormData((prev) => ({ ...prev, [name]: parsedValue }));
   };
 
   return {
