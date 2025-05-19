@@ -13,10 +13,12 @@ const TripResults = ({ results }) => {
     totalCost,
     weather,
     roadSlope,
+    climate,
+    weatherRaw = {},
     vehicleDetails = {},
   } = results;
 
-  const isSnowy = weather?.toLowerCase() === "snowy";
+  const isSnowy = (weather || climate)?.toLowerCase() === "snowy";
 
   return (
     <div className="trip-results-container">
@@ -35,11 +37,26 @@ const TripResults = ({ results }) => {
             {formatValue(totalCost?.toFixed(2), "$")}
           </li>
           <li>
-            <strong>Condiciones climáticas:</strong> {weather || "-"}
+            <strong>Condiciones climáticas:</strong> {weather || climate || "-"}
           </li>
           <li>
             <strong>Pendiente del camino:</strong> {roadSlope || "-"}
           </li>
+          {weatherRaw && (
+            <>
+              <li>
+                <strong>🌡️ Temperatura:</strong>{" "}
+                {formatValue(weatherRaw.temp_celsius, "°C")}
+              </li>
+              <li>
+                <strong>🌬️ Viento:</strong>{" "}
+                {formatValue(weatherRaw.wind_speed_mps, "m/s")}
+              </li>
+              <li>
+                <strong>☁️ Condición:</strong> {weatherRaw.condition || "-"}
+              </li>
+            </>
+          )}
         </ul>
 
         {isSnowy && (
@@ -97,7 +114,13 @@ TripResults.propTypes = {
     fuelUsed: PropTypes.number,
     totalCost: PropTypes.number,
     weather: PropTypes.string,
+    climate: PropTypes.string,
     roadSlope: PropTypes.string,
+    weatherRaw: PropTypes.shape({
+      temp_celsius: PropTypes.number,
+      wind_speed_mps: PropTypes.number,
+      condition: PropTypes.string,
+    }),
     vehicleDetails: PropTypes.shape({
       make: PropTypes.string,
       model: PropTypes.string,

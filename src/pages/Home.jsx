@@ -1,4 +1,3 @@
-// src/pages/Home.jsx
 import { useState, useCallback } from "react";
 import TripForm from "../components/TripForm";
 import GoogleMapSection from "../components/GoogleMapSection";
@@ -49,7 +48,8 @@ const Home = () => {
   const { calculateTrip } = useTripCalculation(
     formData,
     setResults,
-    vehicleDetails
+    vehicleDetails,
+    fetchWeather
   );
 
   const handleLocationChange = useCallback(
@@ -63,7 +63,7 @@ const Home = () => {
 
       if (field === "location") {
         setMapCenter(coords);
-        fetchWeather(coords.lat, coords.lng);
+        fetchWeather(coords.lat, coords.lng); // aunque ya no es obligatorio
       }
     },
     [formData, setFormData, setMapCenter, fetchWeather]
@@ -74,12 +74,6 @@ const Home = () => {
     setErrors(validationErrors);
 
     if (Object.keys(validationErrors).length === 0) {
-      if (!formData.climate) {
-        alert(
-          "El clima aún no ha sido cargado. Espera unos segundos e inténtalo nuevamente."
-        );
-        return;
-      }
       calculateTrip();
     } else {
       alert("Por favor completa todos los campos requeridos correctamente.");

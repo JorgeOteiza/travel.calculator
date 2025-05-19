@@ -15,7 +15,6 @@ export const useTripCalculation = (
     }
 
     try {
-      // Validación de coordenadas
       if (!formData.location || !formData.destinity) {
         alert("Debes seleccionar origen y destino en el mapa.");
         return;
@@ -29,7 +28,6 @@ export const useTripCalculation = (
         "Content-Type": "application/json",
       };
 
-      // Paso 1: obtener distancia
       const distRes = await axios.get(`${VITE_BACKEND_URL}/api/distance`, {
         params: {
           origin: `${originLat},${originLng}`,
@@ -44,7 +42,6 @@ export const useTripCalculation = (
         return;
       }
 
-      // Paso 2: obtener elevación
       const elevRes = await axios.get(`${VITE_BACKEND_URL}/api/elevation`, {
         params: {
           origin: `${originLat},${originLng}`,
@@ -60,11 +57,18 @@ export const useTripCalculation = (
         ((elevationDiff / (distanceKm * 1000)) * 100).toFixed(2)
       );
 
+      // ✅ Obtener clima desde el backend
+      const weatherRes = await axios.get(`${VITE_BACKEND_URL}/api/weather`, {
+        params: { lat: originLat, lng: originLng },
+        headers,
+      });
+
+      const climate = weatherRes.data?.climate || "mild";
+
       const isElectric = vehicleDetails?.fuel_type
         ?.toLowerCase()
         .includes("electric");
 
-      // Paso 3: payload para cálculo
       const payload = {
         brand: formData.brand.trim().toLowerCase(),
         model: formData.model.trim().toLowerCase(),
@@ -73,7 +77,7 @@ export const useTripCalculation = (
         passengers: parseInt(formData.passengers),
         distance: distanceKm,
         roadGrade: slopePercent,
-        climate: formData.climate,
+        climate,
         ...(vehicleDetails && {
           lkm_mixed: vehicleDetails.lkm_mixed,
           weight_kg: vehicleDetails.weight_kg,
@@ -83,7 +87,6 @@ export const useTripCalculation = (
         }),
       };
 
-      // Paso 4: cálculo
       const calcRes = await axios.post(
         `${VITE_BACKEND_URL}/api/calculate`,
         payload,
@@ -92,11 +95,10 @@ export const useTripCalculation = (
 
       setResults({
         ...calcRes.data,
-        climate: formData.climate,
+        climate,
         roadSlope: `${slopePercent}%`,
       });
 
-      // Paso 5: guardar viaje
       const savePayload = {
         brand: formData.brand,
         model: formData.model,
@@ -109,7 +111,7 @@ export const useTripCalculation = (
         fuel_consumed: calcRes.data.fuelUsed,
         total_cost: calcRes.data.totalCost,
         road_grade: slopePercent,
-        weather: formData.climate,
+        climate,
         ...(isElectric ? {} : { fuel_price: parseFloat(formData.fuelPrice) }),
       };
 
