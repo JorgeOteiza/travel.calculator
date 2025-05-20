@@ -25,7 +25,6 @@ def calculate_trip():
             "brand", "model", "year", "totalWeight",
             "distance", "roadGrade", "climate"
         ]
-
         for field in required_fields:
             if field not in data:
                 return jsonify({"error": f"Falta el campo obligatorio '{field}'"}), 400
@@ -76,7 +75,6 @@ def calculate_trip():
         fuel_used = (distance_km * adjusted_fc) / 100
         total_cost = fuel_used * fuel_price
 
-        # 🔍 Logs informativos
         print("📊 CÁLCULO:")
         print(f" - Vehículo: {vehicle.make} {vehicle.model} {vehicle.year}")
         print(f" - base_fc: {base_fc} L/100km")
@@ -109,6 +107,9 @@ def calculate_trip():
             "totalCost": round(total_cost, 3),
             "weather": climate,
             "roadSlope": f"{grade}%",
+            "baseFC": round(base_fc, 2),
+            "adjustedFC": round(adjusted_fc, 2),
+            "pricePerLitre": round(fuel_price, 2),
             "vehicleDetails": {
                 "make": vehicle.make,
                 "model": vehicle.model,
@@ -127,6 +128,7 @@ def calculate_trip():
     except Exception as e:
         print(f"❌ Error general en /calculate: {e}")
         return jsonify({"error": str(e)}), 500
+
 
 # ==========================================
 # 💾 Guardar viaje (POST)

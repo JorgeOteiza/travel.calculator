@@ -21,10 +21,8 @@ with open(NORMALIZED_MAP_PATH, encoding="utf-8") as f:
 
 ALLOWED_BRANDS_NORMALIZED = set(NORMALIZED_BRAND_MAP.keys())
 
-# Función para normalizar texto
 def normalize(text):
     return unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode("utf-8").strip().lower()
-
 
 @car_bp.route("/brands", methods=["GET"])
 @cross_origin()
@@ -47,7 +45,6 @@ def get_car_brands():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
 @car_bp.route("/models", methods=["GET"])
 @cross_origin()
 def get_car_models():
@@ -56,16 +53,13 @@ def get_car_models():
         if not make:
             return jsonify({"error": "Falta el parámetro make_id"}), 400
 
-        # Normalizar y validar
         normalized = normalize(make)
         if normalized not in NORMALIZED_BRAND_MAP:
             return jsonify({"error": f"Marca '{make}' no permitida"}), 400
 
         mapped_make = NORMALIZED_BRAND_MAP[normalized]
 
-        response = requests.get(
-            f"{NHTSA_BASE_URL}/getmodelsformake/{mapped_make}?format=json"
-        )
+        response = requests.get(f"{NHTSA_BASE_URL}/getmodelsformake/{mapped_make}?format=json")
         if response.status_code != 200:
             return jsonify([], 500)
 
@@ -75,7 +69,6 @@ def get_car_models():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
 
 @car_bp.route("/model_details", methods=["GET"])
 @cross_origin()
@@ -99,25 +92,19 @@ def get_model_details():
             Vehicle.year == year
         ).first()
 
-        # 🛠️ Si existe pero no tiene datos suficientes, actualizarlo
         if vehicle:
             updated = False
-
             if vehicle.lkm_mixed is None:
-                vehicle.lkm_mixed = 6.5  # valor por defecto
+                vehicle.lkm_mixed = 6.5
                 updated = True
-
             if vehicle.weight_kg is None:
                 vehicle.weight_kg = 1200
                 updated = True
-
             if updated:
                 db.session.commit()
                 print("[DEBUG] Vehículo existente actualizado con valores de referencia.")
-
             return jsonify(vehicle.to_dict()), 200
 
-        # Si no existe, consultar a NHTSA
         url = (
             f"{NHTSA_BASE_URL}/GetVehicleTypesForMakeModelYear/"
             f"make/{mapped_make}/model/{model}/modelyear/{year}?format=json"
@@ -139,7 +126,6 @@ def get_model_details():
         if fuel_type.lower() in ["electric", "battery electric"]:
             fuel_type = "Electric"
 
-        # Crear con datos de referencia
         new_vehicle = Vehicle(
             make=mapped_make,
             model=model,

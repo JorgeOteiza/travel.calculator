@@ -15,6 +15,9 @@ const TripResults = ({ results }) => {
     roadSlope,
     climate,
     weatherRaw = {},
+    baseFC,
+    adjustedFC,
+    pricePerLitre,
     vehicleDetails = {},
   } = results;
 
@@ -29,8 +32,19 @@ const TripResults = ({ results }) => {
             <strong>Distancia:</strong> {formatValue(distance, "km")}
           </li>
           <li>
-            <strong>Consumo de combustible:</strong>{" "}
+            <strong>Consumo base del vehículo:</strong>{" "}
+            {formatValue(baseFC, "L/100km")}
+          </li>
+          <li>
+            <strong>Consumo ajustado:</strong>{" "}
+            {formatValue(adjustedFC, "L/100km")}
+          </li>
+          <li>
+            <strong>Consumo total:</strong>{" "}
             {formatValue(fuelUsed?.toFixed(2), "litros")}
+          </li>
+          <li>
+            <strong>Precio por litro:</strong> {formatValue(pricePerLitre, "$")}
           </li>
           <li>
             <strong>Costo total:</strong>{" "}
@@ -116,6 +130,9 @@ TripResults.propTypes = {
     weather: PropTypes.string,
     climate: PropTypes.string,
     roadSlope: PropTypes.string,
+    baseFC: PropTypes.number,
+    adjustedFC: PropTypes.number,
+    pricePerLitre: PropTypes.number,
     weatherRaw: PropTypes.shape({
       temp_celsius: PropTypes.number,
       wind_speed_mps: PropTypes.number,
