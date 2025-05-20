@@ -28,3 +28,11 @@ body {
   display: flex;
   flex-direction: column;
 }
+
+html,
+body {
+  background: linear-gradient(135deg, #e3f2fd, #fdfbfb);
+  background-attachment: fixed;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}

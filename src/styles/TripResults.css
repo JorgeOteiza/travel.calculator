@@ -56,6 +56,12 @@
   margin-bottom: 12px;
 }
 
+.trip-results-card {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
 /* Adaptación para pantallas pequeñas */
 @media screen and (max-width: 1024px) {
   .trip-results-container {
