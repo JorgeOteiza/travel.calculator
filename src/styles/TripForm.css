@@ -73,4 +73,5 @@ button.calculate-button:hover {
   font-size: 13px;
   margin-top: -4px;
   margin-bottom: 6px;
+  border-radius: 3px;
 }
