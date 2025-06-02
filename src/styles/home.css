@@ -1,6 +1,6 @@
 /* Contenedor principal de la vista Home */
 .home-container {
-  padding: 32px;
+  padding-bottom: 20px;
   min-height: calc(100vh - 140px);
   display: flex;
   flex-direction: column;
@@ -35,7 +35,6 @@
   flex-direction: column;
   justify-content: flex-start;
   gap: 16px;
-  height: fit-content;
 }
 
 /* Botón de calcular */
