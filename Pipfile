@@ -7,6 +7,16 @@ name = "pypi"
 flask = "*"
 flask-sqlalchemy = "*"
 flask-cors = "*"
+flask-jwt-extended = "*"
+flask-bcrypt = "*"
+flask-migrate = "*"
+python-dotenv = "*"
+requests = "*"
+psycopg2-binary = "*"
 
 [requires]
 python_version = "3.12"
+
+[scripts]
+dev = "python app.py"
+backend = "python app.py"

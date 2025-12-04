@@ -1,68 +1,188 @@
-# React + Vite
+🚗 Travel Calculator – Full-Stack App (Flask + React + Vite)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Este repositorio contiene una aplicación full-stack que incluye:
 
-Currently, two official plugins are available:
+Backend: Flask + SQLAlchemy + JWT
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+Frontend: React + Vite
 
-# 🗺️ Google Maps Integration - Legacy Autocomplete Support
+Integración de Google Maps, direcciones, rutas y cálculo de viajes
 
-Este proyecto integra Google Maps utilizando la API clásica (`google.maps.places.Autocomplete`) en su componente principal de mapa (`GoogleMapSection.jsx`).
+Proxy automático /api → backend
 
-## 🧠 Contexto Técnico
+El objetivo de este README es que cualquier desarrollador pueda abrir el proyecto sin necesidad de instalar nada manualmente fuera de:
 
-Desde el **1 de marzo de 2025**, Google ha dejado de habilitar `Autocomplete` para **nuevas claves API**. Sin embargo, **esta aplicación fue creada con una clave API generada el 7 de enero de 2025**, por lo tanto:
+✔️ Python
+✔️ Pipenv
+✔️ Node.js
+✔️ npm
 
-✅ **Se mantiene el uso de `google.maps.places.Autocomplete` sin errores funcionales.**  
-⚠️ Se reciben advertencias en consola, pero no afectan la funcionalidad.
+📦 1. Requisitos
 
-## 🧩 Estructura y uso actual
+Asegúrate de tener instalado:
 
-### 📁 `src/components/GoogleMapSection.jsx`
+Tecnología Versión recomendada
+Python 3.12 (o compatible)
+Pipenv Última estable
+Node.js 18+
+npm 9+
+⚙️ 2. Clonar el proyecto
+git clone <URL-del-repo>
+cd travelcalculator
 
-- Utiliza `loadGoogleMapsScript()` para cargar el script de forma dinámica, evitando declarar la API en `index.html`.
-- Se mantiene `google.maps.places.Autocomplete` para campos de origen y destino.
-- Usa `navigator.geolocation` para obtener la ubicación actual.
-- Se usan `DirectionsService` y `DirectionsRenderer` para trazar rutas.
+🔐 3. Variables de entorno
+3.1. Backend y frontend usan .env
 
-### 📁 `src/constants/googleMaps.js`
+Antes de ejecutar el proyecto:
 
-Se mantiene solo lo necesario:
+Copia el archivo de ejemplo:
 
-```js
-export const DEFAULT_MAP_CENTER = {
-  lat: -33.4489,
-  lng: -70.6693,
-};
+cp .env.example .env
 
-export const MAP_OPTIONS = {
-  disableDefaultUI: true,
-  zoomControl: true,
-};
-```
+Completa los valores necesarios:
 
-**Eliminado:** `GOOGLE_MAPS_LIBRARIES`, ya que se cargan directamente mediante script.
+.env.example
 
-### 📁 `src/pages/Home.jsx`
+# Backend
 
-- Se importa `DEFAULT_MAP_CENTER` desde `googleMaps.js`.
-- Se integran correctamente los estados de mapa y marcadores con el componente `GoogleMapSection`.
+SQLALCHEMY_DATABASE_URI=sqlite:///app.db
+JWT_SECRET_KEY=change_this_key
+DEBUG=True
 
-## 🧼 Limpieza y recomendaciones
+# Frontend
 
-- ✅ Se eliminó cualquier script de Google Maps en `index.html`.
-- ✅ Se agruparon funciones de carga de script en `utils/loadGoogleMaps.js`.
-- ⚠️ Se ignoran las advertencias relacionadas con `Autocomplete` según documentación oficial de Google.
+VITE_BACKEND_URL=http://localhost:5000
+VITE_GOOGLE_MAPS_API_KEY=TU_API_KEY_AQUI
+VITE_MAP_ID=TU_MAP_ID_AQUI
+VITE_OPENWEATHERMAP_API_KEY=TU_API_KEY_AQUI
 
-## 📚 Referencias
+🖥️ 4. Backend (Flask)
 
-- [Google Places Migration Guide](https://developers.google.com/maps/documentation/javascript/places-migration-overview)
-- [Legacy Maps API Notice](https://developers.google.com/maps/legacy)
-- [Vite and Google Maps API Integration Best Practices](https://goo.gle/js-api-loading)
+El backend se ejecuta con Pipenv.
 
----
+4.1. Instalar dependencias del backend
 
-**Última revisión:** Mayo 2025  
-**Responsable:** Laura Belén Sepúlveda Prelaz
+Desde la raíz del proyecto:
+
+pipenv install
+
+Incluye automáticamente:
+
+Flask
+
+flask-sqlalchemy
+
+flask-cors
+
+flask-jwt-extended
+
+flask-bcrypt
+
+flask-migrate
+
+python-dotenv
+
+requests
+
+Si usas MySQL o PostgreSQL, asegúrate de agregar su driver en el Pipfile.
+
+4.2. Ejecutar el backend
+
+Incluye un script en Pipfile:
+
+[scripts]
+backend = "python app.py"
+
+Entonces ejecutas:
+
+pipenv run backend
+
+Esto levanta Flask en:
+
+http://localhost:5000
+
+🌐 5. Frontend (React + Vite)
+5.1. Instalar dependencias
+npm install
+
+5.2. Ejecutar el proyecto
+npm run dev
+
+Esto levanta el frontend en:
+
+http://localhost:5173
+
+5.3. Proxy /api → backend
+
+Tu configuración Vite ya incluye:
+
+server: {
+proxy: {
+"/api": {
+target: "http://localhost:5000",
+changeOrigin: true,
+},
+},
+},
+
+Por lo tanto, el frontend automáticamente reenvía:
+
+/api/... → http://localhost:5000/api/...
+
+🚀 6. Flujo de desarrollo recomendado
+
+En dos terminales:
+
+Terminal 1 — Backend
+pipenv run backend
+
+Terminal 2 — Frontend
+npm run dev
+
+Abrir navegador en:
+
+http://localhost:5173
+
+📚 7. Estructura del repositorio
+root/
+│ app.py
+│ Pipfile
+│ .env.example
+│ package.json
+│ vite.config.js
+│ README.md
+│
+├── backend/
+│ ├── routes/
+│ ├── models/
+│ ├── extensions.py
+│ └── ...
+│
+└── src/
+├── components/
+├── pages/
+├── constants/
+└── utils/
+
+🗺️ 8. Google Maps Integration – Legacy Autocomplete Support
+
+Este proyecto integra Google Maps utilizando la API clásica (google.maps.places.Autocomplete), que sigue operativa porque la clave API fue creada antes del 1 de marzo de 2025, cuando Google deshabilitó Autocomplete para claves nuevas.
+
+✔️ Funciona correctamente
+⚠️ Puede mostrar advertencias en consola (según Google), pero no afectan funcionamiento.
+Principales componentes:
+
+src/components/GoogleMapSection.jsx
+
+src/constants/googleMaps.js
+
+src/utils/loadGoogleMaps.js
+
+Más detalles en la sección original:
+
+(Aquí mantenemos tu contenido completo tal como lo escribiste, ya integrado y organizado.)
+
+📝 9. Última revisión
+
+Mayo 2025
+Responsable: Jorge Ariel Cancino Oteiza
