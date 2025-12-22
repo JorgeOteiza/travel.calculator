@@ -5,7 +5,7 @@ import PropTypes from "prop-types";
 import axios from "axios";
 import "../styles/Navbar.css";
 
-const VITE_BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+import { API_BASE_URL } from "../config/api";
 
 const Navbar = ({ user, setUser }) => {
   const navigate = useNavigate();
@@ -24,7 +24,7 @@ const Navbar = ({ user, setUser }) => {
       }
 
       try {
-        const response = await axios.get(`${VITE_BACKEND_URL}/api/user`, {
+        const response = await axios.get(`${API_BASE_URL}/api/user`, {
           headers: { Authorization: `Bearer ${token}` },
           withCredentials: true,
         });

@@ -1,11 +1,11 @@
 import axios from "axios";
-const VITE_BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+import { API_BASE_URL } from "../config/api";
 
 export const useWeather = (setFormData) => {
   const fetchWeather = async (lat, lng) => {
     try {
       const response = await axios.get(
-        `${VITE_BACKEND_URL}/api/weather?lat=${lat}&lng=${lng}`
+        `${API_BASE_URL}/api/weather?lat=${lat}&lng=${lng}`
       );
       if (response.data) {
         setFormData((prev) => ({

@@ -1,10 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { API_BASE_URL } from "../config/api";
 import "../styles/Login.css";
 import PropTypes from "prop-types";
-
-const VITE_BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
 const Login = ({ setUser }) => {
   const [form, setForm] = useState({ email: "", password: "" });
@@ -20,7 +19,7 @@ const Login = ({ setUser }) => {
     setError(null);
 
     try {
-      const response = await axios.post(`${VITE_BACKEND_URL}/api/login`, form, {
+      const response = await axios.post(`${API_BASE_URL}/api/login`, form, {
         withCredentials: true,
       });
 
@@ -30,27 +29,7 @@ const Login = ({ setUser }) => {
         localStorage.setItem("token", jwt);
         localStorage.setItem("user", JSON.stringify(user));
         setUser(user);
-
-        setTimeout(async () => {
-          try {
-            const userResponse = await axios.get(
-              `${VITE_BACKEND_URL}/api/user`,
-              {
-                headers: {
-                  Authorization: `Bearer ${localStorage.getItem("token")}`,
-                },
-                withCredentials: true,
-              }
-            );
-
-            if (userResponse.status === 200) {
-              setUser(userResponse.data);
-              navigate("/");
-            }
-          } catch (error) {
-            console.error("🚨 Error al obtener usuario:", error);
-          }
-        }, 500);
+        navigate("/");
       }
     } catch (error) {
       console.error(

@@ -8,9 +8,8 @@ import About from "./pages/About";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Profile from "./pages/Profile";
-import "./styles/app.css";
-
-const VITE_BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+import { API_BASE_URL } from "./config/api";
+import "./styles/App.css";
 
 function App() {
   const [user, setUser] = useState(null);
@@ -21,7 +20,7 @@ function App() {
       if (!token) return;
 
       try {
-        const response = await axios.get(`${VITE_BACKEND_URL}/api/user`, {
+        const response = await axios.get(`${API_BASE_URL}/api/user`, {
           headers: { Authorization: `Bearer ${token}` },
           withCredentials: true,
         });

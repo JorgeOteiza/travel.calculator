@@ -4,7 +4,7 @@ import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
 import "../styles/TripCard.css";
 
-const VITE_BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+import { API_BASE_URL } from "../config/api";
 
 const TripCard = ({ trip, onDelete }) => {
   const [expanded, setExpanded] = useState(false);
@@ -15,7 +15,7 @@ const TripCard = ({ trip, onDelete }) => {
     setDeleting(true);
     try {
       const token = localStorage.getItem("token");
-      await axios.delete(`${VITE_BACKEND_URL}/api/trips/${trip.id}`, {
+      await axios.delete(`${API_BASE_URL}/api/trips/${trip.id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       onDelete(trip.id);

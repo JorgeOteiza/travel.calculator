@@ -1,6 +1,5 @@
 import axios from "axios";
-
-const VITE_BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+import { API_BASE_URL } from "../config/api";
 
 export const useTripCalculation = (
   formData,
@@ -28,7 +27,7 @@ export const useTripCalculation = (
         "Content-Type": "application/json",
       };
 
-      const distRes = await axios.get(`${VITE_BACKEND_URL}/api/distance`, {
+      const distRes = await axios.get(`${API_BASE_URL}/api/distance`, {
         params: {
           origin: `${originLat},${originLng}`,
           destination: `${destLat},${destLng}`,
@@ -42,7 +41,7 @@ export const useTripCalculation = (
         return;
       }
 
-      const elevRes = await axios.get(`${VITE_BACKEND_URL}/api/elevation`, {
+      const elevRes = await axios.get(`${API_BASE_URL}/api/elevation`, {
         params: {
           origin: `${originLat},${originLng}`,
           destination: `${destLat},${destLng}`,
@@ -58,7 +57,7 @@ export const useTripCalculation = (
       );
 
       // ✅ Obtener clima desde el backend
-      const weatherRes = await axios.get(`${VITE_BACKEND_URL}/api/weather`, {
+      const weatherRes = await axios.get(`${API_BASE_URL}/api/weather`, {
         params: { lat: originLat, lng: originLng },
         headers,
       });
@@ -88,7 +87,7 @@ export const useTripCalculation = (
       };
 
       const calcRes = await axios.post(
-        `${VITE_BACKEND_URL}/api/calculate`,
+        `${API_BASE_URL}/api/calculate`,
         payload,
         { headers }
       );
@@ -115,7 +114,7 @@ export const useTripCalculation = (
         ...(isElectric ? {} : { fuel_price: parseFloat(formData.fuelPrice) }),
       };
 
-      await axios.post(`${VITE_BACKEND_URL}/api/trips`, savePayload, {
+      await axios.post(`${API_BASE_URL}/api/trips`, savePayload, {
         headers,
       });
 

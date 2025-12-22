@@ -1,10 +1,12 @@
+import { API_BASE_URL } from "../config/api";
+
 export const getUser = async () => {
   const token = localStorage.getItem("token");
   if (!token) return null;
 
   try {
     const response = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/user`,
+      `${API_BASE_URL}/api/user`,
       {
         method: "GET",
         headers: {
@@ -32,7 +34,7 @@ export const getUser = async () => {
 export const login = async (credentials) => {
   try {
     const response = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/login`,
+      `${API_BASE_URL}/api/login`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },

@@ -2,9 +2,7 @@ from flask import Blueprint, request, jsonify
 from flask_cors import cross_origin
 import requests
 import os
-from dotenv import load_dotenv
 
-load_dotenv()
 elevation_bp = Blueprint("elevation_bp", __name__)
 
 @elevation_bp.route("/elevation", methods=["GET"])

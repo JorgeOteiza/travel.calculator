@@ -2,11 +2,6 @@ import os
 import requests
 from flask import Blueprint, request, jsonify
 from flask_cors import cross_origin
-from dotenv import load_dotenv
-
-# 🔄 Cargar variables desde .env con ruta explícita si es necesario
-dotenv_path = os.path.join(os.path.dirname(__file__), "../../.env")
-load_dotenv(dotenv_path)
 
 weather_bp = Blueprint("weather_bp", __name__)
 OPENWEATHERMAP_API_KEY = os.getenv("VITE_OPENWEATHERMAP_API_KEY")

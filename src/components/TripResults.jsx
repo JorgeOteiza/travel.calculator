@@ -1,5 +1,5 @@
 import PropTypes from "prop-types";
-import "../styles/tripResults.css";
+import "../styles/TripResults.css";
 
 const formatValue = (value, unit = "") =>
   value !== undefined && value !== null ? `${value} ${unit}`.trim() : "-";

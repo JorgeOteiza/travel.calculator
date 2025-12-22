@@ -1,13 +1,11 @@
-import os
 from flask import Blueprint, request, jsonify
-from flask_bcrypt import Bcrypt
 from flask_jwt_extended import (
     create_access_token, jwt_required, get_jwt_identity
 )
 from backend.models import db, User
+from backend.extensions import bcrypt
 
 auth_bp = Blueprint('auth_bp', __name__)
-bcrypt = Bcrypt()
 
 
 @auth_bp.route("/user", methods=["GET"])

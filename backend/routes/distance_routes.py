@@ -2,9 +2,6 @@ from flask import Blueprint, request, jsonify
 from flask_cors import cross_origin
 import requests
 import os
-from dotenv import load_dotenv
-
-load_dotenv()
 
 distance_bp = Blueprint("distance_bp", __name__)
 

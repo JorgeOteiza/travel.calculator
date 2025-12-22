@@ -1,10 +1,9 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { API_BASE_URL } from "../config/api";
 import TripCard from "../components/TripCard";
 import "../styles/Profile.css";
-
-const VITE_BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
 const Profile = () => {
   const [user, setUser] = useState(null);
@@ -21,8 +20,8 @@ const Profile = () => {
         const headers = { Authorization: `Bearer ${token}` };
 
         const [userRes, tripsRes] = await Promise.all([
-          axios.get(`${VITE_BACKEND_URL}/api/user`, { headers }),
-          axios.get(`${VITE_BACKEND_URL}/api/trips`, { headers }),
+          axios.get(`${API_BASE_URL}/api/user`, { headers }),
+          axios.get(`${API_BASE_URL}/api/trips`, { headers }),
         ]);
 
         setUser(userRes.data);
