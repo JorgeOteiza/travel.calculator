@@ -36,7 +36,30 @@ const Login = ({ setUser }) => {
         "🚨 Error al iniciar sesión:",
         error.response?.data || error.message
       );
-      setError(error.response?.data?.error || "Error al iniciar sesión.");
+
+      // Mensajes de error más específicos
+      let errorMessage = "Error al iniciar sesión.";
+
+      if (error.response) {
+        switch (error.response.status) {
+          case 401:
+            errorMessage = "Correo o contraseña incorrectos.";
+            break;
+          case 404:
+            errorMessage = "Usuario no encontrado.";
+            break;
+          case 500:
+            errorMessage = "Error del servidor. Intenta más tarde.";
+            break;
+          default:
+            errorMessage =
+              error.response.data?.error || "Error al iniciar sesión.";
+        }
+      } else if (error.request) {
+        errorMessage = "No se pudo conectar con el servidor.";
+      }
+
+      setError(errorMessage);
     }
   };
 
