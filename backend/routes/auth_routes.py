@@ -4,8 +4,22 @@ from flask_jwt_extended import (
 )
 from backend.models import db, User
 from backend.extensions import bcrypt
+from functools import wraps
 
 auth_bp = Blueprint('auth_bp', __name__)
+
+# Decorador para verificar roles
+def role_required(role):
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            user_id = get_jwt_identity()
+            user = User.query.get(user_id)
+            if not user or not user.has_role(role):
+                return jsonify({"error": "Acceso denegado"}), 403
+            return func(*args, **kwargs)
+        return wrapper
+    return decorator
 
 
 @auth_bp.route("/user", methods=["GET"])
@@ -101,3 +115,10 @@ def logout():
         return jsonify({"message": "Cierre de sesión exitoso"}), 200
     except Exception as e:
         return jsonify({"error": f"Error en logout: {str(e)}"}), 500
+
+
+@auth_bp.route("/admin", methods=["GET"])
+@jwt_required()
+@role_required("admin")
+def admin_dashboard():
+    return jsonify({"message": "Bienvenido al panel de administrador"}), 200

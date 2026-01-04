@@ -11,6 +11,7 @@ class User(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     trips = db.relationship("Trip", back_populates="user", cascade="all, delete", lazy=True)
+    roles = db.relationship("Role", secondary="user_role", backref="users")
 
     def __init__(self, name, email, password):
         self.name = name
@@ -29,6 +30,9 @@ class User(db.Model):
 
     def to_dict(self):
         return {"id": self.id, "name": self.name, "email": self.email}
+
+    def has_role(self, role_name):
+        return any(role.name == role_name for role in self.roles)
 
 
 class Vehicle(db.Model):
@@ -114,3 +118,17 @@ class Trip(db.Model):
 
     def __repr__(self):
         return f"<Trip {self.brand} {self.model} - {self.distance} km>"
+
+
+class Role(db.Model):
+    __tablename__ = "role"
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), unique=True, nullable=False)
+
+
+class UserRole(db.Model):
+    __tablename__ = "user_role"
+
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), primary_key=True)
+    role_id = db.Column(db.Integer, db.ForeignKey("role.id"), primary_key=True)

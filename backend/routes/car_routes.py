@@ -4,6 +4,7 @@ import requests
 import unicodedata
 from flask import Blueprint, request, jsonify
 from flask_cors import cross_origin
+from backend.extensions import cache
 from backend.models import db, Vehicle
 
 car_bp = Blueprint("car_bp", __name__)
@@ -146,3 +147,14 @@ def get_model_details():
     except Exception as e:
         print(f"[ERROR] Excepción en /model_details: {e}")
         return jsonify({"error": str(e)}), 500
+
+@car_bp.route("/vehicles", methods=["GET"])
+@cache.cached(timeout=300, key_prefix="all_vehicles")
+def get_vehicles():
+    vehicles = Vehicle.query.all()
+    return jsonify([{
+        "id": v.id,
+        "make": v.make,
+        "model": v.model,
+        "year": v.year
+    } for v in vehicles]), 200
