@@ -55,6 +55,11 @@ const GoogleMapSection = ({
             lng: place.geometry.location.lng(),
           };
 
+          if (typeof handleLocationChange !== "function") {
+            console.error("handleLocationChange no es una función válida.");
+            return;
+          }
+
           handleLocationChange(field, coords);
 
           setMarkers((prev) => {
@@ -143,7 +148,7 @@ const GoogleMapSection = ({
     if (!navigator.geolocation) return;
 
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
+      async (pos) => {
         const current = {
           lat: pos.coords.latitude,
           lng: pos.coords.longitude,
@@ -156,19 +161,48 @@ const GoogleMapSection = ({
 
         if (!alreadySet) {
           setMapCenter(current);
-          handleLocationChange("location", current);
           setMarkers((prev) => [current, prev[1]].filter(Boolean));
+
+          try {
+            const response = await fetch(
+              `https://maps.googleapis.com/maps/api/geocode/json?latlng=${current.lat},${current.lng}&key=YOUR_GOOGLE_MAPS_API_KEY`
+            );
+            const data = await response.json();
+
+            if (data.status === "OK" && data.results.length > 0) {
+              const placeName = data.results[0].formatted_address;
+              handleLocationChange("location", current);
+
+              if (originInputRef.current) {
+                originInputRef.current.value = placeName;
+              }
+            } else if (data.status === "REQUEST_DENIED") {
+              console.error(
+                "Clave de API inválida o permisos insuficientes. Verifica tu configuración de Google Cloud."
+              );
+              alert(
+                "Error: Clave de API inválida. Por favor, verifica tu configuración de Google Maps API."
+              );
+            } else {
+              console.error("No se pudo obtener el nombre del lugar:", data);
+            }
+          } catch (error) {
+            console.error(
+              "Error al realizar la geocodificación inversa:",
+              error
+            );
+          }
         }
 
         setLocationDenied(false);
-
-        if (originInputRef.current) {
-          originInputRef.current.value = `${current.lat}, ${current.lng}`;
-        }
       },
       () => {
         setMapCenter(DEFAULT_MAP_CENTER);
         setLocationDenied(true);
+
+        if (originInputRef.current) {
+          originInputRef.current.value = "Santiago, Chile";
+        }
       }
     );
   }, [markers, handleLocationChange, setMapCenter, setMarkers]);

@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import axios from "axios";
 
 const useTripData = (initialFormData) => {
@@ -18,45 +18,103 @@ const useTripData = (initialFormData) => {
 
   const ignoreRef = useRef(false);
 
-  // 🔹 Obtener marcas permitidas desde el backend
+  const brandCache = useRef({});
+  const modelCache = useRef({});
+
+  // Marcas y modelos predeterminados
+  const defaultBrands = useMemo(
+    () => [
+      { label: "Chery", value: "Chery" },
+      { label: "Chevrolet", value: "Chevrolet" },
+      { label: "Suzuki", value: "Suzuki" },
+      { label: "KIA", value: "KIA" },
+      { label: "MG", value: "MG" },
+    ],
+    []
+  );
+
+  const defaultModels = useMemo(
+    () => ({
+      Chery: [{ label: "Tiggo 2 GLX", value: "Tiggo 2 GLX" }],
+      Chevrolet: [
+        { label: "Groove", value: "Groove" },
+        { label: "Spark", value: "Spark" },
+      ],
+      Suzuki: [{ label: "Baleno", value: "Baleno" }],
+      KIA: [{ label: "Morning", value: "Morning" }],
+      MG: [{ label: "ZS", value: "ZS" }],
+    }),
+    []
+  );
+
+  // Combinar marcas locales y de la API con caché
   useEffect(() => {
     const fetchBrands = async () => {
+      if (brandCache.current.data) {
+        setBrandOptions(brandCache.current.data);
+        return;
+      }
+
       try {
         const response = await axios.get("/api/cars/brands");
         if (Array.isArray(response.data) && response.data.length) {
-          setBrandOptions(response.data);
+          const combinedBrands = [...defaultBrands, ...response.data].reduce(
+            (acc, brand) => {
+              if (!acc.find((b) => b.value === brand.value)) {
+                acc.push(brand);
+              }
+              return acc;
+            },
+            []
+          );
+          brandCache.current.data = combinedBrands;
+          setBrandOptions(combinedBrands);
         } else {
           console.warn("⚠️ No se recibieron marcas desde NHTSA.");
+          setBrandOptions(defaultBrands);
         }
       } catch (error) {
         console.error("❌ Error al obtener marcas:", error.message);
+        setBrandOptions(defaultBrands);
       }
     };
     fetchBrands();
-  }, []);
+  }, [defaultBrands]);
 
-  // 🔹 Obtener modelos solo si cambia la marca
+  // Combinar modelos locales y de la API con caché
   useEffect(() => {
-    if (!formData.brand || formData.brand === lastFetchRef.current.brand)
-      return;
-
-    lastFetchRef.current.brand = formData.brand;
-    setModelOptions([]); // Limpia modelos previos
-    setVehicleDetails(null);
+    if (!formData.brand) return;
 
     const fetchModels = async () => {
+      if (modelCache.current[formData.brand]) {
+        setModelOptions(modelCache.current[formData.brand]);
+        return;
+      }
+
       try {
         const res = await axios.get(
           `/api/cars/models?make_id=${encodeURIComponent(formData.brand)}`
         );
-        setModelOptions(res.data || []);
+        const apiModels = res.data || [];
+        const localModels = defaultModels[formData.brand] || [];
+        const combinedModels = [...localModels, ...apiModels].reduce(
+          (acc, model) => {
+            if (!acc.find((m) => m.value === model.value)) {
+              acc.push(model);
+            }
+            return acc;
+          },
+          []
+        );
+        modelCache.current[formData.brand] = combinedModels;
+        setModelOptions(combinedModels);
       } catch (error) {
         console.error("❌ Error al obtener modelos:", error.message);
+        setModelOptions(defaultModels[formData.brand] || []);
       }
     };
-
     fetchModels();
-  }, [formData.brand]);
+  }, [formData.brand, defaultModels]);
 
   // 🔹 Obtener detalles del vehículo solo cuando cambien marca + modelo + año
   const fetchVehicleDetails = useCallback(async () => {
@@ -144,9 +202,7 @@ const useTripData = (initialFormData) => {
       "totalWeight",
       "roadGrade",
     ].includes(name)
-      ? value === ""
-        ? ""
-        : parseFloat(value)
+      ? parseFloat(value) || ""
       : value;
 
     setFormData((prev) => ({ ...prev, [name]: parsedValue }));
@@ -154,7 +210,6 @@ const useTripData = (initialFormData) => {
 
   return {
     formData,
-    setFormData,
     brandOptions,
     modelOptions,
     availableYears,

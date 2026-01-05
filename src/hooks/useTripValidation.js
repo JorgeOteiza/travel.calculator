@@ -1,6 +1,8 @@
 export const validateTripForm = (formData) => {
   const errors = {};
 
+  console.log("Datos recibidos para validación:", formData);
+
   const isEmpty = (value) =>
     value === undefined || value === null || value === "";
   const isPositiveNumber = (value) => !isNaN(value) && Number(value) > 0;
@@ -42,6 +44,16 @@ export const validateTripForm = (formData) => {
   // Precio del combustible si no es eléctrico
   if (!isElectric && !isPositiveNumber(formData.fuelPrice)) {
     errors.fuelPrice = "Ingresa un precio de combustible válido.";
+  }
+
+  console.log("Errores detectados:", errors);
+
+  if (Object.keys(errors).length > 0) {
+    console.error("Errores de validación detectados:", errors);
+  } else {
+    console.log(
+      "Validación exitosa. Todos los campos están completos y correctos."
+    );
   }
 
   return errors;

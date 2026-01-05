@@ -53,25 +53,60 @@ const Home = () => {
   );
 
   const handleLocationChange = useCallback(
-    (field, coords) => {
-      if (!coords?.lat || !coords?.lng) return;
+    async (field, coords) => {
+      console.log(
+        `handleLocationChange llamado con field: ${field}, coords:`,
+        coords
+      );
 
-      const newCoordStr = `${coords.lat}, ${coords.lng}`;
-      if (formData[field] === newCoordStr) return;
+      if (!coords?.lat || !coords?.lng) {
+        console.error("Coordenadas inválidas recibidas:", coords);
+        return;
+      }
 
-      setFormData((prev) => ({ ...prev, [field]: newCoordStr }));
+      if (typeof setFormData !== "function") {
+        console.error("setFormData no es una función válida.");
+        return;
+      }
 
-      if (field === "location") {
-        setMapCenter(coords);
-        fetchWeather(coords.lat, coords.lng); // aunque ya no es obligatorio
+      try {
+        const response = await fetch(
+          `https://maps.googleapis.com/maps/api/geocode/json?latlng=${coords.lat},${coords.lng}&key=YOUR_GOOGLE_MAPS_API_KEY`
+        );
+        const data = await response.json();
+
+        if (data.status === "OK" && data.results.length > 0) {
+          const placeName = data.results[0].formatted_address;
+          console.log(`Nombre del lugar obtenido: ${placeName}`);
+
+          setFormData((prev) => {
+            const updatedFormData = { ...prev, [field]: placeName };
+            console.log(
+              "formData actualizado con nombre del lugar:",
+              updatedFormData
+            );
+            return updatedFormData;
+          });
+
+          if (field === "location") {
+            setMapCenter(coords);
+            fetchWeather(coords.lat, coords.lng);
+          }
+        } else {
+          console.error("No se pudo obtener el nombre del lugar:", data);
+        }
+      } catch (error) {
+        console.error("Error al realizar la geocodificación inversa:", error);
       }
     },
-    [formData, setFormData, setMapCenter, fetchWeather]
+    [setFormData, setMapCenter, fetchWeather]
   );
 
   const handleSubmit = () => {
     const validationErrors = validateTripForm(formData);
     setErrors(validationErrors);
+
+    console.log("Datos enviados a validateTripForm:", formData);
 
     if (Object.keys(validationErrors).length === 0) {
       calculateTrip();
