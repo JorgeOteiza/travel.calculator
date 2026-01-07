@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import TripForm from "../components/TripForm";
 import GoogleMapSection from "../components/GoogleMapSection";
 import TripResults from "../components/TripResults";
@@ -47,6 +47,11 @@ const Home = () => {
   const [mapCenter, setMapCenter] = useState(DEFAULT_MAP_CENTER);
   const [markers, setMarkers] = useState([]);
   const [errors, setErrors] = useState({});
+
+  useEffect(() => {
+    console.log("🖥️ results en Home:", results);
+  }, [results]);
+
   const { handleLocationChange } = useTripFormHandlers(
     formData,
     setFormData,

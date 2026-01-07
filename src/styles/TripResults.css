@@ -1,37 +1,18 @@
-.trip-results-card h2 {
-  color: #28a745;
-  margin-bottom: 16px;
-}
-
-.trip-results-card ul {
-  list-style: none;
-  padding-left: 0;
-}
-
-.trip-results p {
-  margin: 6px 0;
-  font-size: 14px;
-  line-height: 1.5;
-}
-
-.trip-warning-snowy {
-  background-color: #ffe4c4;
-  border: 1px solid #e38c34;
-  color: #5c3906;
-  padding: 12px 16px;
-  border-radius: 8px;
-  font-size: 14px;
-  margin-top: 16px;
-  line-height: 1.5;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+.trip-results-container {
+  width: 100%;
 }
 
 .trip-results-card {
-  background-color: #ffffff;
+  background: rgba(255, 255, 255, 0.9);
   border-radius: 12px;
-  border: 1px solid #ddd;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   padding: 20px;
+}
+
+.trip-results-card h2 {
+  color: #28a745;
+  margin-bottom: 16px;
 }
 
 .trip-results-card ul {
@@ -46,33 +27,34 @@
   color: #333;
 }
 
-.vehicle-details ul {
-  padding-left: 0;
-  margin-top: 10px;
+/* Advertencia nieve */
+.trip-warning-snowy {
+  background-color: #ffe4c4;
+  border: 1px solid #e38c34;
+  color: #5c3906;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  margin-top: 16px;
+}
+
+/* Detalles vehículo */
+.vehicle-details {
+  margin-top: 20px;
 }
 
 .vehicle-details h3 {
+  margin-bottom: 10px;
   color: #333;
-  margin-bottom: 12px;
 }
 
-.trip-results-card {
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(4px);
-  border: 1px solid rgba(0, 0, 0, 0.05);
+.vehicle-details ul {
+  padding: 0;
 }
 
-/* Adaptación para pantallas pequeñas */
+/* Responsive */
 @media screen and (max-width: 1024px) {
   .trip-results-container {
-    width: 90%;
-    margin: 20px auto 0 auto;
-  }
-}
-
-@media screen and (max-width: 768px) {
-  .trip-results-container {
-    margin-left: 0;
-    max-width: 100%;
+    width: 100%;
   }
 }

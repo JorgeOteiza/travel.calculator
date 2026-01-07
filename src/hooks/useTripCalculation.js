@@ -104,15 +104,29 @@ export const useTripCalculation = (formData, setResults, vehicleDetails) => {
       );
 
       // 📊 Resultados UI
-      // 📊 Resultados → FRONTEND FRIENDLY
       setResults({
+        // datos base del cálculo
         distance: calcRes.data.distance,
         fuelUsed: calcRes.data.fuelUsed,
         totalCost: calcRes.data.totalCost,
+
+        // consumo
+        baseFC: calcRes.data.baseFC,
+        adjustedFC: calcRes.data.adjustedFC,
+        pricePerLitre: isElectric ? null : Number(formData.fuelPrice),
+
+        // clima
+        weather: climate,
         climate,
+        weatherRaw: weatherRes.data || null,
+
+        // ruta
         roadSlope: `${slopePercent}%`,
         origin: formData.locationLabel,
         destination: formData.destinationLabel,
+
+        // vehículo
+        vehicleDetails,
       });
 
       // 💾 Guardar viaje (API /trips)
