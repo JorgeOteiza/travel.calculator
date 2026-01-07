@@ -13,16 +13,25 @@
   transition: all 0.3s ease-in-out;
 }
 
-/* Distribución principal: Form | Mapa | Resultados */
+/* Grid base */
 .form-map-container {
   display: grid;
-  grid-template-columns: 360px 1fr 400px;
   gap: 24px;
   width: 100%;
   max-width: 1600px;
   margin-top: 20px;
   box-sizing: border-box;
-  align-items: flex-start;
+  align-items: stretch;
+}
+
+/* SIN resultados → Form | Mapa */
+.form-map-container.no-results {
+  grid-template-columns: 360px 1fr;
+}
+
+/* CON resultados → Form | Mapa | Resultados */
+.form-map-container.with-results {
+  grid-template-columns: 360px 1fr 400px;
 }
 
 /* Estilo del formulario */
@@ -74,8 +83,9 @@
   background-color: #f5fff7;
   padding: 20px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  height: 100%;
+  min-height: 480px;
   overflow-y: auto;
-  max-height: calc(100vh - 200px);
 }
 
 /* Advertencia login */

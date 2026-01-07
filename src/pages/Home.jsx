@@ -48,6 +48,8 @@ const Home = () => {
   const [markers, setMarkers] = useState([]);
   const [errors, setErrors] = useState({});
 
+  const hasResults = Boolean(results);
+
   useEffect(() => {
     console.log("🖥️ results en Home:", results);
   }, [results]);
@@ -80,11 +82,13 @@ const Home = () => {
     calculateTrip();
   };
 
-  console.log("🖥️ results en Home:", results);
-
   return (
     <div className="home-container">
-      <div className="form-map-container">
+      <div
+        className={`form-map-container ${
+          hasResults ? "with-results" : "no-results"
+        }`}
+      >
         <TripForm
           formData={formData}
           brandOptions={brandOptions}
@@ -106,7 +110,11 @@ const Home = () => {
           onLocationChange={handleLocationChange}
         />
 
-        {results && <TripResults results={results} />}
+        {hasResults && (
+          <div className="results-panel">
+            <TripResults results={results} />
+          </div>
+        )}
       </div>
     </div>
   );
