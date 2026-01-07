@@ -1,31 +1,34 @@
-let weatherTimeout = null;
-
 export const useTripFormHandlers = (
   formData,
   setFormData,
   setMapCenter,
   fetchWeather
 ) => {
-  const handleLocationChange = (field, newLocation) => {
-    if (!newLocation?.lat || !newLocation?.lng) return;
+  console.log("🧪 setFormData:", setFormData);
 
-    const coordString = `${newLocation.lat}, ${newLocation.lng}`;
+  const handleLocationChange = (field, data) => {
+    console.log("🧭 handleLocationChange", field, data);
 
-    // Evitar actualizaciones redundantes
-    if (formData[field] === coordString) return;
+    if (!data?.lat || !data?.lng) return;
 
-    setFormData((prev) => ({ ...prev, [field]: coordString }));
-    setMapCenter(newLocation);
+    setFormData((prev) => ({
+      ...prev,
+      [`${field}Coords`]: {
+        lat: data.lat,
+        lng: data.lng,
+      },
+      [`${field}Label`]: data.label || "",
+    }));
+
+    setMapCenter({
+      lat: data.lat,
+      lng: data.lng,
+    });
 
     if (field === "location") {
-      if (weatherTimeout) clearTimeout(weatherTimeout);
-      weatherTimeout = setTimeout(() => {
-        fetchWeather(newLocation.lat, newLocation.lng);
-      }, 500); // ❗ Evita múltiples llamadas excesivas
+      fetchWeather(data.lat, data.lng);
     }
   };
 
-  return {
-    handleLocationChange,
-  };
+  return { handleLocationChange };
 };

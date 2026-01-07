@@ -1,127 +1,123 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef } from "react";
 import PropTypes from "prop-types";
 import "../styles/map.css";
 import { DEFAULT_MAP_CENTER } from "../constants/googleMaps";
 import { loadGoogleMapsScript } from "../utils/loadGoogleMaps";
 
 const GoogleMapSection = ({
-  setMapCenter,
   markers,
   setMarkers,
-  handleLocationChange,
+  onLocationChange,
+  mapCenter,
 }) => {
   const mapRef = useRef(null);
   const originInputRef = useRef(null);
   const destinationInputRef = useRef(null);
 
-  const [map, setMap] = useState(null);
-  const [directionsService, setDirectionsService] = useState(null);
-  const [directionsRenderer, setDirectionsRenderer] = useState(null);
-  const [locationDenied, setLocationDenied] = useState(false);
+  const mapInstanceRef = useRef(null);
+  const directionsServiceRef = useRef(null);
+  const directionsRendererRef = useRef(null);
   const originMarkerRef = useRef(null);
   const destinationMarkerRef = useRef(null);
 
-  // Inicializar mapa y autocompletado
+  // 🗺️ Inicializar mapa + autocomplete
   useEffect(() => {
     loadGoogleMapsScript(() => {
-      if (!mapRef.current) return;
+      if (!mapRef.current || mapInstanceRef.current) return;
 
-      const instance = new window.google.maps.Map(mapRef.current, {
-        center: DEFAULT_MAP_CENTER,
+      const map = new window.google.maps.Map(mapRef.current, {
+        center: mapCenter || DEFAULT_MAP_CENTER,
         zoom: 12,
         mapId: import.meta.env.VITE_MAP_ID,
       });
 
-      const renderer = new window.google.maps.DirectionsRenderer({
-        suppressMarkers: true,
-      });
-      const service = new window.google.maps.DirectionsService();
+      mapInstanceRef.current = map;
 
-      renderer.setMap(instance);
-      setMap(instance);
-      setDirectionsRenderer(renderer);
-      setDirectionsService(service);
+      directionsServiceRef.current = new window.google.maps.DirectionsService();
+
+      directionsRendererRef.current = new window.google.maps.DirectionsRenderer(
+        {
+          suppressMarkers: true,
+        }
+      );
+
+      directionsRendererRef.current.setMap(map);
 
       const setupAutocomplete = (inputRef, field) => {
         const autocomplete = new window.google.maps.places.Autocomplete(
-          inputRef.current
+          inputRef.current,
+          {
+            fields: ["geometry", "formatted_address", "name"],
+          }
         );
+
         autocomplete.addListener("place_changed", () => {
           const place = autocomplete.getPlace();
-          if (!place.geometry?.location) return;
+          if (!place?.geometry?.location) return;
 
           const coords = {
             lat: place.geometry.location.lat(),
             lng: place.geometry.location.lng(),
           };
 
-          if (typeof handleLocationChange !== "function") {
-            console.error("handleLocationChange no es una función válida.");
-            return;
-          }
+          const label = place.formatted_address || place.name || "";
 
-          handleLocationChange(field, coords);
-
-          setMarkers((prev) => {
-            const updated =
-              field === "location"
-                ? [coords, prev[1]].filter(Boolean)
-                : [prev[0], coords].filter(Boolean);
-
-            const isSame =
-              prev.length === updated.length &&
-              prev.every(
-                (v, i) =>
-                  v?.lat === updated[i]?.lat && v?.lng === updated[i]?.lng
-              );
-
-            return isSame ? prev : updated;
+          // ✅ CLAVE: avisar correctamente al formulario
+          onLocationChange(field, {
+            ...coords,
+            label,
           });
 
-          if (field === "location") {
-            instance.setCenter(coords);
-            instance.setZoom(14);
-          }
+          // 📍 actualizar markers
+          setMarkers((prev) => {
+            const next =
+              field === "location" ? [coords, prev[1]] : [prev[0], coords];
+            return next.filter(Boolean);
+          });
+
+          mapInstanceRef.current.setCenter(coords);
+          mapInstanceRef.current.setZoom(14);
         });
       };
 
       setupAutocomplete(originInputRef, "location");
-      setupAutocomplete(destinationInputRef, "destinity");
+      setupAutocomplete(destinationInputRef, "destination");
     });
-  }, [handleLocationChange, setMarkers]);
+  }, [onLocationChange, mapCenter, setMarkers]);
 
-  // Rutas en el mapa
+  // 🧭 Dibujar ruta
   useEffect(() => {
-    if (!map || !directionsService || !directionsRenderer) return;
-
-    if (markers.length === 2) {
-      directionsService.route(
-        {
-          origin: markers[0],
-          destination: markers[1],
-          travelMode: window.google.maps.TravelMode.DRIVING,
-        },
-        (result, status) => {
-          if (status === "OK") {
-            directionsRenderer.setDirections(result);
-            const bounds = new window.google.maps.LatLngBounds();
-            result.routes[0].overview_path.forEach((p) => bounds.extend(p));
-            map.fitBounds(bounds);
-          } else {
-            directionsRenderer.setDirections({ routes: [] });
-          }
-        }
-      );
-    } else {
-      directionsRenderer.setDirections({ routes: [] });
+    if (
+      markers.length !== 2 ||
+      !directionsServiceRef.current ||
+      !directionsRendererRef.current
+    ) {
+      directionsRendererRef.current?.setDirections({ routes: [] });
+      return;
     }
-  }, [markers, map, directionsService, directionsRenderer]);
 
-  // Marcadores
+    directionsServiceRef.current.route(
+      {
+        origin: markers[0],
+        destination: markers[1],
+        travelMode: window.google.maps.TravelMode.DRIVING,
+      },
+      (result, status) => {
+        if (status === "OK") {
+          directionsRendererRef.current.setDirections(result);
+        }
+      }
+    );
+  }, [markers]);
+
+  // 📍 Marcadores
   useEffect(() => {
+    const map = mapInstanceRef.current;
     if (!map) return;
 
     const updateMarker = (ref, position, label) => {
+      if (!position) return;
+
       if (!ref.current) {
         ref.current = new window.google.maps.Marker({
           map,
@@ -129,115 +125,30 @@ const GoogleMapSection = ({
           label,
         });
       } else {
-        const currentPos = ref.current.getPosition();
-        if (
-          currentPos.lat() !== position.lat ||
-          currentPos.lng() !== position.lng
-        ) {
-          ref.current.setPosition(position);
-        }
+        ref.current.setPosition(position);
       }
     };
 
-    if (markers[0]) updateMarker(originMarkerRef, markers[0], "A");
-    if (markers[1]) updateMarker(destinationMarkerRef, markers[1], "B");
-  }, [markers, map]);
-
-  // Obtener ubicación actual
-  const getCurrentLocation = useCallback(() => {
-    if (!navigator.geolocation) return;
-
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const current = {
-          lat: pos.coords.latitude,
-          lng: pos.coords.longitude,
-        };
-
-        const alreadySet =
-          markers[0] &&
-          Math.abs(markers[0].lat - current.lat) < 0.0001 &&
-          Math.abs(markers[0].lng - current.lng) < 0.0001;
-
-        if (!alreadySet) {
-          setMapCenter(current);
-          setMarkers((prev) => [current, prev[1]].filter(Boolean));
-
-          try {
-            const response = await fetch(
-              `https://maps.googleapis.com/maps/api/geocode/json?latlng=${current.lat},${current.lng}&key=YOUR_GOOGLE_MAPS_API_KEY`
-            );
-            const data = await response.json();
-
-            if (data.status === "OK" && data.results.length > 0) {
-              const placeName = data.results[0].formatted_address;
-              handleLocationChange("location", current);
-
-              if (originInputRef.current) {
-                originInputRef.current.value = placeName;
-              }
-            } else if (data.status === "REQUEST_DENIED") {
-              console.error(
-                "Clave de API inválida o permisos insuficientes. Verifica tu configuración de Google Cloud."
-              );
-              alert(
-                "Error: Clave de API inválida. Por favor, verifica tu configuración de Google Maps API."
-              );
-            } else {
-              console.error("No se pudo obtener el nombre del lugar:", data);
-            }
-          } catch (error) {
-            console.error(
-              "Error al realizar la geocodificación inversa:",
-              error
-            );
-          }
-        }
-
-        setLocationDenied(false);
-      },
-      () => {
-        setMapCenter(DEFAULT_MAP_CENTER);
-        setLocationDenied(true);
-
-        if (originInputRef.current) {
-          originInputRef.current.value = "Santiago, Chile";
-        }
-      }
-    );
-  }, [markers, handleLocationChange, setMapCenter, setMarkers]);
+    updateMarker(originMarkerRef, markers[0], "A");
+    updateMarker(destinationMarkerRef, markers[1], "B");
+  }, [markers]);
 
   return (
     <div className="map-wrapper">
       <div className="search-container">
         <div className="search-inputs">
           <input
-            id="origin-input"
             ref={originInputRef}
-            placeholder="Ubicación de inicio"
-            className="search-box custom-input"
+            className="map-input"
+            placeholder="Origen"
           />
           <input
-            id="destiny-input"
             ref={destinationInputRef}
+            className="map-input"
             placeholder="Destino"
-            className="search-box custom-input"
           />
         </div>
-        <button
-          className="gps-button"
-          onClick={getCurrentLocation}
-          title="Usar mi ubicación actual"
-        >
-          📍
-        </button>
       </div>
-
-      {locationDenied && (
-        <div className="location-warning">
-          ⚠️ Acceso a ubicación denegado. Se muestra Santiago por defecto.
-        </div>
-      )}
 
       <div ref={mapRef} className="map-container" />
     </div>
@@ -245,10 +156,10 @@ const GoogleMapSection = ({
 };
 
 GoogleMapSection.propTypes = {
-  setMapCenter: PropTypes.func.isRequired,
   markers: PropTypes.array.isRequired,
   setMarkers: PropTypes.func.isRequired,
-  handleLocationChange: PropTypes.func.isRequired,
+  onLocationChange: PropTypes.func.isRequired,
+  mapCenter: PropTypes.object,
 };
 
 export default GoogleMapSection;

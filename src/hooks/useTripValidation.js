@@ -1,59 +1,64 @@
+// ✅ Validación COMPLETA (submit final)
 export const validateTripForm = (formData) => {
   const errors = {};
 
-  console.log("Datos recibidos para validación:", formData);
+  // 🚗 Vehículo
+  if (!formData.brand) errors.brand = "Selecciona una marca";
+  if (!formData.model) errors.model = "Selecciona un modelo";
+  if (!formData.year) errors.year = "Selecciona un año";
 
-  const isEmpty = (value) =>
-    value === undefined || value === null || value === "";
-  const isPositiveNumber = (value) => !isNaN(value) && Number(value) > 0;
-  const isValidCoordinate = (value) =>
-    /^-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?$/.test(value);
-
-  // Marca, modelo y año
-  if (isEmpty(formData.brand)) errors.brand = "Selecciona una marca.";
-  if (isEmpty(formData.model)) errors.model = "Selecciona un modelo.";
-  if (isEmpty(formData.year)) errors.year = "Selecciona un año.";
-
-  // Combustible si no es eléctrico
-  const isElectric = formData?.fuelType?.toLowerCase?.().includes("electric");
-  if (!isElectric && isEmpty(formData.fuelType)) {
-    errors.fuelType = "Selecciona un tipo de combustible.";
+  // 📍 Origen
+  if (
+    !formData.locationCoords ||
+    typeof formData.locationCoords.lat !== "number" ||
+    typeof formData.locationCoords.lng !== "number"
+  ) {
+    errors.location = "Selecciona una ubicación de origen";
   }
 
-  // Ubicación
-  if (isEmpty(formData.location)) {
-    errors.location = "Selecciona una ubicación de inicio.";
-  } else if (!isValidCoordinate(formData.location)) {
-    errors.location = "Coordenadas de ubicación inválidas.";
+  // 📍 Destino
+  if (
+    !formData.destinationCoords ||
+    typeof formData.destinationCoords.lat !== "number" ||
+    typeof formData.destinationCoords.lng !== "number"
+  ) {
+    errors.destination = "Selecciona una ubicación de destino";
   }
 
-  if (isEmpty(formData.destinity)) {
-    errors.destinity = "Selecciona un destino.";
-  } else if (!isValidCoordinate(formData.destinity)) {
-    errors.destinity = "Coordenadas de destino inválidas.";
+  // 👥 Pasajeros
+  if (!formData.passengers || formData.passengers < 1) {
+    errors.passengers = "Ingresa al menos 1 pasajero";
   }
 
-  // Pasajeros y peso
-  if (!isPositiveNumber(formData.passengers)) {
-    errors.passengers = "Ingresa una cantidad válida de pasajeros.";
-  }
-  if (!isPositiveNumber(formData.totalWeight)) {
-    errors.totalWeight = "Ingresa un peso válido.";
+  // ⚖️ Peso
+  if (!formData.totalWeight || Number(formData.totalWeight) <= 0) {
+    errors.totalWeight = "Ingresa un peso válido";
   }
 
-  // Precio del combustible si no es eléctrico
-  if (!isElectric && !isPositiveNumber(formData.fuelPrice)) {
-    errors.fuelPrice = "Ingresa un precio de combustible válido.";
+  // ⛽ Combustible
+  if (
+    formData.fuelType !== "electric" &&
+    (!formData.fuelPrice || Number(formData.fuelPrice) <= 0)
+  ) {
+    errors.fuelPrice = "Ingresa un precio de combustible válido";
   }
 
-  console.log("Errores detectados:", errors);
+  return errors;
+};
 
-  if (Object.keys(errors).length > 0) {
-    console.error("Errores de validación detectados:", errors);
-  } else {
-    console.log(
-      "Validación exitosa. Todos los campos están completos y correctos."
-    );
+// ✅ Validación LIGERA (antes de calcular)
+export const validateTripCalculation = (formData) => {
+  const errors = {};
+
+  const isValidCoords = (coords) =>
+    coords && typeof coords.lat === "number" && typeof coords.lng === "number";
+
+  if (!isValidCoords(formData.locationCoords)) {
+    errors.location = "Selecciona un origen";
+  }
+
+  if (!isValidCoords(formData.destinationCoords)) {
+    errors.destination = "Selecciona un destino";
   }
 
   return errors;

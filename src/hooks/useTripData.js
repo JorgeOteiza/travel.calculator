@@ -210,6 +210,7 @@ const useTripData = (initialFormData) => {
 
   return {
     formData,
+    setFormData,
     brandOptions,
     modelOptions,
     availableYears,
