@@ -4,9 +4,10 @@ from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from datetime import timedelta
 from dotenv import load_dotenv
-
 from backend.extensions import db, bcrypt, migrate
 from backend.routes import main_bp
+from backend.routes.trip_calculation_routes import trip_calc_bp
+from backend.routes.trip_calculate_and_save import trip_calc_and_save_bp
 
 load_dotenv()
 
@@ -27,7 +28,8 @@ def create_app():
     JWTManager(app)
 
     # Registrar rutas
-    app.register_blueprint(main_bp, url_prefix="/api")
+    app.register_blueprint(trip_calc_bp, url_prefix="/api")
+    app.register_blueprint(trip_calc_and_save_bp, url_prefix="/api")
 
     print("🚀 Flask iniciado en modo:", "Debug" if app.config["DEBUG"] else "Producción")
     return app
