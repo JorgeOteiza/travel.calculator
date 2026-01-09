@@ -17,7 +17,7 @@ export const useTripCalculation = (formData, setResults) => {
         year: Number(formData.year),
         origin: formData.locationCoords,
         destination: formData.destinationCoords,
-        total_weight: Number(formData.totalWeight),
+        total_weight: Number(formData.extraWeight),
         passengers: Number(formData.passengers),
         fuel_price: Number(formData.fuelPrice),
       };

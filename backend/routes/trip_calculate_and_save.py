@@ -11,10 +11,10 @@ from backend.services.distance_service import get_distance_km
 from backend.services.elevation_service import get_elevation_difference
 from backend.services.weather_service import get_climate_from_coords
 
-trip_calc_bp = Blueprint("trip_calc_bp", __name__)
+trip_calc_and_save_bp = Blueprint("trip_calc_and_save_bp", __name__)
 
 
-@trip_calc_bp.route("/trips/calculate-and-save", methods=["POST"])
+@trip_calc_and_save_bp.route("/trips/calculate-and-save", methods=["POST"])
 @cross_origin()
 @jwt_required()
 def calculate_and_save_trip():
@@ -45,6 +45,7 @@ def calculate_and_save_trip():
         total_weight = float(data["total_weight"])
         passengers = int(data["passengers"])
         fuel_price = float(data.get("fuel_price", 0))
+        
 
         # =========================
         # 🚗 Vehículo

@@ -31,8 +31,8 @@ export const validateTripForm = (formData) => {
   }
 
   // ⚖️ Peso
-  if (!formData.totalWeight || Number(formData.totalWeight) <= 0) {
-    errors.totalWeight = "Ingresa un peso válido";
+  if (!formData.extraWeight || Number(formData.extraWeight) <= 0) {
+    errors.extraWeight = "Ingresa un peso válido";
   }
 
   // ⛽ Combustible

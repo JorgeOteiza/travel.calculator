@@ -25,7 +25,7 @@ def calculate_trip():
 
         required_fields = [
             "brand", "model", "year",
-            "totalWeight", "distance",
+            "extraWeight", "distance",
             "roadGrade", "climate"
         ]
         for field in required_fields:
@@ -39,7 +39,7 @@ def calculate_trip():
         distance_km = float(data["distance"])
         grade = float(data["roadGrade"])
         climate = data["climate"].lower()
-        extra_weight = float(data["totalWeight"])
+        extra_weight = float(data["extraWeight"])
         fuel_price = float(data.get("fuelPrice", 0))
 
         # 🔹 Buscar vehículo
