@@ -65,7 +65,7 @@ const TripForm = ({
       <select
         id="year"
         name="year"
-        value={formData.year}
+        value={formData.year || ""}
         onChange={(e) => handleYearSelect(e.target.value)}
         className="custom-input"
         disabled={!availableYears.length}
@@ -80,7 +80,7 @@ const TripForm = ({
       </select>
       {errors.year && <span className="error-text">{errors.year}</span>}
 
-      {/* Tipo de combustible (solo si no es eléctrico) */}
+      {/* Tipo de combustible */}
       {!isElectric && (
         <>
           <label htmlFor="fuelType">Octane Rating</label>
@@ -88,9 +88,10 @@ const TripForm = ({
             id="fuelType"
             name="fuelType"
             options={fuelTypeOptions}
-            value={fuelTypeOptions.find(
-              (opt) => opt.value === formData.fuelType
-            )}
+            value={
+              fuelTypeOptions.find((opt) => opt.value === formData.fuelType) ||
+              null
+            }
             onChange={(selectedOption) =>
               handleChange({
                 target: {
@@ -116,7 +117,7 @@ const TripForm = ({
           <input
             type="number"
             name="fuelPrice"
-            value={formData.fuelPrice}
+            value={formData.fuelPrice ?? ""}
             onChange={handleChange}
             placeholder="Fuel price per liter"
             min="0"
@@ -132,7 +133,7 @@ const TripForm = ({
       <input
         type="number"
         name="passengers"
-        value={formData.passengers}
+        value={formData.passengers ?? ""}
         onChange={handleChange}
         placeholder="Enter number of passengers"
         min="1"
@@ -143,24 +144,22 @@ const TripForm = ({
         <span className="error-text">{errors.passengers}</span>
       )}
 
-      {/* Peso total */}
+      {/* Peso extra */}
       <label htmlFor="extraWeight">Estimated Extra Weight (kg)</label>
       <input
         type="number"
         name="extraWeight"
-        value={formData.extraWeight}
+        value={formData.extraWeight ?? ""}
         onChange={handleChange}
         placeholder="Luggage, cargo, etc."
         min="0"
         className="custom-input"
         required
       />
-
       {errors.extraWeight && (
         <span className="error-text">{errors.extraWeight}</span>
       )}
 
-      {/* Botón de cálculo */}
       <button
         type="button"
         className="calculate-button"
