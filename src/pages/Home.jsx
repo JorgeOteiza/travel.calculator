@@ -31,7 +31,7 @@ const Home = () => {
     fuelType: "",
     fuelPrice: 0,
     passengers: 1,
-    totalWeight: 0,
+    extraWeight: 0,
     user: userFromStorage || null,
     locationCoords: null,
     destinationCoords: null,

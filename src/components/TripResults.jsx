@@ -12,107 +12,97 @@ const TripResults = ({ results }) => {
     fuelUsed,
     totalCost,
     weather,
-    roadSlope,
-    climate,
-    weatherRaw = {},
+    roadGrade,
     baseFC,
     adjustedFC,
-    pricePerLitre,
-    vehicleDetails = {},
+    vehicle = {},
   } = results;
 
-  const isSnowy = (weather || climate)?.toLowerCase() === "snowy";
+  const isSnowy = weather?.toLowerCase() === "snowy";
 
   return (
     <div className="trip-results-container">
       <div className="trip-results-card">
         <h2>📊 Resultados del Viaje</h2>
+
         <ul>
           <li>
             <strong>Distancia:</strong> {formatValue(distance, "km")}
           </li>
+
           <li>
             <strong>Consumo base del vehículo:</strong>{" "}
             {formatValue(baseFC, "L/100km")}
           </li>
+
           <li>
             <strong>Consumo ajustado:</strong>{" "}
             {formatValue(adjustedFC, "L/100km")}
           </li>
+
           <li>
             <strong>Consumo total:</strong>{" "}
             {formatValue(fuelUsed?.toFixed(2), "litros")}
           </li>
-          <li>
-            <strong>Precio por litro:</strong> {formatValue(pricePerLitre, "$")}
-          </li>
+
           <li>
             <strong>Costo total:</strong>{" "}
             {formatValue(totalCost?.toFixed(2), "$")}
           </li>
+
           <li>
-            <strong>Condiciones climáticas:</strong> {weather || climate || "-"}
+            <strong>Condiciones climáticas:</strong> {weather || "-"}
           </li>
+
           <li>
-            <strong>Pendiente del camino:</strong> {roadSlope || "-"}
+            <strong>Pendiente del camino:</strong> {roadGrade || "-"}
           </li>
-          {weatherRaw && (
-            <>
-              <li>
-                <strong>🌡️ Temperatura:</strong>{" "}
-                {formatValue(weatherRaw.temp_celsius, "°C")}
-              </li>
-              <li>
-                <strong>🌬️ Viento:</strong>{" "}
-                {formatValue(weatherRaw.wind_speed_mps, "m/s")}
-              </li>
-              <li>
-                <strong>☁️ Condición:</strong> {weatherRaw.condition || "-"}
-              </li>
-            </>
-          )}
         </ul>
 
         {isSnowy && (
           <div className="trip-warning-snowy">
             ⚠️ <strong>Advertencia:</strong> Se detectaron condiciones de nieve.
-            El consumo de combustible puede incrementarse considerablemente
-            debido al aumento en la resistencia y menor tracción.
+            El consumo puede aumentar por menor tracción y mayor resistencia.
           </div>
         )}
 
-        {vehicleDetails && (
+        {vehicle && (
           <div className="vehicle-details">
             <h3>🚘 Detalles del Vehículo</h3>
+
             <ul>
               <li>
-                <strong>Marca:</strong> {vehicleDetails.make || "-"}
+                <strong>Marca:</strong> {vehicle.make || "-"}
               </li>
+
               <li>
-                <strong>Modelo:</strong> {vehicleDetails.model || "-"}
+                <strong>Modelo:</strong> {vehicle.model || "-"}
               </li>
+
               <li>
-                <strong>Año:</strong> {vehicleDetails.year || "-"}
+                <strong>Año:</strong> {vehicle.year || "-"}
               </li>
+
               <li>
-                <strong>Tipo de Combustible:</strong>{" "}
-                {vehicleDetails.fuel_type || "-"}
+                <strong>Tipo de Combustible:</strong> {vehicle.fuel_type || "-"}
               </li>
+
               <li>
                 <strong>Cilindrada:</strong>{" "}
-                {formatValue(vehicleDetails.engine_cc, "cc")}
+                {formatValue(vehicle.engine_cc, "cc")}
               </li>
+
               <li>
-                <strong>N° de Cilindros:</strong>{" "}
-                {vehicleDetails.engine_cylinders || "-"}
+                <strong>N° de Cilindros:</strong> {vehicle.cylinders || "-"}
               </li>
+
               <li>
-                <strong>Peso:</strong>{" "}
-                {formatValue(vehicleDetails.weight_kg, "kg")}
+                <strong>Peso:</strong> {formatValue(vehicle.weight_kg, "kg")}
               </li>
+
               <li>
                 <strong>Consumo Mixto:</strong>{" "}
-                {formatValue(vehicleDetails.lkm_mixed, "l/100km")}
+                {formatValue(vehicle.lkm_mixed, "L/100km")}
               </li>
             </ul>
           </div>
@@ -128,23 +118,16 @@ TripResults.propTypes = {
     fuelUsed: PropTypes.number,
     totalCost: PropTypes.number,
     weather: PropTypes.string,
-    climate: PropTypes.string,
-    roadSlope: PropTypes.string,
+    roadGrade: PropTypes.string,
     baseFC: PropTypes.number,
     adjustedFC: PropTypes.number,
-    pricePerLitre: PropTypes.number,
-    weatherRaw: PropTypes.shape({
-      temp_celsius: PropTypes.number,
-      wind_speed_mps: PropTypes.number,
-      condition: PropTypes.string,
-    }),
-    vehicleDetails: PropTypes.shape({
+    vehicle: PropTypes.shape({
       make: PropTypes.string,
       model: PropTypes.string,
       year: PropTypes.number,
       fuel_type: PropTypes.string,
       engine_cc: PropTypes.number,
-      engine_cylinders: PropTypes.number,
+      cylinders: PropTypes.number,
       weight_kg: PropTypes.number,
       lkm_mixed: PropTypes.number,
     }),

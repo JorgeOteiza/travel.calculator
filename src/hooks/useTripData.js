@@ -168,7 +168,7 @@ const useTripData = (initialFormData) => {
 
   const availableYears =
     formData.brand && formData.model
-      ? Array.from({ length: 35 }, (_, i) => 2025 - i)
+      ? Array.from({ length: 30 }, (_, i) => new Date().getFullYear() - i)
       : [];
 
   const handleBrandSelect = (selectedOption) => {
@@ -199,10 +199,10 @@ const useTripData = (initialFormData) => {
     const parsedValue = [
       "fuelPrice",
       "passengers",
-      "totalWeight",
+      "extraWeight",
       "roadGrade",
     ].includes(name)
-      ? parseFloat(value) || ""
+      ? parseFloat(value) || 0
       : value;
 
     setFormData((prev) => ({ ...prev, [name]: parsedValue }));

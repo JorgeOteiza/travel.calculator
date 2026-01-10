@@ -13,6 +13,7 @@ flask-migrate = "*"
 python-dotenv = "*"
 requests = "*"
 psycopg2-binary = "*"
+flask-caching = "*"
 
 [requires]
 python_version = "3.12"

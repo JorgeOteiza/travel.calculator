@@ -1,8 +1,10 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from flask_cors import cross_origin
-from backend.models import db, Trip, Vehicle, UserVehicle
 from sqlalchemy.exc import SQLAlchemyError
+
+from backend.models import db, Trip, Vehicle, UserVehicle
+from backend.utils.trip_calculation import calculate_fuel_consumption
 
 trip_bp = Blueprint("trip_bp", __name__)
 
@@ -15,24 +17,32 @@ trip_bp = Blueprint("trip_bp", __name__)
 @jwt_required()
 def calculate_trip():
     if request.method == "OPTIONS":
-        return '', 200
+        return "", 200
 
     try:
         data = request.get_json()
         user_id = get_jwt_identity()
 
         required_fields = [
-            "brand", "model", "year", "totalWeight",
-            "distance", "roadGrade", "climate"
+            "brand", "model", "year",
+            "extraWeight", "distance",
+            "roadGrade", "climate"
         ]
         for field in required_fields:
             if field not in data:
                 return jsonify({"error": f"Falta el campo obligatorio '{field}'"}), 400
 
+        # 🔹 Normalización de entrada
         brand = data["brand"].strip().lower()
         model = data["model"].strip().lower()
         year = int(data["year"])
+        distance_km = float(data["distance"])
+        grade = float(data["roadGrade"])
+        climate = data["climate"].lower()
+        extra_weight = float(data["extraWeight"])
+        fuel_price = float(data.get("fuelPrice", 0))
 
+        # 🔹 Buscar vehículo
         vehicle = Vehicle.query.filter(
             db.func.lower(Vehicle.make) == brand,
             db.func.lower(Vehicle.model) == model,
@@ -40,91 +50,60 @@ def calculate_trip():
         ).first()
 
         if not vehicle:
-            print(f"[ERROR] Vehículo no encontrado: {brand} {model} {year}")
             return jsonify({"error": "No se encontraron detalles del vehículo"}), 404
 
         if vehicle.fuel_type and "electric" in vehicle.fuel_type.lower():
             return jsonify({
-                "error": "Este es un vehículo eléctrico. La simulación de consumo de combustible no aplica."
+                "error": "Este es un vehículo eléctrico. No aplica simulación de combustible."
             }), 400
 
         if vehicle.lkm_mixed is None:
             return jsonify({
-                "error": "No se encontraron datos suficientes para estimar el consumo mixto de este modelo."
+                "error": "No hay datos suficientes de consumo para este vehículo."
             }), 400
 
-        base_fc = vehicle.lkm_mixed
-        total_weight = float(data["totalWeight"])
-        weight_factor = 1 + ((total_weight + (vehicle.weight_kg or 1500)) / 1500) * 0.1
-        adjusted_fc = base_fc * weight_factor
+        # 🔹 Cálculo real centralizado
+        adjusted_fc = calculate_fuel_consumption(
+            base_fc=vehicle.lkm_mixed,
+            vehicle_weight=vehicle.weight_kg or 1500,
+            extra_weight=max(0, extra_weight),
+            road_grade=grade,
+            climate=climate,
+            distance_km=distance_km,
+            engine_type=vehicle.fuel_type
+        )
 
-        grade = float(data["roadGrade"])
-        if grade > 0:
-            adjusted_fc *= 1 + (grade / 100)
-        elif grade < 0:
-            adjusted_fc *= 1 + (grade / 200)
-
-        climate = data["climate"].lower()
-        climate_modifiers = {
-            "cold": 1.10, "hot": 1.05, "windy": 1.08, "snowy": 1.12
-        }
-        adjusted_fc *= climate_modifiers.get(climate, 1.0)
-
-        distance_km = float(data["distance"])
-        fuel_price = float(data.get("fuelPrice", 0))
         fuel_used = (distance_km * adjusted_fc) / 100
         total_cost = fuel_used * fuel_price
 
-        print("📊 CÁLCULO:")
-        print(f" - Vehículo: {vehicle.make} {vehicle.model} {vehicle.year}")
-        print(f" - base_fc: {base_fc} L/100km")
-        print(f" - peso total (veh + carga): {total_weight + (vehicle.weight_kg or 1500)} kg")
-        print(f" - pendiente: {grade}%")
-        print(f" - clima: {climate}")
-        print(f" - distancia: {distance_km} km")
-        print(f" - consumo ajustado: {adjusted_fc:.3f} L/100km")
-        print(f" - consumo total: {fuel_used:.3f} L")
-        print(f" - precio por litro: {fuel_price}")
-        print(f" - costo total: {total_cost:.3f} CLP")
-
-        existing_relation = UserVehicle.query.filter_by(
+        # 🔹 Asociación usuario–vehículo
+        if not UserVehicle.query.filter_by(
             user_id=user_id,
             vehicle_id=vehicle.id
-        ).first()
-
-        if not existing_relation:
-            new_relation = UserVehicle(user_id=user_id, vehicle_id=vehicle.id)
-            db.session.add(new_relation)
+        ).first():
+            db.session.add(UserVehicle(
+                user_id=user_id,
+                vehicle_id=vehicle.id
+            ))
             db.session.commit()
-            print(f"[INFO] Vehículo asociado al usuario ID {user_id}")
-        else:
-            print(f"[INFO] Relación usuario-vehículo ya existente.")
 
         return jsonify({
             "distance": distance_km,
             "fuelConsumptionPer100km": round(adjusted_fc, 3),
             "fuelUsed": round(fuel_used, 3),
-            "totalCost": round(total_cost, 3),
+            "totalCost": round(total_cost, 2),
             "weather": climate,
             "roadSlope": f"{grade}%",
-            "baseFC": round(base_fc, 2),
+            "baseFC": round(vehicle.lkm_mixed, 2),
             "adjustedFC": round(adjusted_fc, 2),
             "pricePerLitre": round(fuel_price, 2),
-            "vehicleDetails": {
-                "make": vehicle.make,
-                "model": vehicle.model,
-                "year": vehicle.year,
-                "fuel_type": vehicle.fuel_type,
-                "engine_cc": vehicle.engine_cc,
-                "engine_cylinders": vehicle.engine_cylinders,
-                "weight_kg": vehicle.weight_kg,
-                "lkm_mixed": vehicle.lkm_mixed,
-            }
+            "vehicleDetails": vehicle.to_dict()
         }), 200
 
     except SQLAlchemyError as db_err:
         print(f"❌ SQLAlchemy error: {db_err}")
         return jsonify({"error": "Error interno de base de datos"}), 500
+
     except Exception as e:
         print(f"❌ Error general en /calculate: {e}")
         return jsonify({"error": str(e)}), 500
@@ -143,8 +122,9 @@ def save_trip():
 
         required = [
             "brand", "model", "year", "fuel_type",
-            "total_weight", "passengers", "location", "distance",
-            "fuel_consumed", "total_cost", "road_grade", "climate"
+            "total_weight", "passengers", "location",
+            "distance", "fuel_consumed", "total_cost",
+            "road_grade", "climate"
         ]
 
         for field in required:
@@ -198,7 +178,9 @@ def save_trip():
 def get_trips():
     try:
         user_id = get_jwt_identity()
-        trips = Trip.query.filter_by(user_id=user_id).order_by(Trip.id.desc()).all()
+        trips = Trip.query.filter_by(
+            user_id=user_id
+        ).order_by(Trip.id.desc()).all()
 
         results = []
         for trip in trips:
@@ -228,6 +210,7 @@ def delete_trip(trip_id):
 
         db.session.delete(trip)
         db.session.commit()
+
         return jsonify({"message": "Viaje eliminado exitosamente"}), 200
 
     except Exception as e:
