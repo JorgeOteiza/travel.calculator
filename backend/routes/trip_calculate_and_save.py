@@ -7,7 +7,7 @@ from backend.models import db, Trip, Vehicle, UserVehicle
 from backend.utils.trip_calculation import calculate_fuel_consumption
 from backend.services.distance_service import get_distance_km
 from backend.services.elevation_service import get_elevation_difference
-from backend.services.weather_service import get_climate_from_coords
+from backend.services.weather_service import get_weather_from_coords
 
 trip_calc_and_save_bp = Blueprint("trip_calc_and_save_bp", __name__)
 
@@ -28,7 +28,6 @@ def calculate_and_save_trip():
             "year",
             "origin",
             "destination",
-            "extra_weight",
             "passengers",
         ]
 
@@ -59,11 +58,8 @@ def calculate_and_save_trip():
         fuel_type = vehicle.fuel_type or "gasoline"
         is_electric = "electric" in fuel_type.lower()
 
-        real_total_weight = (
-            (vehicle.weight_kg or 1500)
-            + extra_weight
-            + (passengers * PASSENGER_WEIGHT)
-        )
+        base_weight = vehicle.weight_kg or 1500
+        total_weight = base_weight + extra_weight + (passengers * PASSENGER_WEIGHT)
 
         distance_km = get_distance_km(origin, destination)
 
@@ -74,7 +70,9 @@ def calculate_and_save_trip():
             else 0
         )
 
-        climate = get_climate_from_coords(origin)
+        weather_data = get_weather_from_coords(origin)
+        climate_label = weather_data["climate"]
+        weather_raw = weather_data["raw"]
 
         if is_electric:
             adjusted_fc = 0
@@ -83,10 +81,10 @@ def calculate_and_save_trip():
         else:
             adjusted_fc = calculate_fuel_consumption(
                 base_fc=vehicle.lkm_mixed,
-                vehicle_weight=vehicle.weight_kg or 1500,
-                extra_weight=real_total_weight - (vehicle.weight_kg or 1500),
+                vehicle_weight=base_weight,
+                extra_weight=total_weight - base_weight,
                 road_grade=road_grade,
-                climate=climate,
+                climate=climate_label,
                 distance_km=distance_km,
                 engine_type=fuel_type,
             )
@@ -101,14 +99,14 @@ def calculate_and_save_trip():
             year=vehicle.year,
             fuel_type=fuel_type,
             fuel_price=fuel_price,
-            total_weight=real_total_weight,
+            total_weight=total_weight,
             passengers=passengers,
             location=f"{origin['lat']},{origin['lng']}",
             distance=distance_km,
             fuel_consumed=fuel_used,
             total_cost=total_cost,
             road_grade=road_grade,
-            weather=climate,
+            weather=climate_label,
         )
 
         db.session.add(trip)
@@ -116,25 +114,31 @@ def calculate_and_save_trip():
         if not UserVehicle.query.filter_by(
             user_id=user_id, vehicle_id=vehicle.id
         ).first():
-            db.session.add(
-                UserVehicle(user_id=user_id, vehicle_id=vehicle.id)
-            )
+            db.session.add(UserVehicle(user_id=user_id, vehicle_id=vehicle.id))
 
         db.session.commit()
 
-        return jsonify(
-            {
-                "distance": round(distance_km, 2),
-                "fuelUsed": round(fuel_used, 3),
-                "totalCost": round(total_cost, 2),
-                "baseFC": vehicle.lkm_mixed,
-                "adjustedFC": round(adjusted_fc, 3),
-                "roadGrade": f"{road_grade}%",
-                "weather": climate,
-                "realTotalWeight": round(real_total_weight, 1),
-                "vehicle": vehicle.to_dict(),
-            }
-        ), 201
+        return jsonify({
+            "distance": round(distance_km, 2),
+            "fuelUsed": round(fuel_used, 2),
+            "totalCost": round(total_cost, 2),
+            "baseFC": vehicle.lkm_mixed,
+            "adjustedFC": round(adjusted_fc, 3),
+            "roadGrade": f"{road_grade}%",
+            "weather": climate_label,
+            "pricePerLitre": fuel_price,
+            "weatherRaw": weather_raw,
+            "vehicle": {
+                "make": vehicle.make,
+                "model": vehicle.model,
+                "year": vehicle.year,
+                "fuel_type": vehicle.fuel_type,
+                "engine_cc": vehicle.engine_cc,
+                "cylinders": vehicle.engine_cylinders,
+                "weight_kg": vehicle.weight_kg,
+                "lkm_mixed": vehicle.lkm_mixed,
+            },
+        }), 201
 
     except SQLAlchemyError as e:
         db.session.rollback()
