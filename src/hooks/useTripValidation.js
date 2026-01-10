@@ -13,7 +13,7 @@ export const validateTripForm = (formData) => {
     typeof formData.locationCoords.lat !== "number" ||
     typeof formData.locationCoords.lng !== "number"
   ) {
-    errors.location = "Selecciona una ubicación de origen";
+    errors.location = "Selecciona una ubicación de origen válida";
   }
 
   // 📍 Destino
@@ -22,7 +22,7 @@ export const validateTripForm = (formData) => {
     typeof formData.destinationCoords.lat !== "number" ||
     typeof formData.destinationCoords.lng !== "number"
   ) {
-    errors.destination = "Selecciona una ubicación de destino";
+    errors.destination = "Selecciona una ubicación de destino válida";
   }
 
   // 👥 Pasajeros
@@ -30,9 +30,13 @@ export const validateTripForm = (formData) => {
     errors.passengers = "Ingresa al menos 1 pasajero";
   }
 
-  // ⚖️ Peso
-  if (!formData.extraWeight || Number(formData.extraWeight) <= 0) {
-    errors.extraWeight = "Ingresa un peso válido";
+  // ⚖️ Peso extra (equipaje)
+  const extraWeight = Number(formData.extraWeight);
+
+  if (Number.isNaN(extraWeight)) {
+    errors.extraWeight = "Ingresa un número válido";
+  } else if (extraWeight < 0) {
+    errors.extraWeight = "El peso no puede ser negativo";
   }
 
   // ⛽ Combustible

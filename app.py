@@ -7,7 +7,6 @@ from dotenv import load_dotenv
 
 from backend.extensions import db, bcrypt, migrate
 from backend.routes import main_bp
-from backend.routes.trip_calculation_routes import trip_calc_bp
 from backend.routes.trip_calculate_and_save import trip_calc_and_save_bp
 
 load_dotenv()
@@ -36,7 +35,6 @@ def create_app():
 
     # ✅ REGISTRAR TODOS LOS BLUEPRINTS
     app.register_blueprint(main_bp, url_prefix="/api")
-    app.register_blueprint(trip_calc_bp, url_prefix="/api")
     app.register_blueprint(trip_calc_and_save_bp, url_prefix="/api")
 
     print("🚀 Flask iniciado correctamente")

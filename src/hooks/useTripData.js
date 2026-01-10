@@ -202,7 +202,7 @@ const useTripData = (initialFormData) => {
       "extraWeight",
       "roadGrade",
     ].includes(name)
-      ? parseFloat(value) || ""
+      ? parseFloat(value) || 0
       : value;
 
     setFormData((prev) => ({ ...prev, [name]: parsedValue }));

@@ -144,17 +144,18 @@ const TripForm = ({
       )}
 
       {/* Peso total */}
-      <label htmlFor="extraWeight">Estimated Total Weight (kg)</label>
+      <label htmlFor="extraWeight">Estimated Extra Weight (kg)</label>
       <input
         type="number"
         name="extraWeight"
         value={formData.extraWeight}
         onChange={handleChange}
-        placeholder="Passengers, luggage, cargo, etc."
+        placeholder="Luggage, cargo, etc."
         min="0"
         className="custom-input"
         required
       />
+
       {errors.extraWeight && (
         <span className="error-text">{errors.extraWeight}</span>
       )}

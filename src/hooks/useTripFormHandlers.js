@@ -4,11 +4,7 @@ export const useTripFormHandlers = (
   setMapCenter,
   fetchWeather
 ) => {
-  console.log("🧪 setFormData:", setFormData);
-
   const handleLocationChange = (field, data) => {
-    console.log("🧭 handleLocationChange", field, data);
-
     if (!data?.lat || !data?.lng) return;
 
     setFormData((prev) => ({
