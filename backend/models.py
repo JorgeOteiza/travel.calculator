@@ -1,6 +1,7 @@
 from datetime import datetime
 from backend.extensions import db, bcrypt
 
+
 class User(db.Model):
     __tablename__ = "user"
 
@@ -38,16 +39,35 @@ class User(db.Model):
 class Vehicle(db.Model):
     __tablename__ = "vehicle"
 
+    __table_args__ = (
+        db.UniqueConstraint("make", "model", "year", name="uq_vehicle_make_model_year"),
+    )
+
     id = db.Column(db.Integer, primary_key=True)
+
     make = db.Column(db.String(100), nullable=False)
     model = db.Column(db.String(100), nullable=False)
     year = db.Column(db.Integer, nullable=False)
-    fuel_type = db.Column(db.String(50))
+
+    fuel_type = db.Column(db.String(50), nullable=False)
     engine_cc = db.Column(db.Integer)
     engine_cylinders = db.Column(db.Integer)
-    weight_kg = db.Column(db.Integer)
+
+    weight_kg = db.Column(db.Integer, nullable=False)
+
     lkm_mixed = db.Column(db.Float)
-    mpg_mixed = db.Column(db.Float)
+    lkm_highway = db.Column(db.Float)   
+
+    mpg_mixed = db.Column(db.Float)     
+
+    drive_type = db.Column(db.String(20))
+    transmission = db.Column(db.String(20))
+
+    data_source = db.Column(db.String(50), default="manual")
+
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    trips = db.relationship("Trip", back_populates="vehicle", lazy=True)
 
     def to_dict(self):
         return {
@@ -61,24 +81,33 @@ class Vehicle(db.Model):
             "weight_kg": self.weight_kg,
             "lkm_mixed": self.lkm_mixed,
             "mpg_mixed": self.mpg_mixed,
+            "drive_type": self.drive_type,
+            "transmission": self.transmission,
+            "data_source": self.data_source,
         }
+    def __repr__(self):
+           return f"<Vehicle {self.make} {self.model} {self.year}>"
 
 class UserVehicle(db.Model):
-    __tablename__ = 'user_vehicle'
+    __tablename__ = "user_vehicle"
 
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    vehicle_id = db.Column(db.Integer, db.ForeignKey('vehicle.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    vehicle_id = db.Column(db.Integer, db.ForeignKey("vehicle.id"), nullable=False)
+
 
 class Trip(db.Model):
     __tablename__ = "trip"
 
     id = db.Column(db.Integer, primary_key=True)
+
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    vehicle_id = db.Column(db.Integer, db.ForeignKey("vehicle.id"), nullable=True)
 
     brand = db.Column(db.String(100), nullable=False)
     model = db.Column(db.String(100), nullable=False)
     year = db.Column(db.Integer, nullable=False)
+
     fuel_type = db.Column(db.String(50), nullable=False)
     fuel_price = db.Column(db.Float, nullable=True)
 
@@ -87,19 +116,26 @@ class Trip(db.Model):
 
     location = db.Column(db.String(255), nullable=False)
     distance = db.Column(db.Float, nullable=False)
+    
+    consumption_type = db.Column(db.String(20))   # "mixed" | "highway"
+    base_consumption = db.Column(db.Float)         # l/100km usado
+
     fuel_consumed = db.Column(db.Float, nullable=False)
     total_cost = db.Column(db.Float, nullable=False)
+
     road_grade = db.Column(db.Float, nullable=False)
     weather = db.Column(db.String(50), nullable=False)
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     user = db.relationship("User", back_populates="trips", lazy=True)
+    vehicle = db.relationship("Vehicle", back_populates="trips", lazy=True)
 
     def to_dict(self):
         return {
             "id": self.id,
             "user_id": self.user_id,
+            "vehicle_id": self.vehicle_id,
             "brand": self.brand,
             "model": self.model,
             "year": self.year,
@@ -115,9 +151,6 @@ class Trip(db.Model):
             "weather": self.weather,
             "created_at": self.created_at.strftime("%Y-%m-%d %H:%M:%S") if self.created_at else None,
         }
-
-    def __repr__(self):
-        return f"<Trip {self.brand} {self.model} - {self.distance} km>"
 
 
 class Role(db.Model):

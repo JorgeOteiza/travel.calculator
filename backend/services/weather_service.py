@@ -2,17 +2,18 @@ import requests
 from backend.config import OPENWEATHER_API_KEY
 
 
-def get_climate_from_coords(coords):
-    """
-    Retorna clima normalizado:
-    cold | hot | windy | snowy | mild
-    """
-
+def get_weather_from_coords(coords):
     lat = coords["lat"]
     lng = coords["lng"]
 
-    url = "https://api.openweathermap.org/data/2.5/weather"
+    if not OPENWEATHER_API_KEY:
+        return {
+            "climate": "mild",
+            "raw": None,
+            "source": "fallback_no_api_key",
+        }
 
+    url = "https://api.openweathermap.org/data/2.5/weather"
     params = {
         "lat": lat,
         "lon": lng,
@@ -21,19 +22,36 @@ def get_climate_from_coords(coords):
     }
 
     response = requests.get(url, params=params)
+    if response.status_code != 200:
+        return {
+            "climate": "mild",
+            "raw": None,
+            "source": f"fallback_status_{response.status_code}",
+        }
+
     data = response.json()
 
     temp = data["main"]["temp"]
     wind = data["wind"]["speed"]
-    weather_main = data["weather"][0]["main"].lower()
+    condition = data["weather"][0]["main"]
 
-    if "snow" in weather_main:
-        return "snowy"
-    if temp < 5:
-        return "cold"
-    if temp > 30:
-        return "hot"
-    if wind > 10:
-        return "windy"
+    if "snow" in condition.lower():
+        label = "snowy"
+    elif temp <= 5:
+        label = "cold"
+    elif temp >= 30:
+        label = "hot"
+    elif wind >= 8:
+        label = "windy"
+    else:
+        label = "mild"
 
-    return "mild"
+    return {
+        "climate": label,
+        "raw": {
+            "temp_celsius": temp,
+            "wind_speed_mps": wind,
+            "condition": condition,
+        },
+        "source": "openweathermap",
+    }

@@ -6,22 +6,17 @@ const useTripData = (initialFormData) => {
     ...initialFormData,
     climate: initialFormData.climate || "mild",
   });
+
   const [brandOptions, setBrandOptions] = useState([]);
   const [modelOptions, setModelOptions] = useState([]);
   const [vehicleDetails, setVehicleDetails] = useState(null);
 
-  const lastFetchRef = useRef({
-    brand: null,
-    model: null,
-    year: null,
-  });
-
+  const lastFetchRef = useRef({ brand: null, model: null, year: null });
   const ignoreRef = useRef(false);
 
   const brandCache = useRef({});
   const modelCache = useRef({});
 
-  // Marcas y modelos predeterminados
   const defaultBrands = useMemo(
     () => [
       { label: "Chery", value: "Chery" },
@@ -47,7 +42,6 @@ const useTripData = (initialFormData) => {
     []
   );
 
-  // Combinar marcas locales y de la API con caché
   useEffect(() => {
     const fetchBrands = async () => {
       if (brandCache.current.data) {
@@ -57,31 +51,21 @@ const useTripData = (initialFormData) => {
 
       try {
         const response = await axios.get("/api/cars/brands");
-        if (Array.isArray(response.data) && response.data.length) {
-          const combinedBrands = [...defaultBrands, ...response.data].reduce(
-            (acc, brand) => {
-              if (!acc.find((b) => b.value === brand.value)) {
-                acc.push(brand);
-              }
-              return acc;
-            },
-            []
-          );
-          brandCache.current.data = combinedBrands;
-          setBrandOptions(combinedBrands);
-        } else {
-          console.warn("⚠️ No se recibieron marcas desde NHTSA.");
-          setBrandOptions(defaultBrands);
-        }
-      } catch (error) {
-        console.error("❌ Error al obtener marcas:", error.message);
+        const apiBrands = Array.isArray(response.data) ? response.data : [];
+        const combined = [...defaultBrands, ...apiBrands].reduce((acc, b) => {
+          if (!acc.find((x) => x.value === b.value)) acc.push(b);
+          return acc;
+        }, []);
+        brandCache.current.data = combined;
+        setBrandOptions(combined);
+      } catch {
         setBrandOptions(defaultBrands);
       }
     };
+
     fetchBrands();
   }, [defaultBrands]);
 
-  // Combinar modelos locales y de la API con caché
   useEffect(() => {
     if (!formData.brand) return;
 
@@ -97,29 +81,22 @@ const useTripData = (initialFormData) => {
         );
         const apiModels = res.data || [];
         const localModels = defaultModels[formData.brand] || [];
-        const combinedModels = [...localModels, ...apiModels].reduce(
-          (acc, model) => {
-            if (!acc.find((m) => m.value === model.value)) {
-              acc.push(model);
-            }
-            return acc;
-          },
-          []
-        );
-        modelCache.current[formData.brand] = combinedModels;
-        setModelOptions(combinedModels);
-      } catch (error) {
-        console.error("❌ Error al obtener modelos:", error.message);
+        const combined = [...localModels, ...apiModels].reduce((acc, m) => {
+          if (!acc.find((x) => x.value === m.value)) acc.push(m);
+          return acc;
+        }, []);
+        modelCache.current[formData.brand] = combined;
+        setModelOptions(combined);
+      } catch {
         setModelOptions(defaultModels[formData.brand] || []);
       }
     };
+
     fetchModels();
   }, [formData.brand, defaultModels]);
 
-  // 🔹 Obtener detalles del vehículo solo cuando cambien marca + modelo + año
   const fetchVehicleDetails = useCallback(async () => {
     const { brand, model, year } = formData;
-
     if (!brand || !model || !year) return;
 
     const alreadyFetched =
@@ -149,16 +126,11 @@ const useTripData = (initialFormData) => {
             fuelPrice: "",
           }));
         }
-      } else {
-        setVehicleDetails(null);
       }
-    } catch (error) {
-      console.error("❌ Error en detalles:", error.message);
-      setVehicleDetails(null);
     } finally {
       setTimeout(() => {
         ignoreRef.current = false;
-      }, 1000);
+      }, 800);
     }
   }, [formData]);
 
@@ -171,41 +143,34 @@ const useTripData = (initialFormData) => {
       ? Array.from({ length: 30 }, (_, i) => new Date().getFullYear() - i)
       : [];
 
-  const handleBrandSelect = (selectedOption) => {
-    const brandValue = selectedOption?.value || "";
-    setFormData((prev) => ({
-      ...prev,
-      brand: brandValue,
+  const handleBrandSelect = (opt) => {
+    setFormData((p) => ({
+      ...p,
+      brand: opt?.value || "",
       model: "",
       year: "",
     }));
-    setModelOptions([]);
     setVehicleDetails(null);
+    setModelOptions([]);
   };
 
-  const handleModelSelect = (selectedOption) => {
-    const modelValue = selectedOption?.value || "";
-    setFormData((prev) => ({ ...prev, model: modelValue, year: "" }));
+  const handleModelSelect = (opt) => {
+    setFormData((p) => ({ ...p, model: opt?.value || "", year: "" }));
     setVehicleDetails(null);
   };
 
   const handleYearSelect = (year) => {
-    setFormData((prev) => ({ ...prev, year: String(year) }));
+    setFormData((p) => ({ ...p, year: String(year) }));
   };
 
+  // ✅ FIX DEFINITIVO DEL "0"
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    const parsedValue = [
-      "fuelPrice",
-      "passengers",
-      "extraWeight",
-      "roadGrade",
-    ].includes(name)
-      ? parseFloat(value) || 0
-      : value;
-
-    setFormData((prev) => ({ ...prev, [name]: parsedValue }));
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value, // ← SIEMPRE string
+    }));
   };
 
   return {

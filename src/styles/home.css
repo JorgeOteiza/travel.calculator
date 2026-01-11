@@ -76,6 +76,7 @@
 
 /* Panel de resultados */
 .results-panel {
+  align-content: center;
   width: 100%;
   max-width: 400px;
   border: 2px solid #28a745;
