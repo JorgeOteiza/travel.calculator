@@ -2,16 +2,18 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from flask_cors import cross_origin
 from sqlalchemy.exc import SQLAlchemyError
-
 from backend.models import db, Trip, Vehicle, UserVehicle
 from backend.utils.trip_calculation import calculate_fuel_consumption
 from backend.services.distance_service import get_distance_km
 from backend.services.elevation_service import get_elevation_difference
 from backend.services.weather_service import get_weather_from_coords
+from backend.services.consumption_service import calculate_trip_consumption
+
 
 trip_calc_and_save_bp = Blueprint("trip_calc_and_save_bp", __name__)
 
 PASSENGER_WEIGHT = 75  # kg promedio por pasajero
+HIGHWAY_DISTANCE_THRESHOLD = 50  # km
 
 
 @trip_calc_and_save_bp.route("/trips/calculate-and-save", methods=["POST"])
@@ -74,26 +76,46 @@ def calculate_and_save_trip():
         climate_label = weather_data["climate"]
         weather_raw = weather_data["raw"]
 
+        # 🚦 DECISIÓN MIXED VS HIGHWAY
+        if distance_km >= HIGHWAY_DISTANCE_THRESHOLD and vehicle.lkm_highway:
+            consumption_type = "highway"
+            base_fc = vehicle.lkm_highway
+        else:
+            consumption_type = "mixed"
+            base_fc = vehicle.lkm_mixed
+
         if is_electric:
             adjusted_fc = 0
             fuel_used = 0
             total_cost = 0
         else:
+            consumption_data = calculate_trip_consumption(
+            vehicle=vehicle,
+            total_km=distance_km,
+            highway_km=data.get("highway_km")  # opcional
+        )
+
+            consumption_type = consumption_data["consumption_type"]
+            base_consumption = consumption_data["base_consumption"]
+
+            
             adjusted_fc = calculate_fuel_consumption(
-                base_fc=vehicle.lkm_mixed,
-                vehicle_weight=base_weight,
-                extra_weight=total_weight - base_weight,
-                road_grade=road_grade,
-                climate=climate_label,
-                distance_km=distance_km,
-                engine_type=fuel_type,
-            )
+            base_fc=base_consumption,
+            vehicle_weight=base_weight,
+            extra_weight=total_weight - base_weight,
+            road_grade=road_grade,
+            climate=climate_label,
+            distance_km=distance_km,
+            engine_type=fuel_type,
+        )
+
 
             fuel_used = (distance_km * adjusted_fc) / 100
             total_cost = fuel_used * fuel_price
 
         trip = Trip(
             user_id=user_id,
+            vehicle_id=vehicle.id,
             brand=vehicle.make,
             model=vehicle.model,
             year=vehicle.year,
@@ -103,11 +125,16 @@ def calculate_and_save_trip():
             passengers=passengers,
             location=f"{origin['lat']},{origin['lng']}",
             distance=distance_km,
+
+            consumption_type=consumption_type,
+            base_consumption=base_consumption,
+
             fuel_consumed=fuel_used,
             total_cost=total_cost,
             road_grade=road_grade,
             weather=climate_label,
         )
+
 
         db.session.add(trip)
 
@@ -122,7 +149,8 @@ def calculate_and_save_trip():
             "distance": round(distance_km, 2),
             "fuelUsed": round(fuel_used, 2),
             "totalCost": round(total_cost, 2),
-            "baseFC": vehicle.lkm_mixed,
+            "consumptionType": consumption_type,
+            "baseFC": base_fc,
             "adjustedFC": round(adjusted_fc, 3),
             "roadGrade": f"{road_grade}%",
             "weather": climate_label,
@@ -137,7 +165,13 @@ def calculate_and_save_trip():
                 "cylinders": vehicle.engine_cylinders,
                 "weight_kg": vehicle.weight_kg,
                 "lkm_mixed": vehicle.lkm_mixed,
+                "lkm_highway": vehicle.lkm_highway,
             },
+            "consumption": {
+                "type": consumption_type,
+                "base_l_per_100km": base_consumption
+            },
+
         }), 201
 
     except SQLAlchemyError as e:
