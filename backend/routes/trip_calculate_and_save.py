@@ -110,7 +110,7 @@ def calculate_and_save_trip():
         )
 
         # 🎯 AUTO-CALIBRACIÓN POR VEHÍCULO (APRENDIZAJE)
-            adjusted_fc *= vehicle.calibration_factor
+            adjusted_fc *= max(0.7, min(vehicle.calibration_factor, 1.3))
 
             fuel_used = (distance_km * adjusted_fc) / 100
             total_cost = fuel_used * fuel_price
