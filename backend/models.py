@@ -66,6 +66,9 @@ class Vehicle(db.Model):
     data_source = db.Column(db.String(50), default="manual")
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    calibration_factor = db.Column(db.Float, default=1.0, nullable=False)
+    calibration_samples = db.Column(db.Integer, default=0, nullable=False)
 
     trips = db.relationship("Trip", back_populates="vehicle", lazy=True)
 

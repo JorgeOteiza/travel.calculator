@@ -109,6 +109,8 @@ def calculate_and_save_trip():
             engine_type=fuel_type,
         )
 
+        # 🎯 AUTO-CALIBRACIÓN POR VEHÍCULO (APRENDIZAJE)
+            adjusted_fc *= vehicle.calibration_factor
 
             fuel_used = (distance_km * adjusted_fc) / 100
             total_cost = fuel_used * fuel_price
