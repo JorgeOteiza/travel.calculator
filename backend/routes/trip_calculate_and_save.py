@@ -45,8 +45,19 @@ def calculate_and_save_trip():
         destination = data["destination"]
 
         passengers = int(data["passengers"])
+        # 🚧 VALIDACIONES DE ENTRADA (SANITY CHECK)
+        if passengers < 0 or passengers > 8:
+          return jsonify({
+        "error": "Cantidad de pasajeros inválida (0–8)"
+        }), 400
+          
         extra_weight = float(data.get("extra_weight", 0))
         fuel_price = float(data.get("fuel_price", 0))
+        if fuel_price < 0 or fuel_price > 5000:
+            return jsonify({
+        "error": "Precio de combustible fuera de rango"
+        }), 400
+
 
         vehicle = Vehicle.query.filter(
             db.func.lower(Vehicle.make) == brand,
