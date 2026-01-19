@@ -4,55 +4,87 @@ def calculate_fuel_consumption(
     extra_weight: float,
     road_grade: float,
     climate: str,
-    distance_km: float | None = None,
-    engine_type: str | None = None,
+    distance_km: float,
+    engine_type: str = "gasoline",
+    debug: bool = False,
 ):
     """
-    Retorna consumo ajustado en L/100km
+    Calcula el consumo ajustado (L/100km) usando penalizaciones aditivas realistas.
     """
 
-    # =========================
-    # 1️⃣ Ajuste por peso
-    # =========================
-    total_weight = vehicle_weight + extra_weight
-    weight_factor = 1 + (total_weight / 1500) * 0.10
-    adjusted_fc = base_fc * weight_factor
+    if base_fc <= 0:
+        raise ValueError("El consumo base debe ser mayor a 0")
 
-    # =========================
-    # 2️⃣ Ajuste por pendiente
-    # =========================
+    # ===============================
+    # PESO
+    # ===============================
+    weight_penalty = 0.0
+    if extra_weight > 0:
+        # +6% cada 100kg
+        weight_penalty = (extra_weight / 100) * 0.06
+        weight_penalty = min(weight_penalty, 0.35)
+
+    # ===============================
+    # PENDIENTE
+    # ===============================
     if road_grade > 0:
-        adjusted_fc *= 1 + (road_grade / 100)
-    elif road_grade < 0:
-        adjusted_fc *= 1 + (road_grade / 200)
+        grade_penalty = road_grade * 0.05
+        grade_penalty = min(grade_penalty, 0.40)
+    else:
+        grade_penalty = road_grade * 0.02
+        grade_penalty = max(grade_penalty, -0.15)
 
-    # =========================
-    # 3️⃣ Ajuste por clima
-    # =========================
-    climate_modifiers = {
-        "cold": 1.10,
-        "hot": 1.05,
-        "windy": 1.08,
-        "snowy": 1.12,
-        "mild": 1.00,
+    # ===============================
+    # CLIMA
+    # ===============================
+    CLIMATE_PENALTIES = {
+        "normal": 0.00,
+        "rain": 0.05,
+        "cold": 0.07,
+        "hot": 0.04,
+        "windy": 0.06,
     }
-    adjusted_fc *= climate_modifiers.get(climate, 1.0)
 
-    # =========================
-    # 4️⃣ Arranque en frío / trayectos cortos
-    # =========================
-    if distance_km is not None and distance_km < 5:
-        adjusted_fc *= 1.15
+    climate_penalty = CLIMATE_PENALTIES.get(climate, 0.0)
 
-    # =========================
-    # 5️⃣ Tipo de motor (fase futura)
-    # =========================
-    if engine_type:
-        engine_modifiers = {
-            "diesel": 0.95,
-            "turbo": 1.05,
-            "hybrid": 0.85,
+    # ===============================
+    # TIPO DE MOTOR
+    # ===============================
+    engine_penalty = 0.0
+    engine_type = engine_type.lower()
+
+    if "diesel" in engine_type:
+        engine_penalty = -0.05
+    elif "hybrid" in engine_type:
+        engine_penalty = -0.10
+
+    # ===============================
+    # PENALIZACIÓN TOTAL
+    # ===============================
+    total_penalty = (
+        weight_penalty
+        + grade_penalty
+        + climate_penalty
+        + engine_penalty
+    )
+
+    # límites de seguridad
+    total_penalty = max(-0.20, min(total_penalty, 0.60))
+
+    adjusted_fc = base_fc * (1 + total_penalty)
+
+    # ===============================
+    # DEBUG
+    # ===============================
+    if debug:
+        return {
+            "base_fc": round(base_fc, 3),
+            "weight_penalty": round(weight_penalty, 3),
+            "grade_penalty": round(grade_penalty, 3),
+            "climate_penalty": round(climate_penalty, 3),
+            "engine_penalty": round(engine_penalty, 3),
+            "total_penalty": round(total_penalty, 3),
+            "adjusted_fc": round(adjusted_fc, 3),
         }
-        adjusted_fc *= engine_modifiers.get(engine_type.lower(), 1.0)
 
     return round(adjusted_fc, 3)
