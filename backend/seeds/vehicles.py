@@ -83,7 +83,7 @@ Vehicle(
             engine_cc=1500,
             engine_cylinders=4,
             weight_kg=1295,
-            lkm_mixed=7.4,
+            lkm_mixed=8.3,
             lkm_highway=6.2,
             mpg_mixed=None
         ),
