@@ -122,12 +122,16 @@ class Trip(db.Model):
     
     consumption_type = db.Column(db.String(20))   # "mixed" | "highway"
     base_consumption = db.Column(db.Float)         # l/100km usado
+    
 
     fuel_consumed = db.Column(db.Float, nullable=False)
     total_cost = db.Column(db.Float, nullable=False)
 
     road_grade = db.Column(db.Float, nullable=False)
     weather = db.Column(db.String(50), nullable=False)
+    
+    adjusted_consumption = db.Column(db.Float)
+    calibration_factor_used = db.Column(db.Float)
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 

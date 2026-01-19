@@ -141,12 +141,15 @@ def calculate_and_save_trip():
 
             consumption_type=consumption_type,
             base_consumption=base_consumption,
+            adjusted_consumption=adjusted_fc,
+            calibration_factor_used=vehicle.calibration_factor,
 
             fuel_consumed=fuel_used,
             total_cost=total_cost,
             road_grade=road_grade,
             weather=climate_label,
         )
+
 
 
         db.session.add(trip)
