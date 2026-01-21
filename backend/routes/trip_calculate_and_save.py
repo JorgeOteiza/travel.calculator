@@ -156,6 +156,7 @@ def calculate_and_save_trip():
             distance=distance_km,
             consumption_type=consumption_type,
             base_consumption=base_consumption,
+            expected_consumption=adjusted_consumption,
             adjusted_consumption=adjusted_consumption,
             calibration_factor_used=vehicle.calibration_factor,
             fuel_consumed=fuel_used,

@@ -169,7 +169,7 @@ def save_trip():
         return jsonify({"error": str(e)}), 500
     
     
-    # ==========================================
+# ==========================================
 # 🎯 Registrar consumo real y calibrar vehículo
 # ==========================================
 @trip_bp.route("/trips/<int:trip_id>/real-consumption", methods=["POST"])
@@ -182,6 +182,9 @@ def set_real_consumption(trip_id):
 
         real_consumption = data.get("real_consumption")
 
+        # ----------------------
+        # Validaciones básicas
+        # ----------------------
         if real_consumption is None or real_consumption <= 0:
             return jsonify({
                 "error": "Consumo real inválido"
@@ -207,37 +210,34 @@ def set_real_consumption(trip_id):
                 "error": "Este viaje no tiene consumo esperado"
             }), 400
 
-        # 🧠 Guardar consumo real
-        trip.real_consumption = float(real_consumption)
-
-        vehicle = trip.vehicle
-
-        # 🔒 Seguridad extra
-        ratio = trip.real_consumption / trip.expected_consumption
-        if ratio < 0.5 or ratio > 1.8:
+        if not trip.vehicle:
             return jsonify({
-                "error": "Consumo real fuera de rango razonable"
+                "error": "Este viaje no tiene vehículo asociado"
             }), 400
 
-        # ⚙️ Ajuste suave del factor de calibración
-        ALPHA = 0.15
+        # ----------------------
+        # Guardar consumo real
+        # ----------------------
+        trip.real_consumption = float(real_consumption)
 
-        new_factor = (
-            vehicle.calibration_factor * (1 - ALPHA)
-            + ratio * ALPHA
-        )
-
-        vehicle.calibration_factor = max(0.7, min(new_factor, 1.3))
-        vehicle.calibration_samples += 1
+        # ----------------------
+        # 🧠 Calibración (service)
+        # ----------------------
+        from backend.services.calibration_service import apply_vehicle_calibration
+        apply_vehicle_calibration(trip)
 
         db.session.commit()
+
+        vehicle = trip.vehicle
 
         return jsonify({
             "message": "Consumo real registrado y vehículo calibrado",
             "trip_id": trip.id,
             "expected_consumption": round(trip.expected_consumption, 2),
             "real_consumption": round(trip.real_consumption, 2),
-            "new_calibration_factor": round(vehicle.calibration_factor, 3),
+            "calibration_factor_used": round(trip.calibration_factor_used, 3)
+            if trip.calibration_factor_used else None,
+            "new_vehicle_calibration_factor": round(vehicle.calibration_factor, 3),
             "calibration_samples": vehicle.calibration_samples
         }), 200
 
