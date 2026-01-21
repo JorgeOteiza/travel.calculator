@@ -26,24 +26,19 @@ export const validateTripForm = (formData) => {
   }
 
   // 👥 Pasajeros
-  if (!formData.passengers || formData.passengers < 1) {
-    errors.passengers = "Ingresa al menos 1 pasajero";
+  const passengers = Number(formData.passengers);
+  if (Number.isNaN(passengers) || passengers < 0 || passengers > 8) {
+    errors.passengers = "Ingresa una cantidad válida de pasajeros (0–8)";
   }
 
-  // ⚖️ Peso extra (equipaje)
+  // ⚖️ Peso extra
   const extraWeight = Number(formData.extraWeight);
-
-  if (Number.isNaN(extraWeight)) {
-    errors.extraWeight = "Ingresa un número válido";
-  } else if (extraWeight < 0) {
-    errors.extraWeight = "El peso no puede ser negativo";
+  if (Number.isNaN(extraWeight) || extraWeight < 0) {
+    errors.extraWeight = "Ingresa un peso extra válido";
   }
 
   // ⛽ Combustible
-  if (
-    formData.fuelType !== "electric" &&
-    (!formData.fuelPrice || Number(formData.fuelPrice) <= 0)
-  ) {
+  if (Number(formData.fuelPrice) <= 0) {
     errors.fuelPrice = "Ingresa un precio de combustible válido";
   }
 
@@ -63,6 +58,11 @@ export const validateTripCalculation = (formData) => {
 
   if (!isValidCoords(formData.destinationCoords)) {
     errors.destination = "Selecciona un destino";
+  }
+
+  const passengers = Number(formData.passengers);
+  if (Number.isNaN(passengers) || passengers < 0 || passengers > 8) {
+    errors.passengers = "Cantidad de pasajeros inválida";
   }
 
   return errors;
