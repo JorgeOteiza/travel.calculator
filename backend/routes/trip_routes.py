@@ -167,6 +167,89 @@ def save_trip():
     except Exception as e:
         print(f"❌ Error interno al guardar viaje: {e}")
         return jsonify({"error": str(e)}), 500
+    
+    
+    # ==========================================
+# 🎯 Registrar consumo real y calibrar vehículo
+# ==========================================
+@trip_bp.route("/trips/<int:trip_id>/real-consumption", methods=["POST"])
+@cross_origin()
+@jwt_required()
+def set_real_consumption(trip_id):
+    try:
+        user_id = get_jwt_identity()
+        data = request.get_json()
+
+        real_consumption = data.get("real_consumption")
+
+        if real_consumption is None or real_consumption <= 0:
+            return jsonify({
+                "error": "Consumo real inválido"
+            }), 400
+
+        trip = Trip.query.filter_by(
+            id=trip_id,
+            user_id=user_id
+        ).first()
+
+        if not trip:
+            return jsonify({
+                "error": "Viaje no encontrado"
+            }), 404
+
+        if trip.real_consumption is not None:
+            return jsonify({
+                "error": "Este viaje ya fue calibrado"
+            }), 400
+
+        if not trip.expected_consumption:
+            return jsonify({
+                "error": "Este viaje no tiene consumo esperado"
+            }), 400
+
+        # 🧠 Guardar consumo real
+        trip.real_consumption = float(real_consumption)
+
+        vehicle = trip.vehicle
+
+        # 🔒 Seguridad extra
+        ratio = trip.real_consumption / trip.expected_consumption
+        if ratio < 0.5 or ratio > 1.8:
+            return jsonify({
+                "error": "Consumo real fuera de rango razonable"
+            }), 400
+
+        # ⚙️ Ajuste suave del factor de calibración
+        ALPHA = 0.15
+
+        new_factor = (
+            vehicle.calibration_factor * (1 - ALPHA)
+            + ratio * ALPHA
+        )
+
+        vehicle.calibration_factor = max(0.7, min(new_factor, 1.3))
+        vehicle.calibration_samples += 1
+
+        db.session.commit()
+
+        return jsonify({
+            "message": "Consumo real registrado y vehículo calibrado",
+            "trip_id": trip.id,
+            "expected_consumption": round(trip.expected_consumption, 2),
+            "real_consumption": round(trip.real_consumption, 2),
+            "new_calibration_factor": round(vehicle.calibration_factor, 3),
+            "calibration_samples": vehicle.calibration_samples
+        }), 200
+
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        print("❌ DB error calibrating vehicle:", e)
+        return jsonify({"error": "Error de base de datos"}), 500
+
+    except Exception as e:
+        print("❌ Error calibrating vehicle:", e)
+        return jsonify({"error": str(e)}), 500
+
 
 
 # ==========================================
