@@ -102,11 +102,17 @@ class UserVehicle(db.Model):
 class Trip(db.Model):
     __tablename__ = "trip"
 
+    # ======================
+    # 🔑 Identidad
+    # ======================
     id = db.Column(db.Integer, primary_key=True)
 
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
     vehicle_id = db.Column(db.Integer, db.ForeignKey("vehicle.id"), nullable=True)
 
+    # ======================
+    # 🚗 Snapshot del vehículo
+    # ======================
     brand = db.Column(db.String(100), nullable=False)
     model = db.Column(db.String(100), nullable=False)
     year = db.Column(db.Integer, nullable=False)
@@ -114,50 +120,86 @@ class Trip(db.Model):
     fuel_type = db.Column(db.String(50), nullable=False)
     fuel_price = db.Column(db.Float, nullable=True)
 
+    # ======================
+    # ⚖️ Carga y viaje
+    # ======================
     total_weight = db.Column(db.Float, nullable=False)
     passengers = db.Column(db.Integer, nullable=False)
 
     location = db.Column(db.String(255), nullable=False)
     distance = db.Column(db.Float, nullable=False)
-    
-    consumption_type = db.Column(db.String(20))   # "mixed" | "highway"
-    base_consumption = db.Column(db.Float)         # l/100km usado
-    
-
-    fuel_consumed = db.Column(db.Float, nullable=False)
-    total_cost = db.Column(db.Float, nullable=False)
 
     road_grade = db.Column(db.Float, nullable=False)
     weather = db.Column(db.String(50), nullable=False)
-    
-    adjusted_consumption = db.Column(db.Float)
+
+    # ======================
+    # 🔢 Modelo de consumo
+    # ======================
+    consumption_type = db.Column(db.String(20))   # mixed | highway
+    base_consumption = db.Column(db.Float)         # L/100km base
+
+    expected_consumption = db.Column(db.Float, nullable=False)  # modelo
+    adjusted_consumption = db.Column(db.Float)                  # persistencia histórica
     calibration_factor_used = db.Column(db.Float)
 
+    real_consumption = db.Column(db.Float, nullable=True)        # input usuario
+
+    # ======================
+    # ⛽ Resultado económico
+    # ======================
+    fuel_consumed = db.Column(db.Float, nullable=False)
+    total_cost = db.Column(db.Float, nullable=False)
+
+    # ======================
+    # ⏱️ Metadata
+    # ======================
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+    # ======================
+    # 🔗 Relaciones
+    # ======================
     user = db.relationship("User", back_populates="trips", lazy=True)
     vehicle = db.relationship("Vehicle", back_populates="trips", lazy=True)
 
+    # ======================
+    # 📤 Serialización
+    # ======================
     def to_dict(self):
         return {
             "id": self.id,
             "user_id": self.user_id,
             "vehicle_id": self.vehicle_id,
+
             "brand": self.brand,
             "model": self.model,
             "year": self.year,
+
             "fuel_type": self.fuel_type,
             "fuel_price": self.fuel_price,
+
             "total_weight": self.total_weight,
             "passengers": self.passengers,
+
             "location": self.location,
             "distance": self.distance,
-            "fuel_consumed": self.fuel_consumed,
-            "total_cost": self.total_cost,
+
             "road_grade": self.road_grade,
             "weather": self.weather,
-            "created_at": self.created_at.strftime("%Y-%m-%d %H:%M:%S") if self.created_at else None,
+
+            "consumption_type": self.consumption_type,
+            "base_consumption": self.base_consumption,
+            "expected_consumption": self.expected_consumption,
+            "adjusted_consumption": self.adjusted_consumption,
+            "real_consumption": self.real_consumption,
+            "calibration_factor_used": self.calibration_factor_used,
+
+            "fuel_consumed": self.fuel_consumed,
+            "total_cost": self.total_cost,
+
+            "created_at": self.created_at.strftime("%Y-%m-%d %H:%M:%S")
+            if self.created_at else None,
         }
+
 
 
 class Role(db.Model):
