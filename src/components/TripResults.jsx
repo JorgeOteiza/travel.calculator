@@ -18,7 +18,9 @@ const TripResults = ({ results }) => {
     vehicle = {},
   } = results;
 
-  const isSnowy = weather?.toLowerCase() === "snowy";
+  const gradeValue = parseFloat(roadGrade);
+  const isMountainRoute =
+    !Number.isNaN(gradeValue) && Math.abs(gradeValue) < 2 && distance < 60;
 
   return (
     <div className="trip-results-container">
@@ -46,13 +48,27 @@ const TripResults = ({ results }) => {
             <strong>Condiciones climáticas:</strong> {weather || "-"}
           </li>
           <li>
-            <strong>Pendiente del camino:</strong> {roadGrade || "-"}
+            <strong>Pendiente promedio:</strong> {roadGrade || "-"}
           </li>
         </ul>
 
-        {isSnowy && (
-          <div className="trip-warning-snowy">
-            ⚠️ <strong>Advertencia:</strong> Se detectaron condiciones de nieve.
+        {/* 🧠 EXPLICACIÓN DEL MODELO */}
+        <div className="trip-explanation">
+          <h4>🧠 ¿Cómo se calculó este consumo?</h4>
+          <ul>
+            <li>Consumo base del vehículo</li>
+            <li>Ajuste por carga y pasajeros</li>
+            <li>Ajuste por pendiente promedio</li>
+            <li>Condiciones climáticas</li>
+          </ul>
+        </div>
+
+        {/* ℹ️ CONTEXTO DE CERROS */}
+        {isMountainRoute && (
+          <div className="trip-info">
+            ℹ️ En rutas de cerros, el consumo instantáneo puede ser alto en
+            subidas (15–20 L/100km), pero el valor mostrado corresponde al
+            <strong> promedio total del viaje</strong>.
           </div>
         )}
 
@@ -69,20 +85,17 @@ const TripResults = ({ results }) => {
               <strong>Año:</strong> {vehicle.year || "-"}
             </li>
             <li>
-              <strong>Tipo de Combustible:</strong> {vehicle.fuel_type || "-"}
+              <strong>Combustible:</strong> {vehicle.fuel_type || "-"}
             </li>
             <li>
               <strong>Cilindrada:</strong>{" "}
               {formatValue(vehicle.engine_cc, "cc")}
             </li>
             <li>
-              <strong>N° de Cilindros:</strong> {vehicle.cylinders || "-"}
-            </li>
-            <li>
               <strong>Peso:</strong> {formatValue(vehicle.weight_kg, "kg")}
             </li>
             <li>
-              <strong>Consumo Mixto:</strong>{" "}
+              <strong>Consumo mixto:</strong>{" "}
               {formatValue(vehicle.lkm_mixed, "L/100km")}
             </li>
           </ul>
