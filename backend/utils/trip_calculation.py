@@ -35,6 +35,15 @@ def calculate_fuel_consumption(
         grade_penalty = max(grade_penalty, -0.15)
 
     # ===============================
+    # TERRENO MONTAÑOSO
+    # ===============================
+    terrain_penalty = 0.0
+
+    if abs(road_grade) < 2 and distance_km < 60:
+        # ruta de cerros / montaña
+        terrain_penalty = 0.10
+
+    # ===============================
     # CLIMA
     # ===============================
     CLIMATE_PENALTIES = {
@@ -43,6 +52,7 @@ def calculate_fuel_consumption(
         "cold": 0.07,
         "hot": 0.04,
         "windy": 0.06,
+        "mild": 0.03,
     }
 
     climate_penalty = CLIMATE_PENALTIES.get(climate, 0.0)
@@ -66,6 +76,7 @@ def calculate_fuel_consumption(
         + grade_penalty
         + climate_penalty
         + engine_penalty
+        + terrain_penalty
     )
 
     # límites de seguridad
@@ -81,6 +92,7 @@ def calculate_fuel_consumption(
             "base_fc": round(base_fc, 3),
             "weight_penalty": round(weight_penalty, 3),
             "grade_penalty": round(grade_penalty, 3),
+            "terrain_penalty": round(terrain_penalty, 3),
             "climate_penalty": round(climate_penalty, 3),
             "engine_penalty": round(engine_penalty, 3),
             "total_penalty": round(total_penalty, 3),

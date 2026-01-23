@@ -24,29 +24,38 @@ def calculate_trip():
         user_id = get_jwt_identity()
 
         required_fields = [
-            "brand", "model", "year",
-            "extraWeight", "distance",
-            "roadGrade", "climate"
+            "brand",
+            "model",
+            "year",
+            "extraWeight",
+            "distance",
+            "roadGrade",
+            "climate",
         ]
+
         for field in required_fields:
             if field not in data:
                 return jsonify({"error": f"Falta el campo obligatorio '{field}'"}), 400
 
-        # 🔹 Normalización de entrada
+        # ----------------------
+        # Normalización entrada
+        # ----------------------
         brand = data["brand"].strip().lower()
         model = data["model"].strip().lower()
         year = int(data["year"])
         distance_km = float(data["distance"])
         grade = float(data["roadGrade"])
-        climate = data["climate"].lower()
+        climate_label = data["climate"].lower()
         extra_weight = float(data["extraWeight"])
         fuel_price = float(data.get("fuelPrice", 0))
 
-        # 🔹 Buscar vehículo
+        # ----------------------
+        # Buscar vehículo
+        # ----------------------
         vehicle = Vehicle.query.filter(
             db.func.lower(Vehicle.make) == brand,
             db.func.lower(Vehicle.model) == model,
-            Vehicle.year == year
+            Vehicle.year == year,
         ).first()
 
         if not vehicle:
@@ -62,42 +71,52 @@ def calculate_trip():
                 "error": "No hay datos suficientes de consumo para este vehículo."
             }), 400
 
-        # 🔹 Cálculo real centralizado
+        # ----------------------
+        # 🔢 Cálculo de consumo
+        # ----------------------
         adjusted_fc = calculate_fuel_consumption(
             base_fc=vehicle.lkm_mixed,
             vehicle_weight=vehicle.weight_kg or 1500,
             extra_weight=max(0, extra_weight),
             road_grade=grade,
-            climate=climate,
+            climate=climate_label,
             distance_km=distance_km,
-            engine_type=vehicle.fuel_type
+            engine_type=vehicle.fuel_type,
+            debug=False,
         )
 
-        fuel_used = (distance_km * adjusted_fc) / 100
-        total_cost = fuel_used * fuel_price
+        # ----------------------
+        # ⛽ Consumo total y costo
+        # ----------------------
+        fuel_used = round((distance_km * adjusted_fc) / 100, 2)
+        total_cost = round(fuel_used * fuel_price, 2)
 
-        # 🔹 Asociación usuario–vehículo
+        # ----------------------
+        # Asociación user–vehicle
+        # ----------------------
         if not UserVehicle.query.filter_by(
             user_id=user_id,
-            vehicle_id=vehicle.id
+            vehicle_id=vehicle.id,
         ).first():
-            db.session.add(UserVehicle(
-                user_id=user_id,
-                vehicle_id=vehicle.id
-            ))
+            db.session.add(
+                UserVehicle(
+                    user_id=user_id,
+                    vehicle_id=vehicle.id,
+                )
+            )
             db.session.commit()
 
         return jsonify({
             "distance": distance_km,
             "fuelConsumptionPer100km": round(adjusted_fc, 3),
-            "fuelUsed": round(fuel_used, 3),
-            "totalCost": round(total_cost, 2),
-            "weather": climate,
+            "fuelUsed": fuel_used,
+            "totalCost": total_cost,
+            "weather": climate_label,
             "roadSlope": f"{grade}%",
             "baseFC": round(vehicle.lkm_mixed, 2),
             "adjustedFC": round(adjusted_fc, 2),
             "pricePerLitre": round(fuel_price, 2),
-            "vehicleDetails": vehicle.to_dict()
+            "vehicleDetails": vehicle.to_dict(),
         }), 200
 
     except SQLAlchemyError as db_err:
@@ -121,10 +140,18 @@ def save_trip():
         data = request.get_json()
 
         required = [
-            "brand", "model", "year", "fuel_type",
-            "total_weight", "passengers", "location",
-            "distance", "fuel_consumed", "total_cost",
-            "road_grade", "climate"
+            "brand",
+            "model",
+            "year",
+            "fuel_type",
+            "total_weight",
+            "passengers",
+            "location",
+            "distance",
+            "fuel_consumed",
+            "total_cost",
+            "road_grade",
+            "climate",
         ]
 
         for field in required:
@@ -137,7 +164,9 @@ def save_trip():
 
         is_electric = "electric" in data["fuel_type"].lower()
         if not is_electric and "fuel_price" not in data:
-            return jsonify({"error": "Falta el campo 'fuel_price' para vehículos no eléctricos"}), 400
+            return jsonify({
+                "error": "Falta el campo 'fuel_price' para vehículos no eléctricos"
+            }), 400
 
         trip = Trip(
             user_id=user_id,
@@ -153,7 +182,7 @@ def save_trip():
             fuel_consumed=float(data["fuel_consumed"]),
             total_cost=float(data["total_cost"]),
             road_grade=float(data["road_grade"]),
-            weather=data["climate"].lower()
+            weather=data["climate"].lower(),
         )
 
         db.session.add(trip)
@@ -161,16 +190,16 @@ def save_trip():
 
         return jsonify({
             "message": "✅ Viaje guardado exitosamente.",
-            "trip": trip.to_dict()
+            "trip": trip.to_dict(),
         }), 201
 
     except Exception as e:
         print(f"❌ Error interno al guardar viaje: {e}")
         return jsonify({"error": str(e)}), 500
-    
-    
+
+
 # ==========================================
-# 🎯 Registrar consumo real y calibrar vehículo
+# 🎯 Consumo real + calibración
 # ==========================================
 @trip_bp.route("/trips/<int:trip_id>/real-consumption", methods=["POST"])
 @cross_origin()
@@ -182,47 +211,28 @@ def set_real_consumption(trip_id):
 
         real_consumption = data.get("real_consumption")
 
-        # ----------------------
-        # Validaciones básicas
-        # ----------------------
         if real_consumption is None or real_consumption <= 0:
-            return jsonify({
-                "error": "Consumo real inválido"
-            }), 400
+            return jsonify({"error": "Consumo real inválido"}), 400
 
         trip = Trip.query.filter_by(
             id=trip_id,
-            user_id=user_id
+            user_id=user_id,
         ).first()
 
         if not trip:
-            return jsonify({
-                "error": "Viaje no encontrado"
-            }), 404
+            return jsonify({"error": "Viaje no encontrado"}), 404
 
         if trip.real_consumption is not None:
-            return jsonify({
-                "error": "Este viaje ya fue calibrado"
-            }), 400
+            return jsonify({"error": "Este viaje ya fue calibrado"}), 400
 
         if not trip.expected_consumption:
-            return jsonify({
-                "error": "Este viaje no tiene consumo esperado"
-            }), 400
+            return jsonify({"error": "Este viaje no tiene consumo esperado"}), 400
 
         if not trip.vehicle:
-            return jsonify({
-                "error": "Este viaje no tiene vehículo asociado"
-            }), 400
+            return jsonify({"error": "Este viaje no tiene vehículo asociado"}), 400
 
-        # ----------------------
-        # Guardar consumo real
-        # ----------------------
         trip.real_consumption = float(real_consumption)
 
-        # ----------------------
-        # 🧠 Calibración (service)
-        # ----------------------
         from backend.services.calibration_service import apply_vehicle_calibration
         apply_vehicle_calibration(trip)
 
@@ -235,10 +245,13 @@ def set_real_consumption(trip_id):
             "trip_id": trip.id,
             "expected_consumption": round(trip.expected_consumption, 2),
             "real_consumption": round(trip.real_consumption, 2),
-            "calibration_factor_used": round(trip.calibration_factor_used, 3)
-            if trip.calibration_factor_used else None,
+            "calibration_factor_used": (
+                round(trip.calibration_factor_used, 3)
+                if trip.calibration_factor_used
+                else None
+            ),
             "new_vehicle_calibration_factor": round(vehicle.calibration_factor, 3),
-            "calibration_samples": vehicle.calibration_samples
+            "calibration_samples": vehicle.calibration_samples,
         }), 200
 
     except SQLAlchemyError as e:
@@ -251,9 +264,8 @@ def set_real_consumption(trip_id):
         return jsonify({"error": str(e)}), 500
 
 
-
 # ==========================================
-# 📋 Obtener viajes (GET)
+# 📋 Obtener viajes
 # ==========================================
 @trip_bp.route("/trips", methods=["GET"])
 @cross_origin()
@@ -261,18 +273,9 @@ def set_real_consumption(trip_id):
 def get_trips():
     try:
         user_id = get_jwt_identity()
-        trips = Trip.query.filter_by(
-            user_id=user_id
-        ).order_by(Trip.id.desc()).all()
+        trips = Trip.query.filter_by(user_id=user_id).order_by(Trip.id.desc()).all()
 
-        results = []
-        for trip in trips:
-            trip_data = trip.to_dict()
-            if hasattr(trip, "created_at"):
-                trip_data["created_at"] = trip.created_at.strftime("%Y-%m-%d %H:%M:%S")
-            results.append(trip_data)
-
-        return jsonify(results), 200
+        return jsonify([trip.to_dict() for trip in trips]), 200
 
     except Exception as e:
         print(f"❌ Error interno en /trips: {e}")
@@ -280,7 +283,7 @@ def get_trips():
 
 
 # ==========================================
-# ❌ Eliminar viaje (DELETE)
+# ❌ Eliminar viaje
 # ==========================================
 @trip_bp.route("/trips/<int:trip_id>", methods=["DELETE"])
 @cross_origin()
@@ -288,6 +291,7 @@ def get_trips():
 def delete_trip(trip_id):
     try:
         trip = Trip.query.get(trip_id)
+
         if not trip:
             return jsonify({"error": "El viaje no fue encontrado"}), 404
 
