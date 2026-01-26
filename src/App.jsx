@@ -13,11 +13,15 @@ import "./styles/App.css";
 
 function App() {
   const [user, setUser] = useState(null);
+  const [loadingUser, setLoadingUser] = useState(true);
 
   useEffect(() => {
     const fetchUser = async () => {
       const token = localStorage.getItem("token");
-      if (!token) return;
+      if (!token) {
+        setLoadingUser(false);
+        return;
+      }
 
       try {
         const response = await axios.get(`${API_BASE_URL}/api/user`, {
@@ -25,11 +29,11 @@ function App() {
           withCredentials: true,
         });
         setUser(response.data);
-      } catch (error) {
-        console.error(
-          "🚨 Error al obtener usuario:",
-          error.response?.data || error.message
-        );
+      } catch {
+        localStorage.removeItem("token");
+        setUser(null);
+      } finally {
+        setLoadingUser(false);
       }
     };
 
@@ -38,7 +42,7 @@ function App() {
 
   return (
     <Router>
-      <Navbar user={user} setUser={setUser} />
+      <Navbar user={user} setUser={setUser} loading={loadingUser} />
       <main className="main-container">
         <Routes>
           <Route path="/" element={<Home user={user} />} />
