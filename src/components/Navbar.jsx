@@ -1,55 +1,16 @@
 import { Link, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import PropTypes from "prop-types";
-import axios from "axios";
 import "../styles/Navbar.css";
-
-import { API_BASE_URL } from "../config/api";
 
 const Navbar = ({ user, setUser }) => {
   const navigate = useNavigate();
-  const [isAuthenticated, setIsAuthenticated] = useState(
-    !!localStorage.getItem("token")
-  );
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      const token = localStorage.getItem("token");
-
-      if (!token) {
-        setIsAuthenticated(false);
-        setUser(null);
-        return;
-      }
-
-      try {
-        const response = await axios.get(`${API_BASE_URL}/api/user`, {
-          headers: { Authorization: `Bearer ${token}` },
-          withCredentials: true,
-        });
-
-        setUser(response.data);
-        setIsAuthenticated(true);
-      } catch (error) {
-        console.error(
-          "🚨 Error en autenticación:",
-          error.response?.data || error.message
-        );
-        localStorage.removeItem("token");
-        setUser(null);
-        setIsAuthenticated(false);
-      }
-    };
-
-    fetchUser();
-  }, [setUser]);
+  const isAuthenticated = !!user;
 
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     setUser(null);
-    setIsAuthenticated(false);
     navigate("/login");
   };
 
@@ -59,6 +20,7 @@ const Navbar = ({ user, setUser }) => {
         <Link className="navbar-brand" to="/">
           Travel Calculator
         </Link>
+
         <button
           className="navbar-toggler"
           type="button"
@@ -70,6 +32,7 @@ const Navbar = ({ user, setUser }) => {
         >
           <span className="navbar-toggler-icon"></span>
         </button>
+
         <div className="collapse navbar-collapse" id="navbarNav">
           <ul className="navbar-nav me-auto mb-2 mb-lg-0">
             <li className="nav-item">
@@ -88,7 +51,7 @@ const Navbar = ({ user, setUser }) => {
             {isAuthenticated ? (
               <>
                 <Link to="/profile" className="nav-link text-light fw-bold">
-                  👤 {user?.name || "Cargando..."}
+                  👤 {user?.name || "Perfil"}
                 </Link>
                 <button
                   className="btn btn-outline-danger w-auto mt-0"
@@ -115,9 +78,7 @@ const Navbar = ({ user, setUser }) => {
 };
 
 Navbar.propTypes = {
-  user: PropTypes.shape({
-    name: PropTypes.string,
-  }),
+  user: PropTypes.object,
   setUser: PropTypes.func.isRequired,
 };
 

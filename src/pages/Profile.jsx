@@ -4,37 +4,34 @@ import { useNavigate } from "react-router-dom";
 import { API_BASE_URL } from "../config/api";
 import TripCard from "../components/TripCard";
 import "../styles/Profile.css";
+import PropTypes from "prop-types";
 
-const Profile = () => {
-  const [user, setUser] = useState(null);
+const Profile = ({ user }) => {
   const [trips, setTrips] = useState([]);
   const [sortBy, setSortBy] = useState("reciente");
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchUserAndTrips = async () => {
-      const token = localStorage.getItem("token");
-      if (!token) return navigate("/login");
+    if (!user) {
+      navigate("/login");
+      return;
+    }
 
+    const fetchTrips = async () => {
       try {
+        const token = localStorage.getItem("token");
         const headers = { Authorization: `Bearer ${token}` };
 
-        const [userRes, tripsRes] = await Promise.all([
-          axios.get(`${API_BASE_URL}/api/user`, { headers }),
-          axios.get(`${API_BASE_URL}/api/trips`, { headers }),
-        ]);
-
-        setUser(userRes.data);
-        setTrips(tripsRes.data);
+        const res = await axios.get(`${API_BASE_URL}/api/trips`, { headers });
+        setTrips(res.data);
       } catch (error) {
-        console.error("Error al cargar datos:", error);
-        localStorage.removeItem("token");
+        console.error("Error al cargar viajes:", error);
         navigate("/login");
       }
     };
 
-    fetchUserAndTrips();
-  }, [navigate]);
+    fetchTrips();
+  }, [user, navigate]);
 
   const sortedTrips = [...trips].sort((a, b) => {
     if (sortBy === "costo") return b.total_cost - a.total_cost;
@@ -47,7 +44,6 @@ const Profile = () => {
   const handleDeleteTrip = (deletedId) => {
     setTrips((prev) => prev.filter((trip) => trip.id !== deletedId));
   };
-  
 
   return (
     <div className="profile-container">
@@ -84,7 +80,11 @@ const Profile = () => {
             ) : (
               <div className="profile-trip-list">
                 {sortedTrips.map((trip) => (
-                  <TripCard key={trip.id} trip={trip} onDelete={handleDeleteTrip} />
+                  <TripCard
+                    key={trip.id}
+                    trip={trip}
+                    onDelete={handleDeleteTrip}
+                  />
                 ))}
               </div>
             )}
@@ -97,6 +97,13 @@ const Profile = () => {
       )}
     </div>
   );
+};
+
+Profile.propTypes = {
+  user: PropTypes.shape({
+    name: PropTypes.string.isRequired,
+    email: PropTypes.string.isRequired,
+  }),
 };
 
 export default Profile;
