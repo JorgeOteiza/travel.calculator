@@ -20,7 +20,7 @@ const GoogleMapSection = ({
   const originMarkerRef = useRef(null);
   const destinationMarkerRef = useRef(null);
 
-  // 🗺️ Inicializar mapa + autocomplete
+  // 🗺️ Init mapa
   useEffect(() => {
     loadGoogleMapsScript(() => {
       if (!mapRef.current || mapInstanceRef.current) return;
@@ -38,7 +38,7 @@ const GoogleMapSection = ({
       directionsRendererRef.current = new window.google.maps.DirectionsRenderer(
         {
           suppressMarkers: true,
-        }
+        },
       );
 
       directionsRendererRef.current.setMap(map);
@@ -46,9 +46,7 @@ const GoogleMapSection = ({
       const setupAutocomplete = (inputRef, field) => {
         const autocomplete = new window.google.maps.places.Autocomplete(
           inputRef.current,
-          {
-            fields: ["geometry", "formatted_address", "name"],
-          }
+          { fields: ["geometry", "formatted_address", "name"] },
         );
 
         autocomplete.addListener("place_changed", () => {
@@ -62,21 +60,17 @@ const GoogleMapSection = ({
 
           const label = place.formatted_address || place.name || "";
 
-          // ✅ CLAVE: avisar correctamente al formulario
           onLocationChange(field, {
             ...coords,
             label,
           });
 
-          // 📍 actualizar markers
-          setMarkers((prev) => {
-            const next =
-              field === "location" ? [coords, prev[1]] : [prev[0], coords];
-            return next.filter(Boolean);
-          });
+          setMarkers((prev) =>
+            field === "location" ? [coords, prev[1]] : [prev[0], coords],
+          );
 
-          mapInstanceRef.current.setCenter(coords);
-          mapInstanceRef.current.setZoom(14);
+          map.setCenter(coords);
+          map.setZoom(14);
         });
       };
 
@@ -85,14 +79,12 @@ const GoogleMapSection = ({
     });
   }, [onLocationChange, mapCenter, setMarkers]);
 
-  // 🧭 Dibujar ruta
+  // 🧭 Ruta + polyline
   useEffect(() => {
-    if (
-      markers.length !== 2 ||
-      !directionsServiceRef.current ||
-      !directionsRendererRef.current
-    ) {
-      directionsRendererRef.current?.setDirections({ routes: [] });
+    if (markers.length !== 2 || !directionsServiceRef.current) {
+      directionsRendererRef.current?.setDirections({
+        routes: [],
+      });
       return;
     }
 
@@ -105,10 +97,14 @@ const GoogleMapSection = ({
       (result, status) => {
         if (status === "OK") {
           directionsRendererRef.current.setDirections(result);
+
+          const polyline = result.routes[0].overview_polyline.points;
+
+          onLocationChange("route_polyline", polyline);
         }
-      }
+      },
     );
-  }, [markers]);
+  }, [markers, onLocationChange]);
 
   // 📍 Marcadores
   useEffect(() => {

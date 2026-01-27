@@ -2,9 +2,23 @@ export const useTripFormHandlers = (
   formData,
   setFormData,
   setMapCenter,
-  fetchWeather
+  fetchWeather,
 ) => {
   const handleLocationChange = (field, data) => {
+    // ===============================
+    // 🧭 POLYLINE (NO es coordenada)
+    // ===============================
+    if (field === "route_polyline") {
+      setFormData((prev) => ({
+        ...prev,
+        route_polyline: data,
+      }));
+      return;
+    }
+
+    // ===============================
+    // 📍 ORIGEN / DESTINO
+    // ===============================
     if (!data?.lat || !data?.lng) return;
 
     setFormData((prev) => ({

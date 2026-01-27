@@ -10,6 +10,11 @@ export const useTripCalculation = (formData, setResults) => {
       return;
     }
 
+    if (!formData.route_polyline) {
+      alert("La ruta aún se está calculando, espera un segundo");
+      return;
+    }
+
     try {
       const payload = {
         brand: formData.brand.toLowerCase(),
@@ -17,6 +22,7 @@ export const useTripCalculation = (formData, setResults) => {
         year: Number(formData.year),
         origin: formData.locationCoords,
         destination: formData.destinationCoords,
+        route_polyline: formData.route_polyline,
         extra_weight: Number(formData.extraWeight),
         passengers: Number(formData.passengers),
         fuel_price: Number(formData.fuelPrice),
@@ -29,13 +35,14 @@ export const useTripCalculation = (formData, setResults) => {
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
 
       setResults(res.data);
     } catch (error) {
       const msg =
         error.response?.data?.error || error.message || "Error desconocido";
+
       console.error("🚨 Error en cálculo:", msg);
       alert(msg);
     }

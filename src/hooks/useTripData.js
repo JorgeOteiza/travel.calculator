@@ -4,8 +4,10 @@ import axios from "axios";
 const useTripData = (initialFormData) => {
   const [formData, setFormData] = useState({
     ...initialFormData,
+    route_polyline: initialFormData.route_polyline || null,
     climate: initialFormData.climate || "mild",
   });
+
 
   const [brandOptions, setBrandOptions] = useState([]);
   const [modelOptions, setModelOptions] = useState([]);
