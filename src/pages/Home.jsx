@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import TripForm from "../components/TripForm";
 import GoogleMapSection from "../components/GoogleMapSection";
 import TripResults from "../components/TripResults";
@@ -54,17 +54,25 @@ const Home = () => {
     console.log("🖥️ results en Home:", results);
   }, [results]);
 
-  const { handleLocationChange } = useTripFormHandlers(
+  // 🔒 Handler estable
+  const { handleLocationChange: rawHandleLocationChange } = useTripFormHandlers(
     formData,
     setFormData,
     setMapCenter,
-    fetchWeather
+    fetchWeather,
+  );
+
+  const handleLocationChange = useCallback(
+    (field, value) => {
+      rawHandleLocationChange(field, value);
+    },
+    [rawHandleLocationChange],
   );
 
   const { calculateTrip } = useTripCalculation(
     formData,
     setResults,
-    vehicleDetails
+    vehicleDetails,
   );
 
   const handleSubmit = () => {
@@ -75,6 +83,11 @@ const Home = () => {
     if (Object.keys(formErrors).length > 0) {
       setErrors(formErrors);
       alert("Completa todos los campos requeridos correctamente");
+      return;
+    }
+
+    if (!formData.route_polyline || formData.route_polyline.length === 0) {
+      alert("La ruta aún no está lista, espera un segundo");
       return;
     }
 

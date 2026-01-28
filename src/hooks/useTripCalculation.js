@@ -10,10 +10,11 @@ export const useTripCalculation = (formData, setResults) => {
       return;
     }
 
-    if (!formData.route_polyline) {
-      alert("La ruta aún se está calculando, espera un segundo");
-      return;
-    }
+    // ===============================
+    // 🧪 DEBUG: estado previo
+    // ===============================
+    console.log("🧪 calculateTrip llamado");
+    console.log("📦 formData actual:", formData);
 
     try {
       const payload = {
@@ -28,6 +29,16 @@ export const useTripCalculation = (formData, setResults) => {
         fuel_price: Number(formData.fuelPrice),
       };
 
+      // ===============================
+      // 🧪 DEBUG: payload final
+      // ===============================
+      console.log("🚀 Payload enviado al backend:", payload);
+
+      if (!payload.route_polyline) {
+        console.error("❌ route_polyline NO está en el payload");
+        return;
+      }
+
       const res = await axios.post(
         `${API_BASE_URL}/api/trips/calculate-and-save`,
         payload,
@@ -38,12 +49,14 @@ export const useTripCalculation = (formData, setResults) => {
         },
       );
 
+      console.log("✅ Respuesta backend:", res.data);
+
       setResults(res.data);
     } catch (error) {
       const msg =
         error.response?.data?.error || error.message || "Error desconocido";
 
-      console.error("🚨 Error en cálculo:", msg);
+      console.error("🚨 Error en cálculo:", error);
       alert(msg);
     }
   };

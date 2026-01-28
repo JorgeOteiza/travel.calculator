@@ -20,7 +20,7 @@ const GoogleMapSection = ({
   const originMarkerRef = useRef(null);
   const destinationMarkerRef = useRef(null);
 
-  // 🗺️ Init mapa
+  // 🗺️ Inicialización del mapa + autocomplete
   useEffect(() => {
     loadGoogleMapsScript(() => {
       if (!mapRef.current || mapInstanceRef.current) return;
@@ -60,10 +60,7 @@ const GoogleMapSection = ({
 
           const label = place.formatted_address || place.name || "";
 
-          onLocationChange(field, {
-            ...coords,
-            label,
-          });
+          onLocationChange(field, { ...coords, label });
 
           setMarkers((prev) =>
             field === "location" ? [coords, prev[1]] : [prev[0], coords],
@@ -77,42 +74,67 @@ const GoogleMapSection = ({
       setupAutocomplete(originInputRef, "location");
       setupAutocomplete(destinationInputRef, "destination");
     });
-  }, [onLocationChange, mapCenter, setMarkers]);
+  }, [mapCenter, onLocationChange, setMarkers]);
 
-  // 🧭 Ruta + polyline
+  // 🧭 Cálculo de ruta + polyline
+  const routeCalculatedRef = useRef(false);
+
   useEffect(() => {
-    if (markers.length !== 2 || !directionsServiceRef.current) {
-      directionsRendererRef.current?.setDirections({
-        routes: [],
-      });
+    const origin = markers[0];
+    const destination = markers[1];
+
+    if (
+      !origin?.lat ||
+      !origin?.lng ||
+      !destination?.lat ||
+      !destination?.lng ||
+      !directionsServiceRef.current ||
+      !directionsRendererRef.current
+    ) {
+      routeCalculatedRef.current = false;
       return;
     }
 
+    if (routeCalculatedRef.current) return;
+
+    routeCalculatedRef.current = true;
+
+    console.log("✅ Calculando ruta", { origin, destination });
+
     directionsServiceRef.current.route(
       {
-        origin: markers[0],
-        destination: markers[1],
+        origin,
+        destination,
         travelMode: window.google.maps.TravelMode.DRIVING,
       },
       (result, status) => {
-        if (status === "OK") {
-          directionsRendererRef.current.setDirections(result);
+        console.log("📡 Directions callback:", status);
 
-          const polyline = result.routes[0].overview_polyline.points;
+        if (status !== "OK" || !result?.routes?.length) {
+          routeCalculatedRef.current = false;
+          return;
+        }
 
-          onLocationChange("route_polyline", polyline);
+        // 🗺️ 1. DIBUJAR RUTA EN EL MAPA
+        directionsRendererRef.current.setDirections(result);
+
+        // 🧵 2. GUARDAR POLYLINE (ligera)
+        const encodedPolyline = result.routes[0].overview_polyline?.points;
+
+        if (encodedPolyline) {
+          onLocationChange("route_polyline", encodedPolyline);
         }
       },
     );
   }, [markers, onLocationChange]);
 
-  // 📍 Marcadores
+  // 📍 Marcadores A y B
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map) return;
 
     const updateMarker = (ref, position, label) => {
-      if (!position) return;
+      if (!position?.lat || !position?.lng) return;
 
       if (!ref.current) {
         ref.current = new window.google.maps.Marker({

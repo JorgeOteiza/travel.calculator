@@ -5,14 +5,18 @@ export const useTripFormHandlers = (
   fetchWeather,
 ) => {
   const handleLocationChange = (field, data) => {
+    console.log("📥 handleLocationChange", field, data);
     // ===============================
     // 🧭 POLYLINE (NO es coordenada)
     // ===============================
     if (field === "route_polyline") {
+      console.log("🧵 Guardando polyline en formData");
+
       setFormData((prev) => ({
         ...prev,
-        route_polyline: data,
+        route_polyline: data.polyline,
       }));
+
       return;
     }
 
