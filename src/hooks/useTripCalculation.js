@@ -10,9 +10,6 @@ export const useTripCalculation = (formData, setResults) => {
       return;
     }
 
-    // ===============================
-    // 🧪 DEBUG: estado previo
-    // ===============================
     console.log("🧪 calculateTrip llamado");
     console.log("📦 formData actual:", formData);
 
@@ -21,21 +18,31 @@ export const useTripCalculation = (formData, setResults) => {
         brand: formData.brand.toLowerCase(),
         model: formData.model.toLowerCase(),
         year: Number(formData.year),
-        origin: formData.locationCoords,
-        destination: formData.destinationCoords,
+
+        origin: formData.location
+          ? { lat: formData.location.lat, lng: formData.location.lng }
+          : null,
+
+        destination: formData.destination
+          ? { lat: formData.destination.lat, lng: formData.destination.lng }
+          : null,
+
         route_polyline: formData.route_polyline,
+
         extra_weight: Number(formData.extraWeight),
         passengers: Number(formData.passengers),
         fuel_price: Number(formData.fuelPrice),
       };
 
-      // ===============================
-      // 🧪 DEBUG: payload final
-      // ===============================
       console.log("🚀 Payload enviado al backend:", payload);
 
       if (!payload.route_polyline) {
         console.error("❌ route_polyline NO está en el payload");
+        return;
+      }
+
+      if (!payload.origin || !payload.destination) {
+        console.error("❌ Origin o Destination faltantes");
         return;
       }
 
