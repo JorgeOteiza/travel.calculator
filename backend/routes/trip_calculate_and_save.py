@@ -4,13 +4,11 @@ from flask_cors import cross_origin
 from sqlalchemy.exc import SQLAlchemyError
 
 from backend.models import db, Trip, Vehicle, UserVehicle
-from backend.utils.trip_calculation import calculate_fuel_consumption
 from backend.services.distance_service import get_distance_km
 from backend.services.weather_service import get_weather_from_coords
 from backend.services.consumption_service import calculate_trip_consumption
-from backend.services.route_elevation_service import (
-    get_route_elevation_segments
-)
+from backend.services.route_elevation_service import get_route_elevation_segments
+from backend.services.route_consumption_service import calculate_route_consumption
 
 trip_calc_and_save_bp = Blueprint("trip_calc_and_save_bp", __name__)
 
@@ -102,6 +100,7 @@ def calculate_and_save_trip():
         # 🔹 Consumo
         # =====================================================
         if is_electric:
+
             fuel_used = 0
             adjusted_consumption = 0
             base_consumption = 0
@@ -109,6 +108,7 @@ def calculate_and_save_trip():
             consumption_type = "electric"
 
         else:
+
             base_data = calculate_trip_consumption(
                 vehicle=vehicle,
                 total_km=distance_km,
@@ -118,27 +118,21 @@ def calculate_and_save_trip():
             base_consumption = base_data["base_consumption"]
             consumption_type = base_data["consumption_type"]
 
-            fuel_used = 0.0
-            weighted_fc = 0.0
+            # 🔹 Cálculo usando servicio
+            route_result = calculate_route_consumption(
+                segments=segments,
+                vehicle=vehicle,
+                base_consumption=base_consumption,
+                total_weight=total_weight,
+                base_weight=base_weight,
+                climate=climate_label,
+                fuel_type=fuel_type,
+            )
 
-            for segment in segments:
-                segment_fc = calculate_fuel_consumption(
-                    base_fc=base_consumption,
-                    vehicle_weight=base_weight,
-                    extra_weight=total_weight - base_weight,
-                    road_grade=segment["grade_percent"],
-                    climate=climate_label,
-                    distance_km=segment["distance_km"],
-                    engine_type=fuel_type,
-                )
+            fuel_used = route_result["fuel_used"]
+            adjusted_consumption = route_result["adjusted_fc"]
 
-                liters = (segment["distance_km"] * segment_fc) / 100
-                fuel_used += liters
-                weighted_fc += segment_fc * segment["distance_km"]
-
-            adjusted_consumption = weighted_fc / distance_km
-
-            # 🎯 calibración
+            # 🎯 calibración del vehículo
             adjusted_consumption *= max(
                 0.7,
                 min(vehicle.calibration_factor, 1.3)
@@ -197,7 +191,7 @@ def calculate_and_save_trip():
             "segmentsAnalyzed": len(segments),
         }), 201
 
-    except SQLAlchemyError as e:
+    except SQLAlchemyError:
         db.session.rollback()
         return jsonify({"error": "Error de base de datos"}), 500
 
