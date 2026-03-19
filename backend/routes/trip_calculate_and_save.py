@@ -10,6 +10,11 @@ from backend.services.consumption_service import calculate_trip_consumption
 from backend.services.route_elevation_service import get_route_elevation_segments
 from backend.services.route_consumption_service import calculate_route_consumption
 
+# 🔥 NUEVOS IMPORTS
+from backend.services.polyline_service import decode_polyline, reduce_points
+from backend.services.elevation_profile import get_elevation_for_points
+from backend.services.elevation_profile_chart_service import build_elevation_profile
+
 trip_calc_and_save_bp = Blueprint("trip_calc_and_save_bp", __name__)
 
 PASSENGER_WEIGHT = 75
@@ -25,9 +30,6 @@ def calculate_and_save_trip():
         user_id = get_jwt_identity()
         data = request.get_json() or {}
 
-        # =====================================================
-        # 🔹 Validaciones
-        # =====================================================
         required_fields = [
             "brand", "model", "year",
             "origin", "destination",
@@ -56,9 +58,9 @@ def calculate_and_save_trip():
         destination = data["destination"]
         polyline = data["route_polyline"]
 
-        # =====================================================
-        # 🔹 Vehículo
-        # =====================================================
+        # ===============================
+        # 🚗 Vehículo
+        # ===============================
         vehicle = Vehicle.query.filter(
             db.func.lower(Vehicle.make) == brand,
             db.func.lower(Vehicle.model) == model,
@@ -71,34 +73,46 @@ def calculate_and_save_trip():
         fuel_type = vehicle.fuel_type or "gasoline"
         is_electric = "electric" in fuel_type.lower()
 
-        # =====================================================
-        # 🔹 Peso
-        # =====================================================
+        # ===============================
+        # ⚖️ Peso
+        # ===============================
         base_weight = vehicle.weight_kg or 1500
         total_weight = base_weight + extra_weight + (passengers * PASSENGER_WEIGHT)
 
-        # =====================================================
-        # 🔹 Distancia
-        # =====================================================
+        # ===============================
+        # 📏 Distancia
+        # ===============================
         distance_km = get_distance_km(origin, destination)
         if distance_km <= 0:
             return jsonify({"error": "Distancia inválida"}), 400
 
-        # =====================================================
-        # 🔹 Clima
-        # =====================================================
+        # ===============================
+        # 🌦️ Clima
+        # ===============================
         weather_data = get_weather_from_coords(origin)
         climate_label = weather_data["climate"]
-        weather_raw = weather_data["raw"]
 
-        # =====================================================
-        # 🔹 Tramos con elevación real
-        # =====================================================
+        # ===============================
+        # 🧭 Segmentos (consumo)
+        # ===============================
         segments = get_route_elevation_segments(polyline)
 
-        # =====================================================
-        # 🔹 Consumo
-        # =====================================================
+        # ===============================
+        # ⛰️ PERFIL DE ELEVACIÓN (NUEVO)
+        # ===============================
+        decoded_points = decode_polyline(polyline)
+        reduced_points = reduce_points(decoded_points, max_points=100)
+
+        elevations = get_elevation_for_points(reduced_points)
+
+        elevation_profile = build_elevation_profile(
+            reduced_points,
+            elevations
+        )
+
+        # ===============================
+        # ⛽ Consumo
+        # ===============================
         if is_electric:
 
             fuel_used = 0
@@ -118,7 +132,6 @@ def calculate_and_save_trip():
             base_consumption = base_data["base_consumption"]
             consumption_type = base_data["consumption_type"]
 
-            # 🔹 Cálculo usando servicio
             route_result = calculate_route_consumption(
                 segments=segments,
                 vehicle=vehicle,
@@ -132,7 +145,6 @@ def calculate_and_save_trip():
             fuel_used = route_result["fuel_used"]
             adjusted_consumption = route_result["adjusted_fc"]
 
-            # 🎯 calibración del vehículo
             adjusted_consumption *= max(
                 0.7,
                 min(vehicle.calibration_factor, 1.3)
@@ -141,9 +153,9 @@ def calculate_and_save_trip():
             fuel_used = (distance_km * adjusted_consumption) / 100
             total_cost = fuel_used * fuel_price
 
-        # =====================================================
-        # 🔹 Persistencia
-        # =====================================================
+        # ===============================
+        # 💾 Persistencia
+        # ===============================
         trip = Trip(
             user_id=user_id,
             vehicle_id=vehicle.id,
@@ -179,9 +191,9 @@ def calculate_and_save_trip():
 
         db.session.commit()
 
-        # =====================================================
-        # 🔹 Response
-        # =====================================================
+        # ===============================
+        # 📤 RESPONSE
+        # ===============================
         return jsonify({
             "distance": round(distance_km, 2),
             "fuelUsed": round(fuel_used, 2),
@@ -189,6 +201,7 @@ def calculate_and_save_trip():
             "adjustedFC": round(adjusted_consumption, 3),
             "weather": climate_label,
             "segmentsAnalyzed": len(segments),
+            "elevationProfile": elevation_profile  # 🔥 NUEVO
         }), 201
 
     except SQLAlchemyError:
