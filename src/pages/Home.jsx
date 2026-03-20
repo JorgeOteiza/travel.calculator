@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import TripForm from "../components/TripForm";
 import GoogleMapSection from "../components/GoogleMapSection";
 import TripResults from "../components/TripResults";
@@ -39,6 +39,7 @@ const Home = () => {
     destinationLabel: "",
     climate: "",
     roadGrade: 0,
+    route_polyline: "", // 🔥 FIX
   });
 
   const { fetchWeather } = useWeather(setFormData);
@@ -54,19 +55,11 @@ const Home = () => {
     console.log("🖥️ results en Home:", results);
   }, [results]);
 
-  // 🔒 Handler estable
-  const { handleLocationChange: rawHandleLocationChange } = useTripFormHandlers(
+  const { handleLocationChange } = useTripFormHandlers(
     formData,
     setFormData,
     setMapCenter,
     fetchWeather,
-  );
-
-  const handleLocationChange = useCallback(
-    (field, value) => {
-      rawHandleLocationChange(field, value);
-    },
-    [rawHandleLocationChange],
   );
 
   const { calculateTrip } = useTripCalculation(
@@ -75,24 +68,20 @@ const Home = () => {
     vehicleDetails,
   );
 
-  const handleSubmit = () => {
-    console.log("📦 Datos enviados:", formData);
+  const handleSubmit = async () => {
+    const validationErrors = validateTripForm(formData);
+    setErrors(validationErrors);
 
-    const formErrors = validateTripForm(formData);
+    if (Object.keys(validationErrors).length > 0) return;
 
-    if (Object.keys(formErrors).length > 0) {
-      setErrors(formErrors);
-      alert("Completa todos los campos requeridos correctamente");
-      return;
-    }
-
-    if (!formData.route_polyline || formData.route_polyline.length === 0) {
+    if (!formData.route_polyline) {
       alert("La ruta aún no está lista, espera un segundo");
       return;
     }
 
-    setErrors({});
-    calculateTrip();
+    console.log("📦 Datos enviados:", formData);
+
+    await calculateTrip();
   };
 
   return (

@@ -6,87 +6,51 @@ def calculate_fuel_consumption(
     climate: str,
     distance_km: float,
     engine_type: str = "gasoline",
-    debug: bool = False,
 ):
-    """
-    Calcula el consumo ajustado (L/100km) combinando:
-    - Régimen de conducción
-    - Esfuerzo por pendiente
-    - Terreno
-    - Peso
-    - Clima
-    Permite valores altos cuando la física lo justifica.
-    """
-
     if base_fc <= 0:
         raise ValueError("El consumo base debe ser mayor a 0")
 
-    debug_data = {}
-
-    # =====================================================
-    # 1. RÉGIMEN DE CONDUCCIÓN (AFECTA BASE)
-    # =====================================================
-    driving_mode = "normal"
+    # =========================
+    # 1. REGIMEN
+    # =========================
     regime_multiplier = 1.0
 
     if road_grade >= 7 and distance_km <= 30:
-        # Colliguay, Farellones, Cajón del Maipo
-        driving_mode = "extreme_climb"
         regime_multiplier = 1.28
-
     elif 3 <= road_grade < 7 and distance_km >= 40:
-        # Ruta 5 Sur, Camino de la Fruta
-        driving_mode = "sustained_climb"
         regime_multiplier = 1.10
 
     adjusted_base_fc = base_fc * regime_multiplier
 
-    debug_data.update({
-        "driving_mode": driving_mode,
-        "regime_multiplier": round(regime_multiplier, 3),
-        "adjusted_base_fc": round(adjusted_base_fc, 3),
-    })
-
-    # =====================================================
+    # =========================
     # 2. PESO
-    # =====================================================
-    weight_penalty = 0.0
-    if extra_weight > 0:
-        weight_penalty = (extra_weight / 100) * 0.06
+    # =========================
+    weight_penalty = (extra_weight / 100) * 0.06 if extra_weight > 0 else 0
 
-    # =====================================================
-    # 3. PENDIENTE (ESFUERZO PURO)
-    # =====================================================
+    # =========================
+    # 3. PENDIENTE
+    # =========================
     if road_grade > 0:
         grade_penalty = road_grade * 0.06
     else:
-        grade_penalty = road_grade * 0.02
-        grade_penalty = max(grade_penalty, -0.15)
+        grade_penalty = max(road_grade * 0.02, -0.15)
 
-    # =====================================================
+    # =========================
     # 4. TERRENO
-    # =====================================================
+    # =========================
     terrain_penalty = 0.0
-    terrain_type = "flat"
 
     if road_grade >= 6 and distance_km < 40:
-        terrain_type = "extreme_mountain"
         terrain_penalty = 0.22
-
     elif 2 <= road_grade < 6 and distance_km >= 40:
-        terrain_type = "rolling_hills"
         terrain_penalty = 0.10
-
     elif abs(road_grade) < 2 and distance_km < 60:
-        terrain_type = "urban_hills"
         terrain_penalty = 0.08
 
-    debug_data["terrain_type"] = terrain_type
-
-    # =====================================================
+    # =========================
     # 5. CLIMA
-    # =====================================================
-    CLIMATE_PENALTIES = {
+    # =========================
+    CLIMATE = {
         "normal": 0.00,
         "rain": 0.05,
         "cold": 0.07,
@@ -95,11 +59,11 @@ def calculate_fuel_consumption(
         "mild": 0.03,
     }
 
-    climate_penalty = CLIMATE_PENALTIES.get(climate, 0.0)
+    climate_penalty = CLIMATE.get(climate, 0.0)
 
-    # =====================================================
+    # =========================
     # 6. MOTOR
-    # =====================================================
+    # =========================
     engine_penalty = 0.0
     engine_type = engine_type.lower()
 
@@ -108,9 +72,9 @@ def calculate_fuel_consumption(
     elif "hybrid" in engine_type:
         engine_penalty = -0.12
 
-    # =====================================================
-    # 7. PENALIZACIÓN TOTAL
-    # =====================================================
+    # =========================
+    # TOTAL
+    # =========================
     total_penalty = (
         weight_penalty
         + grade_penalty
@@ -121,22 +85,46 @@ def calculate_fuel_consumption(
 
     total_penalty = max(total_penalty, -0.25)
 
-    adjusted_fc = adjusted_base_fc * (1 + total_penalty)
+    return adjusted_base_fc * (1 + total_penalty)
 
-    # =====================================================
-    # 8. DEBUG
-    # =====================================================
-    if debug:
-        debug_data.update({
-            "base_fc": round(base_fc, 3),
-            "weight_penalty": round(weight_penalty, 3),
-            "grade_penalty": round(grade_penalty, 3),
-            "terrain_penalty": round(terrain_penalty, 3),
-            "climate_penalty": round(climate_penalty, 3),
-            "engine_penalty": round(engine_penalty, 3),
-            "total_penalty": round(total_penalty, 3),
-            "final_fc": round(adjusted_fc, 3),
-        })
-        return debug_data
 
-    return round(adjusted_fc, 3)
+# 🔥 NUEVO: motor por segmentos
+def calculate_trip_from_segments(
+    *,
+    base_fc: float,
+    segments: list[dict],
+    total_weight: float,
+    base_weight: float,
+    climate: str,
+    engine_type: str = "gasoline",
+):
+    total_liters = 0.0
+    total_distance = 0.0
+
+    extra_weight = max(0, total_weight - base_weight)
+
+    for segment in segments:
+        d = segment["distance_km"]
+        grade = segment["grade_percent"]
+
+        fc = calculate_fuel_consumption(
+            base_fc=base_fc,
+            vehicle_weight=total_weight,
+            extra_weight=extra_weight,
+            road_grade=grade,
+            climate=climate,
+            distance_km=d,
+            engine_type=engine_type,
+        )
+
+        liters = (fc / 100) * d
+
+        total_liters += liters
+        total_distance += d
+
+    adjusted_fc = (total_liters / total_distance) * 100 if total_distance > 0 else base_fc
+
+    return {
+        "fuel_used": round(total_liters, 2),
+        "adjusted_fc": round(adjusted_fc, 3),
+    }

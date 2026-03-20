@@ -6,23 +6,17 @@ export const useTripFormHandlers = (
 ) => {
   const handleLocationChange = (field, data) => {
     console.log("📥 handleLocationChange", field, data);
-    // ===============================
-    // 🧭 POLYLINE (NO es coordenada)
-    // ===============================
-    if (field === "route_polyline") {
-      console.log("🧵 Guardando polyline en formData");
 
+    // 🧭 POLYLINE (FIX)
+    if (field === "route_polyline") {
       setFormData((prev) => ({
         ...prev,
-        route_polyline: data.polyline,
+        route_polyline: data || "",
       }));
-
       return;
     }
 
-    // ===============================
     // 📍 ORIGEN / DESTINO
-    // ===============================
     if (!data?.lat || !data?.lng) return;
 
     setFormData((prev) => ({

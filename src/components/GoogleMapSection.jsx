@@ -20,7 +20,9 @@ const GoogleMapSection = ({
   const originMarkerRef = useRef(null);
   const destinationMarkerRef = useRef(null);
 
-  // 🗺️ Inicialización del mapa + autocomplete
+  const routeCalculatedRef = useRef(false);
+  const lastPolylineRef = useRef("");
+
   useEffect(() => {
     loadGoogleMapsScript(() => {
       if (!mapRef.current || mapInstanceRef.current) return;
@@ -68,6 +70,8 @@ const GoogleMapSection = ({
 
           map.setCenter(coords);
           map.setZoom(14);
+
+          routeCalculatedRef.current = false;
         });
       };
 
@@ -75,9 +79,6 @@ const GoogleMapSection = ({
       setupAutocomplete(destinationInputRef, "destination");
     });
   }, [mapCenter, onLocationChange, setMarkers]);
-
-  // 🧭 Cálculo de ruta + polyline
-  const routeCalculatedRef = useRef(false);
 
   useEffect(() => {
     const origin = markers[0];
@@ -99,7 +100,7 @@ const GoogleMapSection = ({
 
     routeCalculatedRef.current = true;
 
-    console.log("✅ Calculando ruta", { origin, destination });
+    console.log("🧭 Calculando ruta", { origin, destination });
 
     directionsServiceRef.current.route(
       {
@@ -115,20 +116,29 @@ const GoogleMapSection = ({
           return;
         }
 
-        // 🗺️ 1. DIBUJAR RUTA EN EL MAPA
         directionsRendererRef.current.setDirections(result);
 
-        // 🧵 2. GUARDAR POLYLINE (ligera)
-        const encodedPolyline = result.routes[0].overview_polyline?.points;
+        const route = result.routes[0];
 
-        if (encodedPolyline) {
-          onLocationChange("route_polyline", encodedPolyline);
+        // 🔥 FIX REAL AQUÍ
+        const encodedPolyline = route?.overview_polyline;
+
+        console.log("🧵 Polyline:", encodedPolyline);
+
+        if (!encodedPolyline) {
+          console.error("❌ NO polyline");
+          return;
         }
+
+        if (encodedPolyline === lastPolylineRef.current) return;
+
+        lastPolylineRef.current = encodedPolyline;
+
+        onLocationChange("route_polyline", encodedPolyline);
       },
     );
-  }, [markers, onLocationChange]);
+  }, [markers]);
 
-  // 📍 Marcadores A y B
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map) return;

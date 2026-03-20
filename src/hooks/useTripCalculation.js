@@ -15,16 +15,23 @@ export const useTripCalculation = (formData, setResults) => {
 
     try {
       const payload = {
-        brand: formData.brand.toLowerCase(),
-        model: formData.model.toLowerCase(),
+        brand: formData.brand?.toLowerCase(),
+        model: formData.model?.toLowerCase(),
         year: Number(formData.year),
 
-        origin: formData.location
-          ? { lat: formData.location.lat, lng: formData.location.lng }
+        // 🔥 FIX REAL AQUÍ
+        origin: formData.locationCoords
+          ? {
+              lat: formData.locationCoords.lat,
+              lng: formData.locationCoords.lng,
+            }
           : null,
 
-        destination: formData.destination
-          ? { lat: formData.destination.lat, lng: formData.destination.lng }
+        destination: formData.destinationCoords
+          ? {
+              lat: formData.destinationCoords.lat,
+              lng: formData.destinationCoords.lng,
+            }
           : null,
 
         route_polyline: formData.route_polyline,
@@ -38,11 +45,13 @@ export const useTripCalculation = (formData, setResults) => {
 
       if (!payload.route_polyline) {
         console.error("❌ route_polyline NO está en el payload");
+        alert("Error: polyline no generada");
         return;
       }
 
       if (!payload.origin || !payload.destination) {
         console.error("❌ Origin o Destination faltantes");
+        alert("Error: origen/destino faltantes");
         return;
       }
 

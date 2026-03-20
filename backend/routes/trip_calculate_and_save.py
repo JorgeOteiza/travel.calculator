@@ -8,7 +8,7 @@ from backend.services.distance_service import get_distance_km
 from backend.services.weather_service import get_weather_from_coords
 from backend.services.consumption_service import calculate_trip_consumption
 from backend.services.route_elevation_service import get_route_elevation_segments
-from backend.services.route_consumption_service import calculate_route_consumption
+from backend.utils.trip_calculation import calculate_trip_from_segments
 
 # 🔥 NUEVOS IMPORTS
 from backend.services.polyline_service import decode_polyline, reduce_points
@@ -132,14 +132,13 @@ def calculate_and_save_trip():
             base_consumption = base_data["base_consumption"]
             consumption_type = base_data["consumption_type"]
 
-            route_result = calculate_route_consumption(
-                segments=segments,
-                vehicle=vehicle,
-                base_consumption=base_consumption,
-                total_weight=total_weight,
-                base_weight=base_weight,
-                climate=climate_label,
-                fuel_type=fuel_type,
+            route_result = calculate_trip_from_segments(
+            base_fc=base_consumption,
+            segments=segments,
+            total_weight=total_weight,
+            base_weight=base_weight,
+            climate=climate_label,
+            engine_type=fuel_type,
             )
 
             fuel_used = route_result["fuel_used"]
@@ -150,7 +149,6 @@ def calculate_and_save_trip():
                 min(vehicle.calibration_factor, 1.3)
             )
 
-            fuel_used = (distance_km * adjusted_consumption) / 100
             total_cost = fuel_used * fuel_price
 
         # ===============================

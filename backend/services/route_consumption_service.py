@@ -1,7 +1,7 @@
 from backend.utils.trip_calculation import calculate_fuel_consumption
 
 
-def calculate_route_consumption(
+def calculate_trip_from_segments(
     segments,
     vehicle,
     extra_weight,
