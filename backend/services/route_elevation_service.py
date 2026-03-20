@@ -3,15 +3,14 @@ import math
 from typing import List, Dict
 from backend.config import GOOGLE_MAPS_API_KEY
 
+from backend.services.polyline_service import decode_polyline, reduce_points
+
 # ============================================================
 # 🔹 Utilidades geográficas
 # ============================================================
 
 def haversine_distance_km(p1: dict, p2: dict) -> float:
-    """
-    Calcula distancia en km entre dos puntos lat/lng
-    """
-    R = 6371  # radio tierra km
+    R = 6371
 
     lat1, lon1 = math.radians(p1["lat"]), math.radians(p1["lng"])
     lat2, lon2 = math.radians(p2["lat"]), math.radians(p2["lng"])
@@ -29,50 +28,6 @@ def haversine_distance_km(p1: dict, p2: dict) -> float:
 
 
 # ============================================================
-# 🔹 Polyline decoder (Google)
-# ============================================================
-
-def decode_polyline(encoded: str) -> List[Dict[str, float]]:
-    """
-    Decodifica polyline de Google Maps a lista de coordenadas
-    """
-    coords = []
-    index = lat = lng = 0
-
-    while index < len(encoded):
-        result = shift = 0
-        while True:
-            b = ord(encoded[index]) - 63
-            index += 1
-            result |= (b & 0x1F) << shift
-            shift += 5
-            if b < 0x20:
-                break
-
-        dlat = ~(result >> 1) if result & 1 else result >> 1
-        lat += dlat
-
-        result = shift = 0
-        while True:
-            b = ord(encoded[index]) - 63
-            index += 1
-            result |= (b & 0x1F) << shift
-            shift += 5
-            if b < 0x20:
-                break
-
-        dlng = ~(result >> 1) if result & 1 else result >> 1
-        lng += dlng
-
-        coords.append({
-            "lat": lat / 1e5,
-            "lng": lng / 1e5
-        })
-
-    return coords
-
-
-# ============================================================
 # 🔹 Elevation por ruta (segmentado)
 # ============================================================
 
@@ -80,20 +35,20 @@ def get_route_elevation_segments(
     polyline: str,
     segment_length_km: float = 1.0
 ) -> List[Dict]:
-    """
-    Retorna segmentos de ruta con distancia y pendiente promedio.
-    """
 
     if not polyline:
         raise ValueError("Polyline requerida")
 
     points = decode_polyline(polyline)
 
+    # 🔥 FIX CRÍTICO: reducir puntos (evita error 500 por URL gigante)
+    points = reduce_points(points, max_points=100)
+
     if len(points) < 2:
         return []
 
     # --------------------------------------------------------
-    # 1️⃣ Obtener elevaciones en batch
+    # 1️⃣ Obtener elevaciones
     # --------------------------------------------------------
     locations = "|".join(
         f"{p['lat']},{p['lng']}" for p in points
@@ -106,10 +61,14 @@ def get_route_elevation_segments(
     }
 
     response = requests.get(url, params=params)
+
+    if response.status_code != 200:
+        raise Exception("Error HTTP en Elevation API")
+
     data = response.json()
 
-    if data["status"] != "OK":
-        raise Exception("Error al obtener elevación por ruta")
+    if data.get("status") != "OK":
+        raise Exception(f"Error Elevation API: {data}")
 
     elevations = [
         r["elevation"] for r in data["results"]
@@ -122,7 +81,6 @@ def get_route_elevation_segments(
 
     acc_distance = 0.0
     acc_elevation = 0.0
-    acc_points = 0
 
     for i in range(1, len(points)):
         d_km = haversine_distance_km(
@@ -134,7 +92,6 @@ def get_route_elevation_segments(
 
         acc_distance += d_km
         acc_elevation += delta_elev
-        acc_points += 1
 
         if acc_distance >= segment_length_km:
             grade = (
@@ -151,7 +108,6 @@ def get_route_elevation_segments(
 
             acc_distance = 0.0
             acc_elevation = 0.0
-            acc_points = 0
 
     return segments
 
@@ -161,9 +117,6 @@ def get_route_elevation_segments(
 # ============================================================
 
 def classify_grade(grade: float) -> str:
-    """
-    Clasifica pendiente para consumo
-    """
     if grade >= 7:
         return "extreme_climb"
     elif grade >= 4:

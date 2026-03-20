@@ -10,10 +10,11 @@ from backend.services.consumption_service import calculate_trip_consumption
 from backend.services.route_elevation_service import get_route_elevation_segments
 from backend.utils.trip_calculation import calculate_trip_from_segments
 
-# 🔥 NUEVOS IMPORTS
 from backend.services.polyline_service import decode_polyline, reduce_points
 from backend.services.elevation_profile import get_elevation_for_points
 from backend.services.elevation_profile_chart_service import build_elevation_profile
+
+import traceback
 
 trip_calc_and_save_bp = Blueprint("trip_calc_and_save_bp", __name__)
 
@@ -30,6 +31,11 @@ def calculate_and_save_trip():
         user_id = get_jwt_identity()
         data = request.get_json() or {}
 
+        print("📥 DATA:", data)
+
+        # ===============================
+        # 🔎 Validación
+        # ===============================
         required_fields = [
             "brand", "model", "year",
             "origin", "destination",
@@ -93,28 +99,47 @@ def calculate_and_save_trip():
         climate_label = weather_data["climate"]
 
         # ===============================
-        # 🧭 Segmentos (consumo)
+        # 🧭 Segmentos (ELEVATION)
         # ===============================
-        segments = get_route_elevation_segments(polyline)
+        try:
+            segments = get_route_elevation_segments(polyline)
+            print("🧪 SEGMENTS:", segments[:3] if segments else "VACÍO")
+
+            if not segments:
+                print("⚠️ No se generaron segmentos, fallback básico")
+                segments = [{
+                    "distance_km": distance_km,
+                    "grade_percent": 0
+                }]
+
+        except Exception as e:
+            print("❌ ERROR EN SEGMENTOS:", str(e))
+
+            segments = [{
+                "distance_km": distance_km,
+                "grade_percent": 0
+            }]
 
         # ===============================
-        # ⛰️ PERFIL DE ELEVACIÓN (NUEVO)
+        # ⛰️ Perfil elevación
         # ===============================
-        decoded_points = decode_polyline(polyline)
-        reduced_points = reduce_points(decoded_points, max_points=100)
+        try:
+            decoded_points = decode_polyline(polyline)
+            reduced_points = reduce_points(decoded_points, max_points=100)
+            elevations = get_elevation_for_points(reduced_points)
 
-        elevations = get_elevation_for_points(reduced_points)
-
-        elevation_profile = build_elevation_profile(
-            reduced_points,
-            elevations
-        )
+            elevation_profile = build_elevation_profile(
+                reduced_points,
+                elevations
+            )
+        except Exception as e:
+            print("❌ ERROR PERFIL:", str(e))
+            elevation_profile = []
 
         # ===============================
         # ⛽ Consumo
         # ===============================
         if is_electric:
-
             fuel_used = 0
             adjusted_consumption = 0
             base_consumption = 0
@@ -122,7 +147,6 @@ def calculate_and_save_trip():
             consumption_type = "electric"
 
         else:
-
             base_data = calculate_trip_consumption(
                 vehicle=vehicle,
                 total_km=distance_km,
@@ -133,12 +157,12 @@ def calculate_and_save_trip():
             consumption_type = base_data["consumption_type"]
 
             route_result = calculate_trip_from_segments(
-            base_fc=base_consumption,
-            segments=segments,
-            total_weight=total_weight,
-            base_weight=base_weight,
-            climate=climate_label,
-            engine_type=fuel_type,
+                base_fc=base_consumption,
+                segments=segments,
+                total_weight=total_weight,
+                base_weight=base_weight,
+                climate=climate_label,
+                engine_type=fuel_type,
             )
 
             fuel_used = route_result["fuel_used"]
@@ -152,29 +176,29 @@ def calculate_and_save_trip():
             total_cost = fuel_used * fuel_price
 
         # ===============================
-        # 💾 Persistencia
+        # 💾 Guardar
         # ===============================
         trip = Trip(
-            user_id=user_id,
-            vehicle_id=vehicle.id,
-            brand=vehicle.make,
-            model=vehicle.model,
-            year=vehicle.year,
-            fuel_type=fuel_type,
-            fuel_price=fuel_price,
-            total_weight=total_weight,
-            passengers=passengers,
-            location=f"{origin['lat']},{origin['lng']}",
-            distance=distance_km,
-            consumption_type=consumption_type,
-            base_consumption=base_consumption,
-            expected_consumption=adjusted_consumption,
-            adjusted_consumption=adjusted_consumption,
-            calibration_factor_used=vehicle.calibration_factor,
-            fuel_consumed=fuel_used,
-            total_cost=total_cost,
-            weather=climate_label,
-        )
+    user_id=user_id,
+    vehicle_id=vehicle.id,
+    brand=vehicle.make,
+    model=vehicle.model,
+    year=vehicle.year,
+    fuel_type=fuel_type,
+    fuel_price=float(fuel_price or 0),
+    total_weight=float(total_weight or 0),
+    passengers=int(passengers or 0),
+    location=f"{origin.get('lat')},{origin.get('lng')}",
+    distance=float(distance_km or 0),
+    consumption_type=consumption_type,
+    base_consumption=float(base_consumption or 0),
+    expected_consumption=float(adjusted_consumption or 0),
+    adjusted_consumption=float(adjusted_consumption or 0),
+    calibration_factor_used=float(vehicle.calibration_factor or 1.0),
+    fuel_consumed=float(fuel_used or 0),
+    total_cost=float(total_cost or 0),
+    weather=climate_label or "unknown",
+)
 
         db.session.add(trip)
 
@@ -190,7 +214,7 @@ def calculate_and_save_trip():
         db.session.commit()
 
         # ===============================
-        # 📤 RESPONSE
+        # 📤 Response
         # ===============================
         return jsonify({
             "distance": round(distance_km, 2),
@@ -199,12 +223,25 @@ def calculate_and_save_trip():
             "adjustedFC": round(adjusted_consumption, 3),
             "weather": climate_label,
             "segmentsAnalyzed": len(segments),
-            "elevationProfile": elevation_profile  # 🔥 NUEVO
+            "elevationProfile": elevation_profile
         }), 201
 
-    except SQLAlchemyError:
+    except SQLAlchemyError as e:
         db.session.rollback()
-        return jsonify({"error": "Error de base de datos"}), 500
+
+        print("💥 SQL ERROR:")
+        traceback.print_exc()
+
+        return jsonify({
+            "error": "Error de base de datos",
+            "details": str(e)
+        }), 500
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        print("🔥 ERROR GLOBAL:")
+        traceback.print_exc()
+
+        return jsonify({
+            "error": str(e),
+            "type": type(e).__name__
+        }), 500

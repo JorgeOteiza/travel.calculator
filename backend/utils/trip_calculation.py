@@ -88,7 +88,7 @@ def calculate_fuel_consumption(
     return adjusted_base_fc * (1 + total_penalty)
 
 
-# 🔥 NUEVO: motor por segmentos
+# 🔥 MOTOR POR SEGMENTOS (FIX COMPLETO)
 def calculate_trip_from_segments(
     *,
     base_fc: float,
@@ -98,14 +98,21 @@ def calculate_trip_from_segments(
     climate: str,
     engine_type: str = "gasoline",
 ):
+    if not segments:
+        raise ValueError("No hay segmentos para calcular")
+
     total_liters = 0.0
     total_distance = 0.0
 
     extra_weight = max(0, total_weight - base_weight)
 
     for segment in segments:
-        d = segment["distance_km"]
-        grade = segment["grade_percent"]
+        # 🔥 FIX COMPATIBILIDAD
+        d = segment.get("distance_km") or segment.get("distance")
+        grade = segment.get("grade_percent") or segment.get("grade")
+
+        if d is None or grade is None:
+            raise ValueError(f"Segmento inválido: {segment}")
 
         fc = calculate_fuel_consumption(
             base_fc=base_fc,
@@ -122,7 +129,10 @@ def calculate_trip_from_segments(
         total_liters += liters
         total_distance += d
 
-    adjusted_fc = (total_liters / total_distance) * 100 if total_distance > 0 else base_fc
+    if total_distance <= 0:
+        raise ValueError("Distancia total inválida en segmentos")
+
+    adjusted_fc = (total_liters / total_distance) * 100
 
     return {
         "fuel_used": round(total_liters, 2),
