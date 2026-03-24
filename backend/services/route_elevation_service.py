@@ -1,14 +1,17 @@
 import requests
+import random
 import math
 from typing import List, Dict
 from backend.config import GOOGLE_MAPS_API_KEY
 
 # ============================================================
-# 🔴 FEATURE FLAG (CONTROL DE COSTOS)
+# 🔴 FEATURE FLAGS
 # ============================================================
-USE_REAL_APIS = False  # 👈 CAMBIA A True SOLO CUANDO QUIERAS PROBAR REAL
+USE_REAL_APIS = False   # 🔥 mantener en False = sin costo
+DEBUG_ELEVATION = True  # 🔍 logs de segmentos
 
-MAX_POINTS = 100  # 🔒 límite duro para evitar costos
+MAX_POINTS = 100
+
 
 # ============================================================
 # 🔹 Utilidades geográficas
@@ -33,6 +36,38 @@ def haversine_distance_km(p1: dict, p2: dict) -> float:
 
 
 # ============================================================
+# 🔹 Simulación realista de elevación
+# ============================================================
+
+def generate_realistic_elevation(points):
+    """
+    Simula elevación tipo terreno real:
+    - ruido suave
+    - subidas largas
+    - bajadas progresivas
+    """
+
+    elevation = random.uniform(0, 500)
+    elevations = []
+
+    for i in range(len(points)):
+        delta = random.uniform(-10, 10)
+
+        # subida progresiva
+        if i % 15 == 0:
+            delta += random.uniform(20, 50)
+
+        # bajada progresiva
+        if i % 25 == 0:
+            delta -= random.uniform(20, 50)
+
+        elevation = max(0, elevation + delta)
+        elevations.append(elevation)
+
+    return elevations
+
+
+# ============================================================
 # 🔹 Elevation por ruta (segmentado)
 # ============================================================
 
@@ -51,34 +86,56 @@ def get_route_elevation_segments(
     if len(points) < 2:
         return []
 
-    # 🔒 LIMITADOR CRÍTICO (ANTI-COSTOS)
+    # 🔒 LIMITADOR (anti costos)
     if len(points) > MAX_POINTS:
         step = len(points) // MAX_POINTS
         points = points[::step][:MAX_POINTS]
 
     # =========================================================
-    # 🔴 MODO SIN COSTO (FALLBACK)
+    # 🔴 MODO MOCK REALISTA (SIN COSTO)
     # =========================================================
     if not USE_REAL_APIS:
-        print("🧪 MODO MOCK ELEVATION ACTIVADO")
+        print("🧪 MODO MOCK REALISTA ACTIVADO")
 
+        elevations = generate_realistic_elevation(points)
         segments = []
-        total_points = len(points)
 
-        for i in range(1, total_points):
-            d_km = haversine_distance_km(points[i - 1], points[i])
+        for i in range(1, len(points)):
+            p1 = points[i - 1]
+            p2 = points[i]
 
-            segments.append({
+            d_km = haversine_distance_km(p1, p2)
+            if d_km == 0:
+                continue
+
+            elev_diff = elevations[i] - elevations[i - 1]
+
+            grade = (elev_diff / (d_km * 1000)) * 100
+
+            # 🔧 limitar valores irreales
+            grade = max(min(grade, 12), -12)
+
+            segment = {
                 "distance_km": round(d_km, 3),
-                "elevation_diff_m": 0,
-                "grade_percent": 0,
-                "type": "flat"
-            })
+                "elevation_diff_m": round(elev_diff, 1),
+                "grade_percent": round(grade, 2),
+                "type": classify_grade(grade)
+            }
+
+            # 🔍 DEBUG
+            if DEBUG_ELEVATION:
+                print(
+                    f"📈 Segmento: {segment['distance_km']} km | "
+                    f"pendiente: {segment['grade_percent']}% | "
+                    f"tipo: {segment['type']}"
+                )
+
+            segments.append(segment)
 
         return segments
 
     # =========================================================
-    # 🌍 LLAMADA REAL (COSTOSA)
+    # 🌍 MODO REAL (COSTOSO)
     # =========================================================
     print(f"📡 Elevation request con {len(points)} puntos")
 
@@ -99,14 +156,11 @@ def get_route_elevation_segments(
         if data["status"] != "OK":
             raise Exception(f"Google API error: {data['status']}")
 
-        elevations = [
-            r["elevation"] for r in data["results"]
-        ]
+        elevations = [r["elevation"] for r in data["results"]]
 
     except Exception as e:
         print("❌ ERROR ELEVATION API:", str(e))
 
-        # fallback automático
         return [{
             "distance_km": 1,
             "elevation_diff_m": 0,
@@ -115,7 +169,7 @@ def get_route_elevation_segments(
         }]
 
     # =========================================================
-    # 🧭 CONSTRUCCIÓN DE SEGMENTOS
+    # 🧭 CONSTRUCCIÓN REAL
     # =========================================================
     segments = []
 

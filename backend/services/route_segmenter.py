@@ -1,5 +1,8 @@
 import math
 
+# 🔧 DEBUG FLAG
+DEBUG_SEGMENTS = False
+
 
 def haversine_distance(coord1, coord2):
     """
@@ -39,6 +42,10 @@ def create_route_segments(points):
         end = points[i + 1]
 
         distance = haversine_distance(start, end)
+
+        # 🔍 DEBUG OPCIONAL
+        if DEBUG_SEGMENTS:
+            print(f"🧩 Segmento base: {distance:.3f} km")
 
         segments.append(
             {
