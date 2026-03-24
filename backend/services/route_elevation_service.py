@@ -3,7 +3,12 @@ import math
 from typing import List, Dict
 from backend.config import GOOGLE_MAPS_API_KEY
 
-from backend.services.polyline_service import decode_polyline, reduce_points
+# ============================================================
+# 🔴 FEATURE FLAG (CONTROL DE COSTOS)
+# ============================================================
+USE_REAL_APIS = False  # 👈 CAMBIA A True SOLO CUANDO QUIERAS PROBAR REAL
+
+MAX_POINTS = 100  # 🔒 límite duro para evitar costos
 
 # ============================================================
 # 🔹 Utilidades geográficas
@@ -39,17 +44,44 @@ def get_route_elevation_segments(
     if not polyline:
         raise ValueError("Polyline requerida")
 
-    points = decode_polyline(polyline)
+    from backend.services.polyline_service import decode_polyline
 
-    # 🔥 FIX CRÍTICO: reducir puntos (evita error 500 por URL gigante)
-    points = reduce_points(points, max_points=100)
+    points = decode_polyline(polyline)
 
     if len(points) < 2:
         return []
 
-    # --------------------------------------------------------
-    # 1️⃣ Obtener elevaciones
-    # --------------------------------------------------------
+    # 🔒 LIMITADOR CRÍTICO (ANTI-COSTOS)
+    if len(points) > MAX_POINTS:
+        step = len(points) // MAX_POINTS
+        points = points[::step][:MAX_POINTS]
+
+    # =========================================================
+    # 🔴 MODO SIN COSTO (FALLBACK)
+    # =========================================================
+    if not USE_REAL_APIS:
+        print("🧪 MODO MOCK ELEVATION ACTIVADO")
+
+        segments = []
+        total_points = len(points)
+
+        for i in range(1, total_points):
+            d_km = haversine_distance_km(points[i - 1], points[i])
+
+            segments.append({
+                "distance_km": round(d_km, 3),
+                "elevation_diff_m": 0,
+                "grade_percent": 0,
+                "type": "flat"
+            })
+
+        return segments
+
+    # =========================================================
+    # 🌍 LLAMADA REAL (COSTOSA)
+    # =========================================================
+    print(f"📡 Elevation request con {len(points)} puntos")
+
     locations = "|".join(
         f"{p['lat']},{p['lng']}" for p in points
     )
@@ -60,34 +92,38 @@ def get_route_elevation_segments(
         "key": GOOGLE_MAPS_API_KEY,
     }
 
-    response = requests.get(url, params=params)
+    try:
+        response = requests.get(url, params=params, timeout=5)
+        data = response.json()
 
-    if response.status_code != 200:
-        raise Exception("Error HTTP en Elevation API")
+        if data["status"] != "OK":
+            raise Exception(f"Google API error: {data['status']}")
 
-    data = response.json()
+        elevations = [
+            r["elevation"] for r in data["results"]
+        ]
 
-    if data.get("status") != "OK":
-        raise Exception(f"Error Elevation API: {data}")
+    except Exception as e:
+        print("❌ ERROR ELEVATION API:", str(e))
 
-    elevations = [
-        r["elevation"] for r in data["results"]
-    ]
+        # fallback automático
+        return [{
+            "distance_km": 1,
+            "elevation_diff_m": 0,
+            "grade_percent": 0,
+            "type": "flat"
+        }]
 
-    # --------------------------------------------------------
-    # 2️⃣ Construcción de segmentos
-    # --------------------------------------------------------
+    # =========================================================
+    # 🧭 CONSTRUCCIÓN DE SEGMENTOS
+    # =========================================================
     segments = []
 
     acc_distance = 0.0
     acc_elevation = 0.0
 
     for i in range(1, len(points)):
-        d_km = haversine_distance_km(
-            points[i - 1],
-            points[i]
-        )
-
+        d_km = haversine_distance_km(points[i - 1], points[i])
         delta_elev = elevations[i] - elevations[i - 1]
 
         acc_distance += d_km

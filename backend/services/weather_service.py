@@ -21,7 +21,7 @@ def get_weather_from_coords(coords):
         "units": "metric",
     }
 
-    response = requests.get(url, params=params)
+    response = requests.get(url, params=params, timeout=5)
     if response.status_code != 200:
         return {
             "climate": "mild",
