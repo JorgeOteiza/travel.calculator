@@ -34,7 +34,7 @@ def calculate_and_save_trip():
         print("📥 DATA:", data)
 
         # ===============================
-        # 🔎 Validación
+        # 🔎 VALIDACIÓN
         # ===============================
         required_fields = [
             "brand", "model", "year",
@@ -46,16 +46,16 @@ def calculate_and_save_trip():
             if field not in data:
                 return jsonify({"error": f"Falta el campo '{field}'"}), 400
 
-        brand = data["brand"].lower().strip()
-        model = data["model"].lower().strip()
+        brand = str(data["brand"]).lower().strip()
+        model = str(data["model"]).lower().strip()
         year = int(data["year"])
         passengers = int(data["passengers"])
 
         if passengers < 0 or passengers > MAX_PASSENGERS:
             return jsonify({"error": "Pasajeros inválidos"}), 400
 
-        extra_weight = float(data.get("extra_weight", 0))
-        fuel_price = float(data.get("fuel_price", 0))
+        extra_weight = float(data.get("extra_weight") or 0)
+        fuel_price = float(data.get("fuel_price") or 0)
 
         if fuel_price < 0 or fuel_price > MAX_FUEL_PRICE:
             return jsonify({"error": "Precio de combustible inválido"}), 400
@@ -64,8 +64,14 @@ def calculate_and_save_trip():
         destination = data["destination"]
         polyline = data["route_polyline"]
 
+        if not origin or not destination:
+            return jsonify({"error": "Origen o destino inválidos"}), 400
+
+        if not polyline:
+            return jsonify({"error": "Polyline inválida"}), 400
+
         # ===============================
-        # 🚗 Vehículo
+        # 🚗 VEHÍCULO
         # ===============================
         vehicle = Vehicle.query.filter(
             db.func.lower(Vehicle.make) == brand,
@@ -80,48 +86,65 @@ def calculate_and_save_trip():
         is_electric = "electric" in fuel_type.lower()
 
         # ===============================
-        # ⚖️ Peso
+        # ⚖️ PESO
         # ===============================
-        base_weight = vehicle.weight_kg or 1500
+        base_weight = float(vehicle.weight_kg or 1500)
         total_weight = base_weight + extra_weight + (passengers * PASSENGER_WEIGHT)
 
         # ===============================
-        # 📏 Distancia
+        # 📏 DISTANCIA
         # ===============================
-        distance_km = get_distance_km(origin, destination)
+        try:
+            distance_km = float(get_distance_km(origin, destination, polyline=polyline))
+        except Exception as e:
+            print("❌ ERROR DISTANCIA:", e)
+            return jsonify({"error": "Error calculando distancia"}), 500
+
         if distance_km <= 0:
             return jsonify({"error": "Distancia inválida"}), 400
 
         # ===============================
-        # 🌦️ Clima
+        # 🌦️ CLIMA
         # ===============================
-        weather_data = get_weather_from_coords(origin)
-        climate_label = weather_data["climate"]
+        try:
+            weather_data = get_weather_from_coords(origin)
+            climate_label = weather_data.get("climate", "unknown")
+        except Exception as e:
+            print("❌ ERROR CLIMA:", e)
+            climate_label = "unknown"
 
         # ===============================
-        # 🧭 Segmentos (ELEVATION)
+        # 🧭 SEGMENTOS (ELEVACIÓN)
         # ===============================
         try:
             segments = get_route_elevation_segments(polyline)
-            print("🧪 SEGMENTS:", segments[:3] if segments else "VACÍO")
 
             if not segments:
-                print("⚠️ No se generaron segmentos, fallback básico")
                 segments = [{
                     "distance_km": distance_km,
                     "grade_percent": 0
                 }]
 
         except Exception as e:
-            print("❌ ERROR EN SEGMENTOS:", str(e))
-
+            print("❌ ERROR SEGMENTOS:", e)
             segments = [{
                 "distance_km": distance_km,
                 "grade_percent": 0
             }]
 
         # ===============================
-        # ⛰️ Perfil elevación
+        # 🛣️ ROAD GRADE (FIX CRÍTICO)
+        # ===============================
+        try:
+            avg_grade = sum(s.get("grade_percent", 0) for s in segments) / len(segments)
+        except Exception as e:
+            print("⚠️ ERROR calculando road_grade:", e)
+            avg_grade = 0
+
+        road_grade = round(avg_grade, 2)
+
+        # ===============================
+        # ⛰️ PERFIL ELEVACIÓN
         # ===============================
         try:
             decoded_points = decode_polyline(polyline)
@@ -133,17 +156,17 @@ def calculate_and_save_trip():
                 elevations
             )
         except Exception as e:
-            print("❌ ERROR PERFIL:", str(e))
+            print("❌ ERROR PERFIL:", e)
             elevation_profile = []
 
         # ===============================
-        # ⛽ Consumo
+        # ⛽ CONSUMO
         # ===============================
         if is_electric:
-            fuel_used = 0
-            adjusted_consumption = 0
-            base_consumption = 0
-            total_cost = 0
+            fuel_used = 0.0
+            adjusted_consumption = 0.0
+            base_consumption = 0.0
+            total_cost = 0.0
             consumption_type = "electric"
 
         else:
@@ -153,8 +176,8 @@ def calculate_and_save_trip():
                 highway_km=data.get("highway_km")
             )
 
-            base_consumption = base_data["base_consumption"]
-            consumption_type = base_data["consumption_type"]
+            base_consumption = float(base_data.get("base_consumption", 0))
+            consumption_type = base_data.get("consumption_type", "mixed")
 
             route_result = calculate_trip_from_segments(
                 base_fc=base_consumption,
@@ -165,40 +188,42 @@ def calculate_and_save_trip():
                 engine_type=fuel_type,
             )
 
-            fuel_used = route_result["fuel_used"]
-            adjusted_consumption = route_result["adjusted_fc"]
+            fuel_used = float(route_result.get("fuel_used", 0))
+            adjusted_consumption = float(route_result.get("adjusted_fc", 0))
 
-            adjusted_consumption *= max(
-                0.7,
-                min(vehicle.calibration_factor, 1.3)
-            )
+            calibration_factor = float(vehicle.calibration_factor or 1.0)
+            calibration_factor = max(0.7, min(calibration_factor, 1.3))
 
+            adjusted_consumption *= calibration_factor
             total_cost = fuel_used * fuel_price
 
         # ===============================
-        # 💾 Guardar
+        # 💾 GUARDAR
         # ===============================
         trip = Trip(
-    user_id=user_id,
-    vehicle_id=vehicle.id,
-    brand=vehicle.make,
-    model=vehicle.model,
-    year=vehicle.year,
-    fuel_type=fuel_type,
-    fuel_price=float(fuel_price or 0),
-    total_weight=float(total_weight or 0),
-    passengers=int(passengers or 0),
-    location=f"{origin.get('lat')},{origin.get('lng')}",
-    distance=float(distance_km or 0),
-    consumption_type=consumption_type,
-    base_consumption=float(base_consumption or 0),
-    expected_consumption=float(adjusted_consumption or 0),
-    adjusted_consumption=float(adjusted_consumption or 0),
-    calibration_factor_used=float(vehicle.calibration_factor or 1.0),
-    fuel_consumed=float(fuel_used or 0),
-    total_cost=float(total_cost or 0),
-    weather=climate_label or "unknown",
-)
+            user_id=user_id,
+            vehicle_id=vehicle.id,
+            brand=vehicle.make,
+            model=vehicle.model,
+            year=vehicle.year,
+            fuel_type=fuel_type,
+            fuel_price=float(fuel_price),
+            total_weight=float(total_weight),
+            passengers=int(passengers),
+            location=f"{origin.get('lat')},{origin.get('lng')}",
+            distance=float(distance_km),
+
+            road_grade=road_grade,  # 🔥 FIX
+
+            consumption_type=consumption_type,
+            base_consumption=float(base_consumption),
+            expected_consumption=float(adjusted_consumption),
+            adjusted_consumption=float(adjusted_consumption),
+            calibration_factor_used=float(vehicle.calibration_factor or 1.0),
+            fuel_consumed=float(fuel_used),
+            total_cost=float(total_cost),
+            weather=climate_label,
+        )
 
         db.session.add(trip)
 
@@ -214,7 +239,7 @@ def calculate_and_save_trip():
         db.session.commit()
 
         # ===============================
-        # 📤 Response
+        # 📤 RESPONSE
         # ===============================
         return jsonify({
             "distance": round(distance_km, 2),
@@ -222,6 +247,7 @@ def calculate_and_save_trip():
             "totalCost": round(total_cost, 2),
             "adjustedFC": round(adjusted_consumption, 3),
             "weather": climate_label,
+            "roadGrade": road_grade,
             "segmentsAnalyzed": len(segments),
             "elevationProfile": elevation_profile
         }), 201

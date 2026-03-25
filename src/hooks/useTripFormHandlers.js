@@ -7,7 +7,7 @@ export const useTripFormHandlers = (
   const handleLocationChange = (field, data) => {
     console.log("📥 handleLocationChange", field, data);
 
-    // 🧭 POLYLINE (FIX)
+    // 🧭 POLYLINE
     if (field === "route_polyline") {
       setFormData((prev) => ({
         ...prev,
@@ -16,9 +16,13 @@ export const useTripFormHandlers = (
       return;
     }
 
-    // 📍 ORIGEN / DESTINO
-    if (!data?.lat || !data?.lng) return;
+    // 📍 VALIDACIÓN
+    if (!data || typeof data.lat !== "number" || typeof data.lng !== "number") {
+      console.warn("⚠️ Datos inválidos en ubicación:", data);
+      return;
+    }
 
+    // 📍 SETEO
     setFormData((prev) => ({
       ...prev,
       [`${field}Coords`]: {
@@ -28,11 +32,13 @@ export const useTripFormHandlers = (
       [`${field}Label`]: data.label || "",
     }));
 
+    // 🗺️ CENTRAR MAPA
     setMapCenter({
       lat: data.lat,
       lng: data.lng,
     });
 
+    // 🌦️ WEATHER SOLO ORIGEN
     if (field === "location") {
       fetchWeather(data.lat, data.lng);
     }

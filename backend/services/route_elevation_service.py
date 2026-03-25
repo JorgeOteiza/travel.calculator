@@ -3,12 +3,13 @@ import random
 import math
 from typing import List, Dict
 from backend.config import GOOGLE_MAPS_API_KEY
+from backend.services.polyline_service import decode_polyline
 
 # ============================================================
 # 🔴 FEATURE FLAGS
 # ============================================================
-USE_REAL_APIS = False   # 🔥 mantener en False = sin costo
-DEBUG_ELEVATION = True  # 🔍 logs de segmentos
+USE_REAL_APIS = False   # 🔥 False = SIN COSTO
+DEBUG_ELEVATION = True  # 🔍 logs
 
 MAX_POINTS = 100
 
@@ -17,11 +18,13 @@ MAX_POINTS = 100
 # 🔹 Utilidades geográficas
 # ============================================================
 
-def haversine_distance_km(p1: dict, p2: dict) -> float:
+def haversine_distance_km(p1, p2):
     R = 6371
 
-    lat1, lon1 = math.radians(p1["lat"]), math.radians(p1["lng"])
-    lat2, lon2 = math.radians(p2["lat"]), math.radians(p2["lng"])
+    lat1 = math.radians(p1["lat"])
+    lon1 = math.radians(p1["lng"])
+    lat2 = math.radians(p2["lat"])
+    lon2 = math.radians(p2["lng"])
 
     dlat = lat2 - lat1
     dlon = lon2 - lon1
@@ -32,6 +35,7 @@ def haversine_distance_km(p1: dict, p2: dict) -> float:
     )
 
     c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
     return R * c
 
 
@@ -40,24 +44,15 @@ def haversine_distance_km(p1: dict, p2: dict) -> float:
 # ============================================================
 
 def generate_realistic_elevation(points):
-    """
-    Simula elevación tipo terreno real:
-    - ruido suave
-    - subidas largas
-    - bajadas progresivas
-    """
-
     elevation = random.uniform(0, 500)
     elevations = []
 
     for i in range(len(points)):
         delta = random.uniform(-10, 10)
 
-        # subida progresiva
         if i % 15 == 0:
             delta += random.uniform(20, 50)
 
-        # bajada progresiva
         if i % 25 == 0:
             delta -= random.uniform(20, 50)
 
@@ -78,8 +73,6 @@ def get_route_elevation_segments(
 
     if not polyline:
         raise ValueError("Polyline requerida")
-
-    from backend.services.polyline_service import decode_polyline
 
     points = decode_polyline(polyline)
 
@@ -109,10 +102,8 @@ def get_route_elevation_segments(
                 continue
 
             elev_diff = elevations[i] - elevations[i - 1]
-
             grade = (elev_diff / (d_km * 1000)) * 100
 
-            # 🔧 limitar valores irreales
             grade = max(min(grade, 12), -12)
 
             segment = {
@@ -122,7 +113,6 @@ def get_route_elevation_segments(
                 "type": classify_grade(grade)
             }
 
-            # 🔍 DEBUG
             if DEBUG_ELEVATION:
                 print(
                     f"📈 Segmento: {segment['distance_km']} km | "
@@ -203,7 +193,7 @@ def get_route_elevation_segments(
 
 
 # ============================================================
-# 🔹 Clasificación de pendiente
+# 🔹 Clasificación
 # ============================================================
 
 def classify_grade(grade: float) -> str:
