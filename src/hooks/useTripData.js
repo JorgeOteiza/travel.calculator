@@ -4,12 +4,17 @@ import axios from "axios";
 const useTripData = (initialFormData) => {
   const [formData, setFormData] = useState({
     ...initialFormData,
+    route_polyline: initialFormData.route_polyline || null,
     climate: initialFormData.climate || "mild",
   });
+
 
   const [brandOptions, setBrandOptions] = useState([]);
   const [modelOptions, setModelOptions] = useState([]);
   const [vehicleDetails, setVehicleDetails] = useState(null);
+  const [isLoadingBrands, setIsLoadingBrands] = useState(true);
+  const [isLoadingModels, setIsLoadingModels] = useState(false);
+  const [dataWarning, setDataWarning] = useState("");
 
   const lastFetchRef = useRef({ brand: null, model: null, year: null });
   const ignoreRef = useRef(false);
@@ -46,6 +51,7 @@ const useTripData = (initialFormData) => {
     const fetchBrands = async () => {
       if (brandCache.current.data) {
         setBrandOptions(brandCache.current.data);
+        setIsLoadingBrands(false);
         return;
       }
 
@@ -60,6 +66,9 @@ const useTripData = (initialFormData) => {
         setBrandOptions(combined);
       } catch {
         setBrandOptions(defaultBrands);
+        setDataWarning("NHTSA no está disponible; mostramos marcas locales.");
+      } finally {
+        setIsLoadingBrands(false);
       }
     };
 
@@ -70,8 +79,10 @@ const useTripData = (initialFormData) => {
     if (!formData.brand) return;
 
     const fetchModels = async () => {
+      setIsLoadingModels(true);
       if (modelCache.current[formData.brand]) {
         setModelOptions(modelCache.current[formData.brand]);
+        setIsLoadingModels(false);
         return;
       }
 
@@ -89,6 +100,9 @@ const useTripData = (initialFormData) => {
         setModelOptions(combined);
       } catch {
         setModelOptions(defaultModels[formData.brand] || []);
+        setDataWarning("No pudimos consultar todos los modelos; mostramos datos locales.");
+      } finally {
+        setIsLoadingModels(false);
       }
     };
 
@@ -184,6 +198,9 @@ const useTripData = (initialFormData) => {
     handleModelSelect,
     handleYearSelect,
     handleChange,
+    isLoadingBrands,
+    isLoadingModels,
+    dataWarning,
   };
 };
 

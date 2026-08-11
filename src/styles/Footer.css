@@ -10,6 +10,17 @@ footer {
   box-sizing: border-box;
 }
 
+footer p {
+  margin: 3px 0;
+}
+
+@media (max-width: 560px) {
+  footer {
+    padding: 18px 12px;
+    font-size: 13px;
+  }
+}
+
 footer a {
   color: #aad8ff;
   text-decoration: none;

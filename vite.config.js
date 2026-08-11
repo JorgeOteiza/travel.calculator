@@ -13,9 +13,6 @@ export default defineConfig(({ mode }) => {
         env.VITE_GOOGLE_MAPS_API_KEY
       ),
       "import.meta.env.VITE_MAP_ID": JSON.stringify(env.VITE_MAP_ID),
-      "import.meta.env.VITE_OPENWEATHERMAP_API_KEY": JSON.stringify(
-        env.VITE_OPENWEATHERMAP_API_KEY
-      ),
     },
     server: {
       proxy: {

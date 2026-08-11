@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 from flask_cors import cross_origin
 import requests
 import os
+from backend.config import PAID_GOOGLE_APIS_ENABLED
 
 distance_bp = Blueprint("distance_bp", __name__)
 
@@ -12,6 +13,11 @@ def get_distance():
     Calcula la distancia en kilómetros entre dos coordenadas usando Google Distance Matrix API,
     y retorna además la polilínea de la ruta mediante Google Directions API.
     """
+    if not PAID_GOOGLE_APIS_ENABLED:
+        return jsonify({
+            "error": "APIs pagadas de Google desactivadas. La distancia se calcula desde la polyline."
+        }), 403
+
     origin = request.args.get("origin")
     destination = request.args.get("destination")
 

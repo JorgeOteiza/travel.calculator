@@ -1,27 +1,87 @@
-import requests
-from backend.config import GOOGLE_MAPS_API_KEY
+import math
+from backend.services.polyline_service import decode_polyline
+
+# ============================================================
+# 🔹 Haversine (distancia en línea recta)
+# ============================================================
+
+def haversine_distance_km(p1, p2):
+    R = 6371  # radio tierra km
+
+    lat1 = math.radians(p1["lat"])
+    lon1 = math.radians(p1["lng"])
+    lat2 = math.radians(p2["lat"])
+    lon2 = math.radians(p2["lng"])
+
+    dlat = lat2 - lat1
+    dlon = lon2 - lon1
+
+    a = (
+        math.sin(dlat / 2) ** 2
+        + math.cos(lat1) * math.cos(lat2)
+        * math.sin(dlon / 2) ** 2
+    )
+
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+    return R * c
 
 
-def get_distance_km(origin, destination):
+# ============================================================
+# 🔹 Distancia basada en polyline (ruta real)
+# ============================================================
+
+def calculate_polyline_distance(polyline: str) -> float:
+    points = decode_polyline(polyline)
+
+    if not points or len(points) < 2:
+        return 0
+
+    # 🔒 OPTIMIZACIÓN ANTI-COSTO / PERFORMANCE
+    if len(points) > 500:
+        print(f"⚠️ Polyline muy grande ({len(points)} puntos), reduciendo...")
+        points = points[::5]
+
+    total_distance = 0.0
+
+    for i in range(1, len(points)):
+        total_distance += haversine_distance_km(
+            points[i - 1],
+            points[i]
+        )
+
+    return total_distance
+
+
+# ============================================================
+# 🔹 API PRINCIPAL (lo que usa tu backend)
+# ============================================================
+
+def get_distance_km(origin, destination, polyline=None):
     """
-    origin / destination:
-    { lat: float, lng: float }
+    Estrategia:
+    - Si hay polyline → distancia real de ruta
+    - Si falla → fallback a línea recta
     """
 
-    url = "https://maps.googleapis.com/maps/api/distancematrix/json"
+    # 🟢 CASO IDEAL (tu flujo actual)
+    if polyline:
+        try:
+            distance = calculate_polyline_distance(polyline)
 
-    params = {
-        "origins": f"{origin['lat']},{origin['lng']}",
-        "destinations": f"{destination['lat']},{destination['lng']}",
-        "units": "metric",
-        "key": GOOGLE_MAPS_API_KEY,
-    }
+            if distance > 0:
+                print("🧪 Distancia calculada desde polyline (PRECISA)")
+                return distance
 
-    response = requests.get(url, params=params)
-    data = response.json()
+            print("⚠️ Polyline inválida, usando fallback")
 
-    if data["status"] != "OK":
-        raise Exception("Error al calcular distancia")
+        except Exception as e:
+            print("❌ Error calculando distancia por polyline:", str(e))
 
-    meters = data["rows"][0]["elements"][0]["distance"]["value"]
-    return meters / 1000
+    # 🟡 FALLBACK (seguro)
+    if origin and destination:
+        print("🧪 Fallback Haversine (línea recta)")
+        return haversine_distance_km(origin, destination)
+
+    # 🔴 ERROR TOTAL
+    raise Exception("Error al calcular distancia")

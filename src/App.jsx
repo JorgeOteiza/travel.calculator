@@ -4,6 +4,9 @@ import axios from "axios";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import Home from "./pages/Home";
+import Landing from "./pages/Landing";
+import Result from "./pages/Result";
+import ResultDetails from "./pages/ResultDetails";
 import About from "./pages/About";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -45,11 +48,14 @@ function App() {
       <Navbar user={user} setUser={setUser} loading={loadingUser} />
       <main className="main-container">
         <Routes>
-          <Route path="/" element={<Home user={user} />} />
+          <Route path="/" element={<Landing />} />
+          <Route path="/calculadora" element={<Home user={user} />} />
+          <Route path="/resultado" element={<Result />} />
+          <Route path="/resultado/detalles" element={<ResultDetails />} />
           <Route path="/about" element={<About />} />
           <Route path="/login" element={<Login setUser={setUser} />} />
           <Route path="/register" element={<Register setUser={setUser} />} />
-          <Route path="/profile" element={<Profile user={user} />} />
+          <Route path="/profile" element={<Profile user={user} authLoading={loadingUser} />} />
         </Routes>
       </main>
       <Footer />

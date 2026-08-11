@@ -2,12 +2,18 @@ from flask import Blueprint, request, jsonify
 from flask_cors import cross_origin
 import requests
 import os
+from backend.config import PAID_GOOGLE_APIS_ENABLED
 
 elevation_bp = Blueprint("elevation_bp", __name__)
 
 @elevation_bp.route("/elevation", methods=["GET"])
 @cross_origin()
 def get_elevation():
+    if not PAID_GOOGLE_APIS_ENABLED:
+        return jsonify({
+            "error": "Google Elevation está desactivado; se utiliza Open-Meteo en el cálculo."
+        }), 403
+
     origin = request.args.get("origin")
     destination = request.args.get("destination")
     api_key = os.getenv("VITE_GOOGLE_MAPS_API_KEY")

@@ -1,11 +1,14 @@
 import requests
-from backend.config import GOOGLE_MAPS_API_KEY
+from backend.config import GOOGLE_MAPS_API_KEY, PAID_GOOGLE_APIS_ENABLED
 
 
 def get_elevation_difference(origin, destination):
     """
     Retorna diferencia de elevación en metros (destino - origen)
     """
+
+    if not PAID_GOOGLE_APIS_ENABLED:
+        raise RuntimeError("Google Elevation está bloqueado por configuración")
 
     url = "https://maps.googleapis.com/maps/api/elevation/json"
 
@@ -19,7 +22,7 @@ def get_elevation_difference(origin, destination):
         "key": GOOGLE_MAPS_API_KEY,
     }
 
-    response = requests.get(url, params=params)
+    response = requests.get(url, params=params, timeout=5)
     data = response.json()
 
     if data["status"] != "OK":

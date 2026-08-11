@@ -1,13 +1,12 @@
-const About = () => {
-  return (
-    <div className="container mt-5">
-      <h1>About Travel Calculator</h1>
-      <p>
-        This application helps you calculate travel costs by considering
-        distance, fuel efficiency, weather conditions, and other factors.
-      </p>
-    </div>
-  );
-};
+import { Link } from "react-router-dom";
+import "../styles/About.css";
+
+const About = () => <div className="about-page">
+  <section className="about-hero"><span>Acerca del proyecto</span><h1>Una estimación de consumo que mira la ruta completa.</h1><p>Travel Calculator nació para superar las aproximaciones basadas únicamente en distancia y un consumo promedio. Su objetivo es explicar cómo el vehículo, el terreno y las condiciones del viaje cambian el resultado.</p><div><Link to="/calculadora">Probar la calculadora</Link><Link className="about-secondary" to="/resultado">Ver último resultado</Link></div></section>
+  <section className="about-principles"><article><span>01</span><h2>Más contexto</h2><p>Vehículo, peso, pasajeros, tipo de vía, clima, elevación y pendientes participan en la estimación.</p></article><article><span>02</span><h2>Resultado explicable</h2><p>El usuario puede revisar métricas rápidas y después abrir el consumo y la elevación por segmentos.</p></article><article><span>03</span><h2>Costos controlados</h2><p>El backend bloquea APIs pagadas de Google y utiliza Open-Meteo para clima y elevación.</p></article></section>
+  <section className="about-method"><div><span>Metodología</span><h2>Cómo construimos la estimación</h2></div><ol><li><b>Base del vehículo</b><p>Consumo mixto o de carretera, combustible, peso y calibración.</p></li><li><b>Ruta segmentada</b><p>Distancia, pendiente positiva o negativa y elevación de cada tramo.</p></li><li><b>Condiciones del viaje</b><p>Ciudad, carretera o camino rural, pasajeros, carga y clima actual.</p></li><li><b>Validación continua</b><p>El modelo se prueba por factor y podrá calibrarse con consumos reales registrados.</p></li></ol></section>
+  <section className="about-stack"><div><span>Tecnología</span><h2>Arquitectura full-stack</h2><p>React y Vite en el cliente; Flask, SQLAlchemy y PostgreSQL en el backend. Open-Meteo aporta clima y elevación sin facturación automática.</p></div><div className="stack-tags"><span>React</span><span>Vite</span><span>Flask</span><span>PostgreSQL</span><span>Open-Meteo</span><span>JWT</span></div></section>
+  <aside className="about-disclaimer"><strong>Transparencia del modelo</strong><p>El resultado es una estimación avanzada, no una medición certificada. Estilo de conducción, tráfico en tiempo real, neumáticos y estado mecánico pueden modificar el consumo observado.</p></aside>
+</div>;
 
 export default About;

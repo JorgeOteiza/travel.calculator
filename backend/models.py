@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from backend.extensions import db, bcrypt
 
 
@@ -9,7 +9,7 @@ class User(db.Model):
     name = db.Column(db.String(80), nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(256), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(UTC).replace(tzinfo=None))
 
     trips = db.relationship("Trip", back_populates="user", cascade="all, delete", lazy=True)
     roles = db.relationship("Role", secondary="user_role", backref="users")
@@ -65,7 +65,7 @@ class Vehicle(db.Model):
 
     data_source = db.Column(db.String(50), default="manual")
 
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(UTC).replace(tzinfo=None))
     
     calibration_factor = db.Column(db.Float, default=1.0, nullable=False)
     calibration_samples = db.Column(db.Integer, default=0, nullable=False)
@@ -130,6 +130,7 @@ class Trip(db.Model):
     distance = db.Column(db.Float, nullable=False)
 
     road_grade = db.Column(db.Float, nullable=False)
+    road_profile = db.Column(db.String(20), nullable=False, default="mixed")
     weather = db.Column(db.String(50), nullable=False)
 
     # ======================
@@ -153,7 +154,7 @@ class Trip(db.Model):
     # ======================
     # ⏱️ Metadata
     # ======================
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(UTC).replace(tzinfo=None))
 
     # ======================
     # 🔗 Relaciones
@@ -184,6 +185,7 @@ class Trip(db.Model):
             "distance": self.distance,
 
             "road_grade": self.road_grade,
+            "road_profile": self.road_profile,
             "weather": self.weather,
 
             "consumption_type": self.consumption_type,

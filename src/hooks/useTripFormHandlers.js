@@ -1,12 +1,29 @@
+import { useCallback } from "react";
+
 export const useTripFormHandlers = (
-  formData,
   setFormData,
   setMapCenter,
-  fetchWeather
+  fetchWeather,
 ) => {
-  const handleLocationChange = (field, data) => {
-    if (!data?.lat || !data?.lng) return;
+  const handleLocationChange = useCallback((field, data) => {
+    console.log("📥 handleLocationChange", field, data);
 
+    // 🧭 POLYLINE
+    if (field === "route_polyline") {
+      setFormData((prev) => ({
+        ...prev,
+        route_polyline: data || "",
+      }));
+      return;
+    }
+
+    // 📍 VALIDACIÓN
+    if (!data || typeof data.lat !== "number" || typeof data.lng !== "number") {
+      console.warn("⚠️ Datos inválidos en ubicación:", data);
+      return;
+    }
+
+    // 📍 SETEO
     setFormData((prev) => ({
       ...prev,
       [`${field}Coords`]: {
@@ -16,15 +33,17 @@ export const useTripFormHandlers = (
       [`${field}Label`]: data.label || "",
     }));
 
+    // 🗺️ CENTRAR MAPA
     setMapCenter({
       lat: data.lat,
       lng: data.lng,
     });
 
+    // 🌦️ WEATHER SOLO ORIGEN
     if (field === "location") {
       fetchWeather(data.lat, data.lng);
     }
-  };
+  }, [fetchWeather, setFormData, setMapCenter]);
 
   return { handleLocationChange };
 };

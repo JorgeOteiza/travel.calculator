@@ -1,0 +1,48 @@
+databases:
+  - name: travelcalculator-db
+    databaseName: travelcalculator
+    user: travelcalculator
+    plan: free
+
+services:
+  - type: web
+    name: travelcalculator-api
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt && flask db upgrade
+    startCommand: gunicorn "app:create_app()"
+    healthCheckPath: /api/
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.6
+      - key: SQLALCHEMY_DATABASE_URI
+        fromDatabase:
+          name: travelcalculator-db
+          property: connectionString
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "False"
+      - key: CORS_ORIGINS
+        sync: false
+      - key: VITE_GOOGLE_MAPS_API_KEY
+        sync: false
+      - key: OPENWEATHERMAP_API_KEY
+        sync: false
+
+  - type: web
+    name: travelcalculator-web
+    runtime: static
+    buildCommand: npm ci && npm run build
+    staticPublishPath: ./dist
+    envVars:
+      - key: VITE_BACKEND_URL
+        sync: false
+      - key: VITE_GOOGLE_MAPS_API_KEY
+        sync: false
+      - key: VITE_MAP_ID
+        sync: false
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
