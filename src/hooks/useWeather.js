@@ -1,22 +1,29 @@
+import { useCallback, useState } from "react";
 import axios from "axios";
 import { API_BASE_URL } from "../config/api";
 
 export const useWeather = (setFormData) => {
-  const fetchWeather = async (lat, lng) => {
+  const [weatherWarning, setWeatherWarning] = useState("");
+
+  const fetchWeather = useCallback(async (lat, lng) => {
+    setWeatherWarning("");
     try {
       const response = await axios.get(
-        `${API_BASE_URL}/api/weather?lat=${lat}&lng=${lng}`
+        `${API_BASE_URL}/api/weather?lat=${lat}&lng=${lng}`,
       );
       if (response.data) {
-        setFormData((prev) => ({
-          ...prev,
+        setFormData((previous) => ({
+          ...previous,
           climate: response.data.climate,
         }));
+        if (response.data.source === "fallback_due_to_exception") {
+          setWeatherWarning("El clima no está disponible; usaremos condiciones moderadas.");
+        }
       }
-    } catch (error) {
-      console.error("🚨 Error al obtener el clima:", error);
+    } catch {
+      setWeatherWarning("El clima no está disponible; usaremos condiciones moderadas.");
     }
-  };
+  }, [setFormData]);
 
-  return { fetchWeather };
+  return { fetchWeather, weatherWarning };
 };

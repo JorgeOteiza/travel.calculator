@@ -2,8 +2,21 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 80vh;
+  width: 100%;
+  min-height: min(80vh, 720px);
+  padding: 20px;
   background-color: #f3f4f6;
+}
+
+@media (max-width: 480px) {
+  .login-container {
+    min-height: calc(100vh - 160px);
+    padding: 12px;
+  }
+
+  .login-form {
+    padding: 24px 18px;
+  }
 }
 
 .login-form {

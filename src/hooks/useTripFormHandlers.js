@@ -1,10 +1,11 @@
+import { useCallback } from "react";
+
 export const useTripFormHandlers = (
-  formData,
   setFormData,
   setMapCenter,
   fetchWeather,
 ) => {
-  const handleLocationChange = (field, data) => {
+  const handleLocationChange = useCallback((field, data) => {
     console.log("📥 handleLocationChange", field, data);
 
     // 🧭 POLYLINE
@@ -42,7 +43,7 @@ export const useTripFormHandlers = (
     if (field === "location") {
       fetchWeather(data.lat, data.lng);
     }
-  };
+  }, [fetchWeather, setFormData, setMapCenter]);
 
   return { handleLocationChange };
 };

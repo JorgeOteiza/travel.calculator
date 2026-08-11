@@ -14,6 +14,10 @@ const TripForm = ({
   handleChange,
   calculateTrip,
   errors,
+  isCalculating,
+  isLoadingBrands,
+  isLoadingModels,
+  message,
 }) => {
   const fuelTypeOptions = [
     { label: "Gasoline 93", value: "gasoline_93" },
@@ -31,37 +35,53 @@ const TripForm = ({
       onSubmit={(e) => e.preventDefault()}
       autoComplete="off"
     >
+      <div className="trip-form-header">
+        <span className="trip-form-eyebrow">Planifica tu ruta</span>
+        <h1>Calcula tu viaje</h1>
+        <p>Completa los datos para estimar consumo y costo.</p>
+      </div>
+
+      {isLoadingBrands && (
+        <div className="form-skeleton" aria-label="Cargando catálogo de vehículos">
+          <span /><span /><span />
+        </div>
+      )}
+
       {/* Marca */}
-      <label htmlFor="brand">Vehicle Brand</label>
+      <label htmlFor="brand">Marca del vehículo</label>
       <Select
         id="brand"
         name="brand"
         options={brandOptions}
         value={brandOptions.find((opt) => opt.value === formData.brand) || null}
         onChange={handleBrandSelect}
-        placeholder="Select a brand"
+        placeholder="Selecciona una marca"
         isClearable
         className="custom-select"
+        classNamePrefix="custom-select"
+        isLoading={isLoadingBrands}
       />
       {errors.brand && <span className="error-text">{errors.brand}</span>}
 
       {/* Modelo */}
-      <label htmlFor="model">Vehicle Model</label>
+      <label htmlFor="model">Modelo</label>
       <Select
         id="model"
         name="model"
         options={modelOptions}
         value={modelOptions.find((opt) => opt.value === formData.model) || null}
         onChange={handleModelSelect}
-        placeholder="Select a model"
+        placeholder="Selecciona un modelo"
         isClearable
         className="custom-select"
+        classNamePrefix="custom-select"
         isDisabled={!formData.brand}
+        isLoading={isLoadingModels}
       />
       {errors.model && <span className="error-text">{errors.model}</span>}
 
       {/* Año */}
-      <label htmlFor="year">Vehicle Year</label>
+      <label htmlFor="year">Año</label>
       <select
         id="year"
         name="year"
@@ -71,7 +91,7 @@ const TripForm = ({
         disabled={!availableYears.length}
         required
       >
-        <option value="">Select year</option>
+        <option value="">Selecciona un año</option>
         {availableYears.map((year) => (
           <option key={year} value={year}>
             {year}
@@ -83,7 +103,7 @@ const TripForm = ({
       {/* Tipo de combustible */}
       {!isElectric && (
         <>
-          <label htmlFor="fuelType">Octane Rating</label>
+          <label htmlFor="fuelType">Octanaje</label>
           <Select
             id="fuelType"
             name="fuelType"
@@ -100,9 +120,10 @@ const TripForm = ({
                 },
               })
             }
-            placeholder="Select octane rating"
+            placeholder="Selecciona el octanaje"
             isClearable
             className="custom-select"
+            classNamePrefix="custom-select"
           />
           {errors.fuelType && (
             <span className="error-text">{errors.fuelType}</span>
@@ -113,13 +134,13 @@ const TripForm = ({
       {/* Precio del combustible */}
       {!isElectric && (
         <>
-          <label htmlFor="fuelPrice">Fuel Price (per liter)</label>
+          <label htmlFor="fuelPrice">Precio por litro</label>
           <input
             type="number"
             name="fuelPrice"
             value={formData.fuelPrice ?? ""}
             onChange={handleChange}
-            placeholder="Fuel price per liter"
+            placeholder="Ej. 1.250"
             min="0"
             step="0.01"
             className="custom-input"
@@ -129,13 +150,13 @@ const TripForm = ({
       )}
 
       {/* Pasajeros */}
-      <label htmlFor="passengers">Number of Passengers</label>
+      <label htmlFor="passengers">Número de pasajeros</label>
       <input
         type="number"
         name="passengers"
         value={formData.passengers ?? ""}
         onChange={handleChange}
-        placeholder="Enter number of passengers"
+        placeholder="Ej. 2"
         min="1"
         className="custom-input"
         required
@@ -145,13 +166,13 @@ const TripForm = ({
       )}
 
       {/* Peso extra */}
-      <label htmlFor="extraWeight">Estimated Extra Weight (kg)</label>
+      <label htmlFor="extraWeight">Peso adicional estimado (kg)</label>
       <input
         type="number"
         name="extraWeight"
         value={formData.extraWeight ?? ""}
         onChange={handleChange}
-        placeholder="Luggage, cargo, etc."
+        placeholder="Equipaje, carga, etc."
         min="0"
         className="custom-input"
         required
@@ -160,12 +181,31 @@ const TripForm = ({
         <span className="error-text">{errors.extraWeight}</span>
       )}
 
+      <div className="trip-preferences">
+        <label htmlFor="currency">Moneda
+          <select id="currency" name="currency" value={formData.currency} onChange={handleChange}>
+            <option value="CLP">CLP ($)</option>
+            <option value="USD">USD (US$)</option>
+            <option value="EUR">EUR (€)</option>
+          </select>
+        </label>
+        <label htmlFor="distanceUnit">Unidad
+          <select id="distanceUnit" name="distanceUnit" value={formData.distanceUnit} onChange={handleChange}>
+            <option value="km">Kilómetros</option>
+            <option value="mi">Millas</option>
+          </select>
+        </label>
+      </div>
+
+      {message && <div className="form-notification" role="alert">{message}</div>}
+
       <button
         type="button"
         className="calculate-button"
         onClick={calculateTrip}
+        disabled={isCalculating}
       >
-        Calculate Trip
+        {isCalculating ? <><span className="button-spinner" /> Calculando ruta…</> : "Calcular viaje"}
       </button>
     </form>
   );
@@ -183,6 +223,10 @@ TripForm.propTypes = {
   handleChange: PropTypes.func.isRequired,
   calculateTrip: PropTypes.func.isRequired,
   errors: PropTypes.object.isRequired,
+  isCalculating: PropTypes.bool.isRequired,
+  isLoadingBrands: PropTypes.bool.isRequired,
+  isLoadingModels: PropTypes.bool.isRequired,
+  message: PropTypes.string,
 };
 
 export default TripForm;

@@ -1,4 +1,5 @@
 .profile-container {
+  width: 100%;
   max-width: 720px;
   margin: 50px auto;
   padding: 24px;
@@ -7,6 +8,23 @@
   box-shadow: 0 0 16px rgba(0, 0, 0, 0.08);
   font-family: "Segoe UI", sans-serif;
   box-sizing: border-box;
+}
+
+@media (max-width: 760px) {
+  .profile-container {
+    margin: 16px auto;
+    padding: 18px;
+  }
+
+  .trip-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .btn-back {
+    width: 100%;
+  }
 }
 
 .profile-container h2 {

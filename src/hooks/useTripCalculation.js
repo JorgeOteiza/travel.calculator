@@ -1,81 +1,58 @@
+import { useState } from "react";
 import axios from "axios";
 import { API_BASE_URL } from "../config/api";
 
-export const useTripCalculation = (formData, setResults) => {
+export const useTripCalculation = (formData) => {
+  const [isCalculating, setIsCalculating] = useState(false);
+  const [calculationError, setCalculationError] = useState("");
+
   const calculateTrip = async () => {
     const token = localStorage.getItem("token");
+    setCalculationError("");
 
     if (!token) {
-      alert("Usuario no autenticado.");
-      return;
+      setCalculationError("Debes iniciar sesión para guardar y calcular un viaje.");
+      return null;
     }
 
-    console.log("🧪 calculateTrip llamado");
-    console.log("📦 formData actual:", formData);
+    const payload = {
+      brand: formData.brand?.toLowerCase(),
+      model: formData.model?.toLowerCase(),
+      year: Number(formData.year),
+      origin: formData.locationCoords,
+      destination: formData.destinationCoords,
+      route_polyline: formData.route_polyline,
+      extra_weight: Number(formData.extraWeight),
+      passengers: Number(formData.passengers),
+      fuel_price: Number(formData.fuelPrice),
+    };
 
+    if (!payload.route_polyline || !payload.origin || !payload.destination) {
+      setCalculationError("Selecciona un origen y destino y espera a que la ruta aparezca en el mapa.");
+      return null;
+    }
+
+    setIsCalculating(true);
     try {
-      const payload = {
-        brand: formData.brand?.toLowerCase(),
-        model: formData.model?.toLowerCase(),
-        year: Number(formData.year),
-
-        // 🔥 FIX REAL AQUÍ
-        origin: formData.locationCoords
-          ? {
-              lat: formData.locationCoords.lat,
-              lng: formData.locationCoords.lng,
-            }
-          : null,
-
-        destination: formData.destinationCoords
-          ? {
-              lat: formData.destinationCoords.lat,
-              lng: formData.destinationCoords.lng,
-            }
-          : null,
-
-        route_polyline: formData.route_polyline,
-
-        extra_weight: Number(formData.extraWeight),
-        passengers: Number(formData.passengers),
-        fuel_price: Number(formData.fuelPrice),
-      };
-
-      console.log("🚀 Payload enviado al backend:", payload);
-
-      if (!payload.route_polyline) {
-        console.error("❌ route_polyline NO está en el payload");
-        alert("Error: polyline no generada");
-        return;
-      }
-
-      if (!payload.origin || !payload.destination) {
-        console.error("❌ Origin o Destination faltantes");
-        alert("Error: origen/destino faltantes");
-        return;
-      }
-
-      const res = await axios.post(
+      const response = await axios.post(
         `${API_BASE_URL}/api/trips/calculate-and-save`,
         payload,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
+        { headers: { Authorization: `Bearer ${token}` } },
       );
-
-      console.log("✅ Respuesta backend:", res.data);
-
-      setResults(res.data);
+      return response.data;
     } catch (error) {
-      const msg =
-        error.response?.data?.error || error.message || "Error desconocido";
-
-      console.error("🚨 Error en cálculo:", error);
-      alert(msg);
+      const serviceMessage = error.response?.data?.error;
+      setCalculationError(
+        serviceMessage ||
+          (error.request
+            ? "No pudimos conectar con el servidor. Comprueba tu conexión e inténtalo nuevamente."
+            : "No fue posible calcular el viaje."),
+      );
+      return null;
+    } finally {
+      setIsCalculating(false);
     }
   };
 
-  return { calculateTrip };
+  return { calculateTrip, isCalculating, calculationError, setCalculationError };
 };

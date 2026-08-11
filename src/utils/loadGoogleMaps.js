@@ -1,29 +1,27 @@
-/**
- * Carga dinámica del script de Google Maps con la clave definida en .env.
- * Evita múltiples cargas si ya está disponible en el entorno global.
- *
- * @param {Function} callback - Función a ejecutar cuando el script se haya cargado.
- */
-let scriptLoaded = false;
+let loadingPromise = null;
 
-export const loadGoogleMapsScript = (callback) => {
-  if (
-    typeof window.google === "object" &&
-    typeof window.google.maps === "object"
-  ) {
+export const loadGoogleMapsScript = (callback, onError = console.error) => {
+  if (window.google?.maps) {
     callback();
     return;
   }
 
-  if (scriptLoaded) return; // 👈 Previene múltiples cargas
-  scriptLoaded = true;
+  if (!loadingPromise) {
+    loadingPromise = new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${
+        import.meta.env.VITE_GOOGLE_MAPS_API_KEY
+      }&libraries=places`;
+      script.async = true;
+      script.defer = true;
+      script.onload = resolve;
+      script.onerror = () => {
+        loadingPromise = null;
+        reject(new Error("No se pudo cargar Google Maps"));
+      };
+      document.head.appendChild(script);
+    });
+  }
 
-  const script = document.createElement("script");
-  script.src = `https://maps.googleapis.com/maps/api/js?key=${
-    import.meta.env.VITE_GOOGLE_MAPS_API_KEY
-  }&libraries=places`;
-  script.async = true;
-  script.defer = true;
-  script.onload = callback;
-  document.head.appendChild(script);
+  loadingPromise.then(callback).catch(onError);
 };

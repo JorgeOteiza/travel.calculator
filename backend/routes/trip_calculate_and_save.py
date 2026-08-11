@@ -168,6 +168,7 @@ def calculate_and_save_trip():
             base_consumption = 0.0
             total_cost = 0.0
             consumption_type = "electric"
+            consumption_segments = []
 
         else:
             base_data = calculate_trip_consumption(
@@ -190,6 +191,7 @@ def calculate_and_save_trip():
 
             fuel_used = float(route_result.get("fuel_used", 0))
             adjusted_consumption = float(route_result.get("adjusted_fc", 0))
+            consumption_segments = route_result.get("segments", [])
 
             calibration_factor = float(vehicle.calibration_factor or 1.0)
             calibration_factor = max(0.7, min(calibration_factor, 1.3))
@@ -242,14 +244,28 @@ def calculate_and_save_trip():
         # 📤 RESPONSE
         # ===============================
         return jsonify({
+            "id": trip.id,
             "distance": round(distance_km, 2),
             "fuelUsed": round(fuel_used, 2),
             "totalCost": round(total_cost, 2),
             "adjustedFC": round(adjusted_consumption, 3),
+            "baseFC": round(base_consumption, 3),
             "weather": climate_label,
             "roadGrade": road_grade,
             "segmentsAnalyzed": len(segments),
-            "elevationProfile": elevation_profile
+            "elevationProfile": elevation_profile,
+            "consumptionProfile": consumption_segments,
+            "vehicle": {
+                "make": vehicle.make,
+                "model": vehicle.model,
+                "year": vehicle.year,
+                "fuel_type": fuel_type,
+                "engine_cc": vehicle.engine_cc,
+                "weight_kg": vehicle.weight_kg,
+                "lkm_mixed": vehicle.lkm_mixed,
+            },
+            "origin": origin,
+            "destination": destination,
         }), 201
 
     except SQLAlchemyError as e:

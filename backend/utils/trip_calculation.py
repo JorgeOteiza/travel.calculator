@@ -103,6 +103,7 @@ def calculate_trip_from_segments(
 
     total_liters = 0.0
     total_distance = 0.0
+    segment_results = []
 
     extra_weight = max(0, total_weight - base_weight)
 
@@ -128,6 +129,12 @@ def calculate_trip_from_segments(
 
         total_liters += liters
         total_distance += d
+        segment_results.append({
+            "distance_km": round(d, 3),
+            "grade_percent": round(grade, 2),
+            "consumption_l100km": round(fc, 3),
+            "fuel_used": round(liters, 4),
+        })
 
     if total_distance <= 0:
         raise ValueError("Distancia total inválida en segmentos")
@@ -137,4 +144,5 @@ def calculate_trip_from_segments(
     return {
         "fuel_used": round(total_liters, 2),
         "adjusted_fc": round(adjusted_fc, 3),
+        "segments": segment_results,
     }

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import PropTypes from "prop-types";
 import "../styles/map.css";
 import { DEFAULT_MAP_CENTER } from "../constants/googleMaps";
@@ -8,6 +8,9 @@ const GoogleMapSection = ({
   markers,
   setMarkers,
   onLocationChange,
+  onRequestLocation,
+  onDeclineLocation,
+  locationStatus,
   mapCenter,
 }) => {
   const mapRef = useRef(null);
@@ -22,18 +25,23 @@ const GoogleMapSection = ({
 
   const routeCalculatedRef = useRef(false);
   const lastPolylineRef = useRef("");
+  const [mapError, setMapError] = useState("");
+  const [mapReady, setMapReady] = useState(false);
+  const latestMapCenterRef = useRef(mapCenter || DEFAULT_MAP_CENTER);
+  latestMapCenterRef.current = mapCenter || DEFAULT_MAP_CENTER;
 
   useEffect(() => {
     loadGoogleMapsScript(() => {
       if (!mapRef.current || mapInstanceRef.current) return;
 
       const map = new window.google.maps.Map(mapRef.current, {
-        center: mapCenter || DEFAULT_MAP_CENTER,
+        center: latestMapCenterRef.current,
         zoom: 12,
         mapId: import.meta.env.VITE_MAP_ID,
       });
 
       mapInstanceRef.current = map;
+      map.setCenter(latestMapCenterRef.current);
 
       directionsServiceRef.current = new window.google.maps.DirectionsService();
 
@@ -77,18 +85,33 @@ const GoogleMapSection = ({
 
       setupAutocomplete(originInputRef, "location");
       setupAutocomplete(destinationInputRef, "destination");
-    });
+      setMapReady(true);
+    }, () => setMapError("No pudimos cargar Google Maps. Revisa la conexión o la clave de API."));
   }, [mapCenter, onLocationChange, setMarkers]);
+
+  useEffect(() => {
+    if (!mapReady || !mapInstanceRef.current || !mapCenter) return;
+    const map = mapInstanceRef.current;
+    window.google.maps.event.trigger(map, "resize");
+    map.panTo(mapCenter);
+    map.setZoom(16);
+  }, [mapCenter, mapReady]);
+
+  useEffect(() => {
+    if (locationStatus === "granted" && originInputRef.current) {
+      originInputRef.current.value = "Mi ubicación actual";
+    }
+  }, [locationStatus, mapReady]);
 
   useEffect(() => {
     const origin = markers[0];
     const destination = markers[1];
 
     if (
-      !origin?.lat ||
-      !origin?.lng ||
-      !destination?.lat ||
-      !destination?.lng ||
+      typeof origin?.lat !== "number" ||
+      typeof origin?.lng !== "number" ||
+      typeof destination?.lat !== "number" ||
+      typeof destination?.lng !== "number" ||
       !directionsServiceRef.current ||
       !directionsRendererRef.current
     ) {
@@ -137,14 +160,14 @@ const GoogleMapSection = ({
         onLocationChange("route_polyline", encodedPolyline);
       },
     );
-  }, [markers]);
+  }, [markers, onLocationChange, mapReady]);
 
   useEffect(() => {
     const map = mapInstanceRef.current;
-    if (!map) return;
+    if (!map || !mapReady) return;
 
     const updateMarker = (ref, position, label) => {
-      if (!position?.lat || !position?.lng) return;
+      if (typeof position?.lat !== "number" || typeof position?.lng !== "number") return;
 
       if (!ref.current) {
         ref.current = new window.google.maps.Marker({
@@ -159,7 +182,7 @@ const GoogleMapSection = ({
 
     updateMarker(originMarkerRef, markers[0], "A");
     updateMarker(destinationMarkerRef, markers[1], "B");
-  }, [markers]);
+  }, [markers, mapReady]);
 
   return (
     <div className="map-wrapper">
@@ -168,17 +191,54 @@ const GoogleMapSection = ({
           <input
             ref={originInputRef}
             className="map-input"
-            placeholder="Origen"
+            placeholder="Ubicación de inicio"
           />
           <input
             ref={destinationInputRef}
             className="map-input"
             placeholder="Destino"
           />
+          {locationStatus !== "idle" && (
+            <button
+              type="button"
+              className="location-button"
+              onClick={onRequestLocation}
+              disabled={locationStatus === "loading"}
+              title="Usar mi ubicación actual"
+              aria-label="Usar mi ubicación actual"
+            >
+              <span aria-hidden="true">⌖</span>
+              {locationStatus === "loading" ? "Ubicando…" : "Mi ubicación"}
+            </button>
+          )}
         </div>
       </div>
 
+      {locationStatus === "idle" && (
+        <div className="location-consent" role="dialog" aria-label="Ubicación actual">
+          <div>
+            <strong>¿Quieres usar tu ubicación actual?</strong>
+            <p>El mapa ya muestra Santiago. Puedes mantenerla o centrarlo donde estás.</p>
+          </div>
+          <div className="location-consent-actions">
+            <button type="button" className="location-decline" onClick={onDeclineLocation}>
+              Ahora no
+            </button>
+            <button type="button" className="location-accept" onClick={onRequestLocation}>
+              Usar mi ubicación
+            </button>
+          </div>
+        </div>
+      )}
+
+      {(locationStatus === "denied" || locationStatus === "unsupported") && (
+        <div className="location-notice" role="status">
+          Mostrando Santiago. Puedes buscar otro origen o intentar tu ubicación nuevamente.
+        </div>
+      )}
+
       <div ref={mapRef} className="map-container" />
+      {mapError && <div className="map-error" role="alert">{mapError}</div>}
     </div>
   );
 };
@@ -187,6 +247,16 @@ GoogleMapSection.propTypes = {
   markers: PropTypes.array.isRequired,
   setMarkers: PropTypes.func.isRequired,
   onLocationChange: PropTypes.func.isRequired,
+  onRequestLocation: PropTypes.func.isRequired,
+  onDeclineLocation: PropTypes.func.isRequired,
+  locationStatus: PropTypes.oneOf([
+    "idle",
+    "loading",
+    "granted",
+    "denied",
+    "unsupported",
+    "dismissed",
+  ]).isRequired,
   mapCenter: PropTypes.object,
 };
 
