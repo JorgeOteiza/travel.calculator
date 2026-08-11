@@ -10,6 +10,7 @@ const GoogleMapSection = ({
   onLocationChange,
   onRequestLocation,
   onDeclineLocation,
+  onCurrentAddressResolved,
   locationStatus,
   mapCenter,
 }) => {
@@ -22,6 +23,7 @@ const GoogleMapSection = ({
   const directionsRendererRef = useRef(null);
   const originMarkerRef = useRef(null);
   const destinationMarkerRef = useRef(null);
+  const geocodedLocationRef = useRef("");
 
   const routeCalculatedRef = useRef(false);
   const lastPolylineRef = useRef("");
@@ -38,6 +40,12 @@ const GoogleMapSection = ({
         center: latestMapCenterRef.current,
         zoom: 12,
         mapId: import.meta.env.VITE_MAP_ID,
+        zoomControl: false,
+        scrollwheel: true,
+        gestureHandling: "greedy",
+        draggable: true,
+        draggableCursor: "grab",
+        draggingCursor: "grabbing",
       });
 
       mapInstanceRef.current = map;
@@ -98,10 +106,29 @@ const GoogleMapSection = ({
   }, [mapCenter, mapReady]);
 
   useEffect(() => {
-    if (locationStatus === "granted" && originInputRef.current) {
-      originInputRef.current.value = "Mi ubicación actual";
-    }
-  }, [locationStatus, mapReady]);
+    const currentLocation = markers[0];
+    if (
+      locationStatus !== "granted" ||
+      !mapReady ||
+      !originInputRef.current ||
+      typeof currentLocation?.lat !== "number" ||
+      typeof currentLocation?.lng !== "number"
+    ) return;
+
+    const locationKey = `${currentLocation.lat},${currentLocation.lng}`;
+    if (geocodedLocationRef.current === locationKey) return;
+    geocodedLocationRef.current = locationKey;
+    originInputRef.current.value = "Buscando dirección…";
+
+    const geocoder = new window.google.maps.Geocoder();
+    geocoder.geocode({ location: currentLocation }, (results, status) => {
+      const address = status === "OK" && results?.[0]?.formatted_address
+        ? results[0].formatted_address
+        : `${currentLocation.lat.toFixed(5)}, ${currentLocation.lng.toFixed(5)}`;
+      if (originInputRef.current) originInputRef.current.value = address;
+      onCurrentAddressResolved(address);
+    });
+  }, [locationStatus, mapReady, markers, onCurrentAddressResolved]);
 
   useEffect(() => {
     const origin = markers[0];
@@ -184,6 +211,14 @@ const GoogleMapSection = ({
     updateMarker(destinationMarkerRef, markers[1], "B");
   }, [markers, mapReady]);
 
+  const changeZoom = (amount) => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+
+    const currentZoom = map.getZoom() ?? 12;
+    map.setZoom(Math.min(21, Math.max(3, currentZoom + amount)));
+  };
+
   return (
     <div className="map-wrapper">
       <div className="search-container">
@@ -238,6 +273,16 @@ const GoogleMapSection = ({
       )}
 
       <div ref={mapRef} className="map-container" />
+      {mapReady && (
+        <div className="map-zoom-controls" aria-label="Controles de zoom">
+          <button type="button" onClick={() => changeZoom(1)} aria-label="Acercar mapa" title="Acercar">
+            +
+          </button>
+          <button type="button" onClick={() => changeZoom(-1)} aria-label="Alejar mapa" title="Alejar">
+            −
+          </button>
+        </div>
+      )}
       {mapError && <div className="map-error" role="alert">{mapError}</div>}
     </div>
   );
@@ -249,6 +294,7 @@ GoogleMapSection.propTypes = {
   onLocationChange: PropTypes.func.isRequired,
   onRequestLocation: PropTypes.func.isRequired,
   onDeclineLocation: PropTypes.func.isRequired,
+  onCurrentAddressResolved: PropTypes.func.isRequired,
   locationStatus: PropTypes.oneOf([
     "idle",
     "loading",

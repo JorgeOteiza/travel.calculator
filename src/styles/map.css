@@ -161,6 +161,50 @@
   min-height: inherit;
 }
 
+.map-zoom-controls {
+  position: absolute;
+  z-index: 10;
+  right: 14px;
+  bottom: 28px;
+  display: grid;
+  overflow: hidden;
+  border: 1px solid rgba(198, 211, 220, 0.95);
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 8px 24px rgba(23, 49, 70, 0.2);
+}
+
+.map-zoom-controls button {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #203747;
+  cursor: pointer;
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1;
+  transition: background 150ms ease, color 150ms ease;
+}
+
+.map-zoom-controls button + button {
+  border-top: 1px solid #dce5ea;
+}
+
+.map-zoom-controls button:hover,
+.map-zoom-controls button:focus-visible {
+  outline: none;
+  background: #e8f6f7;
+  color: #087f8c;
+}
+
+.map-zoom-controls button:active {
+  background: #d5edef;
+}
+
 .map-error {
   position: absolute;
   z-index: 20;
@@ -227,5 +271,15 @@
 
   .location-consent-actions {
     flex-direction: column-reverse;
+  }
+
+  .map-zoom-controls {
+    right: 10px;
+    bottom: 22px;
+  }
+
+  .map-zoom-controls button {
+    width: 40px;
+    height: 40px;
   }
 }
