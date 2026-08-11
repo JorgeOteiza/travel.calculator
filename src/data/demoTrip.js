@@ -19,8 +19,10 @@ export const demoTrip = {
   adjustedFC: 8.558,
   weather: "mild",
   roadGrade: 1.8,
+  roadProfile: "mixed",
   segmentsAnalyzed: 18,
   elevationProfile,
+  elevationSource: "open_meteo",
   consumptionProfile,
   vehicle: {
     make: "Chevrolet",

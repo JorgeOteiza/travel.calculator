@@ -1,3 +1,6 @@
+from backend.services.distance_service import haversine_distance_km
+
+
 def build_elevation_profile(points, elevations):
     """
     Construye el perfil de elevación acumulado de la ruta.
@@ -16,11 +19,7 @@ def build_elevation_profile(points, elevations):
             prev = points[i - 1]
             curr = points[i]
 
-            # distancia aproximada en km (Haversine simplificado)
-            dx = curr["lat"] - prev["lat"]
-            dy = curr["lng"] - prev["lng"]
-
-            segment_distance = ((dx**2 + dy**2) ** 0.5) * 111
+            segment_distance = haversine_distance_km(prev, curr)
             total_distance += segment_distance
 
         profile.append({
@@ -29,3 +28,23 @@ def build_elevation_profile(points, elevations):
         })
 
     return profile
+
+
+def build_elevation_segments(points, elevations):
+    """Construye segmentos deterministas con distancia y pendiente real."""
+    if len(points) < 2 or len(points) != len(elevations):
+        return []
+
+    segments = []
+    for index in range(1, len(points)):
+        distance_km = haversine_distance_km(points[index - 1], points[index])
+        if distance_km <= 0:
+            continue
+        elevation_difference = elevations[index] - elevations[index - 1]
+        grade = (elevation_difference / (distance_km * 1000)) * 100
+        segments.append({
+            "distance_km": round(distance_km, 4),
+            "elevation_diff_m": round(elevation_difference, 2),
+            "grade_percent": round(max(-15, min(grade, 15)), 3),
+        })
+    return segments

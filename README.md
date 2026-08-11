@@ -11,7 +11,8 @@ Antes de iniciar un viaje, comparar solamente distancia y precio de combustible 
 - Landing pública y resultado demostrativo para evaluación sin registro.
 - Calculadora geográfica con ubicación actual y fallback en Santiago.
 - Informe SPA independiente en `/resultado` con métricas y gráficos.
-- Perfil de elevación y consumo estimado por segmento.
+- Perfil de elevación Open-Meteo/Copernicus y consumo estimado por segmento, con fallback plano explícito.
+- Ajustes por tipo de vía, clima, pendiente, pasajeros, carga y calibración del vehículo.
 - Historial autenticado con JWT y persistencia PostgreSQL.
 - Diseño responsive desde 320 px hasta monitores grandes.
 
@@ -31,7 +32,7 @@ Antes de iniciar un viaje, comparar solamente distancia y precio de combustible 
 React + Vite ──HTTP/JSON──> Flask API ──SQLAlchemy──> PostgreSQL
       │                         │
       └── Google Maps           ├── OpenWeatherMap
-                                ├── Google Elevation
+                                ├── Open-Meteo Elevation / Weather
                                 └── NHTSA
 ```
 
@@ -148,6 +149,8 @@ Google Maps debe restringirse al dominio desplegado. La geolocalización del nav
 | `VITE_BACKEND_URL` | URL pública del backend |
 | `VITE_GOOGLE_MAPS_API_KEY` | Clave pública restringida de Google Maps |
 | `VITE_MAP_ID` | Identificador del mapa de Google |
+| `ELEVATION_PROVIDER` | `open_meteo` por defecto; no requiere clave |
+| `PAID_GOOGLE_APIS_ENABLED` | Mantener `False` para bloquear Google desde Flask |
 
 Por compatibilidad, el backend todavía reconoce `VITE_OPENWEATHERMAP_API_KEY`, pero las instalaciones nuevas deben usar `OPENWEATHERMAP_API_KEY`.
 

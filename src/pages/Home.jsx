@@ -22,7 +22,7 @@ const Home = () => {
     passengers: 1, extraWeight: 0, user: userFromStorage || null,
     locationCoords: null, destinationCoords: null, locationLabel: "",
     destinationLabel: "", climate: "", roadGrade: 0, route_polyline: "",
-    currency: "CLP", distanceUnit: "km",
+    currency: "CLP", distanceUnit: "km", roadProfile: "mixed",
   });
 
   const { fetchWeather, weatherWarning } = useWeather(setFormData);
@@ -47,16 +47,20 @@ const Home = () => {
         const currentLocation = { lat: coords.latitude, lng: coords.longitude };
         setMapCenter(currentLocation);
         setMarkers((previous) => [currentLocation, previous[1]]);
-        handleLocationChange("location", { ...currentLocation, label: "Mi ubicación actual" });
+        handleLocationChange("location", { ...currentLocation, label: "Ubicación detectada" });
         setLocationStatus("granted");
       },
       () => {
         setMapCenter(DEFAULT_MAP_CENTER);
         setLocationStatus("denied");
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 },
+      { enableHighAccuracy: false, timeout: 5000, maximumAge: 900000 },
     );
   }, [handleLocationChange]);
+
+  const handleCurrentAddressResolved = useCallback((address) => {
+    setFormData((previous) => ({ ...previous, locationLabel: address }));
+  }, [setFormData]);
 
   const { calculateTrip, isCalculating, calculationError } = useTripCalculation(formData);
 
@@ -93,6 +97,7 @@ const Home = () => {
           mapCenter={mapCenter} markers={markers} setMarkers={setMarkers}
           onLocationChange={handleLocationChange} onRequestLocation={requestCurrentLocation}
           onDeclineLocation={() => setLocationStatus("dismissed")}
+          onCurrentAddressResolved={handleCurrentAddressResolved}
           locationStatus={locationStatus}
         />
       </div>

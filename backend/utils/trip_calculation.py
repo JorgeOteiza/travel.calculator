@@ -6,6 +6,7 @@ def calculate_fuel_consumption(
     climate: str,
     distance_km: float,
     engine_type: str = "gasoline",
+    road_profile: str = "mixed",
 ):
     if base_fc <= 0:
         raise ValueError("El consumo base debe ser mayor a 0")
@@ -57,6 +58,8 @@ def calculate_fuel_consumption(
         "hot": 0.04,
         "windy": 0.06,
         "mild": 0.03,
+        "rain": 0.07,
+        "snowy": 0.12,
     }
 
     climate_penalty = CLIMATE.get(climate, 0.0)
@@ -72,6 +75,14 @@ def calculate_fuel_consumption(
     elif "hybrid" in engine_type:
         engine_penalty = -0.12
 
+    road_multipliers = {
+        "city": 1.16,
+        "mixed": 1.00,
+        "highway": 1.00,
+        "rural": 1.08,
+    }
+    road_multiplier = road_multipliers.get(road_profile, 1.0)
+
     # =========================
     # TOTAL
     # =========================
@@ -85,7 +96,7 @@ def calculate_fuel_consumption(
 
     total_penalty = max(total_penalty, -0.25)
 
-    return adjusted_base_fc * (1 + total_penalty)
+    return adjusted_base_fc * (1 + total_penalty) * road_multiplier
 
 
 # 🔥 MOTOR POR SEGMENTOS (FIX COMPLETO)
@@ -97,6 +108,7 @@ def calculate_trip_from_segments(
     base_weight: float,
     climate: str,
     engine_type: str = "gasoline",
+    road_profile: str = "mixed",
 ):
     if not segments:
         raise ValueError("No hay segmentos para calcular")
@@ -109,8 +121,12 @@ def calculate_trip_from_segments(
 
     for segment in segments:
         # 🔥 FIX COMPATIBILIDAD
-        d = segment.get("distance_km") or segment.get("distance")
-        grade = segment.get("grade_percent") or segment.get("grade")
+        d = segment.get("distance_km")
+        if d is None:
+            d = segment.get("distance")
+        grade = segment.get("grade_percent")
+        if grade is None:
+            grade = segment.get("grade")
 
         if d is None or grade is None:
             raise ValueError(f"Segmento inválido: {segment}")
@@ -123,6 +139,7 @@ def calculate_trip_from_segments(
             climate=climate,
             distance_km=d,
             engine_type=engine_type,
+            road_profile=road_profile,
         )
 
         liters = (fc / 100) * d

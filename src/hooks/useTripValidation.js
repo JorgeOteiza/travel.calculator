@@ -6,6 +6,9 @@ export const validateTripForm = (formData) => {
   if (!formData.brand) errors.brand = "Selecciona una marca";
   if (!formData.model) errors.model = "Selecciona un modelo";
   if (!formData.year) errors.year = "Selecciona un año";
+  if (!["city", "mixed", "highway", "rural"].includes(formData.roadProfile)) {
+    errors.roadProfile = "Selecciona un tipo de vía válido";
+  }
 
   // 📍 Origen
   if (

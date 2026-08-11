@@ -130,6 +130,7 @@ class Trip(db.Model):
     distance = db.Column(db.Float, nullable=False)
 
     road_grade = db.Column(db.Float, nullable=False)
+    road_profile = db.Column(db.String(20), nullable=False, default="mixed")
     weather = db.Column(db.String(50), nullable=False)
 
     # ======================
@@ -184,6 +185,7 @@ class Trip(db.Model):
             "distance": self.distance,
 
             "road_grade": self.road_grade,
+            "road_profile": self.road_profile,
             "weather": self.weather,
 
             "consumption_type": self.consumption_type,

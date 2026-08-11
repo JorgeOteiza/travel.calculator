@@ -60,7 +60,8 @@ def calculate_trip_consumption(
     *,
     vehicle,
     total_km: float,
-    highway_km: float | None = None
+    highway_km: float | None = None,
+    road_profile: str = "mixed",
 ) -> Dict:
     """
     Función principal usada por el endpoint.
@@ -72,9 +73,10 @@ def calculate_trip_consumption(
     }
     """
 
-    consumption_type = resolve_consumption_type(
-        total_km=total_km,
-        highway_km=highway_km
+    consumption_type = (
+        "highway"
+        if road_profile == "highway"
+        else resolve_consumption_type(total_km=total_km, highway_km=highway_km)
     )
 
     base_consumption = resolve_base_consumption(

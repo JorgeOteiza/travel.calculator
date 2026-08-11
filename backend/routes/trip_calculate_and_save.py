@@ -7,14 +7,17 @@ from backend.models import db, Trip, Vehicle, UserVehicle
 from backend.services.distance_service import get_distance_km
 from backend.services.weather_service import get_weather_from_coords
 from backend.services.consumption_service import calculate_trip_consumption
-from backend.services.route_elevation_service import get_route_elevation_segments
 from backend.utils.trip_calculation import calculate_trip_from_segments
 
 from backend.services.polyline_service import decode_polyline, reduce_points
 from backend.services.elevation_profile import get_elevation_for_points
-from backend.services.elevation_profile_chart_service import build_elevation_profile
+from backend.services.elevation_profile_chart_service import (
+    build_elevation_profile,
+    build_elevation_segments,
+)
 
 import traceback
+from backend.config import ELEVATION_PROVIDER
 
 trip_calc_and_save_bp = Blueprint("trip_calc_and_save_bp", __name__)
 
@@ -56,6 +59,9 @@ def calculate_and_save_trip():
 
         extra_weight = float(data.get("extra_weight") or 0)
         fuel_price = float(data.get("fuel_price") or 0)
+        road_profile = str(data.get("road_profile") or "mixed").lower()
+        if road_profile not in {"city", "mixed", "highway", "rural"}:
+            return jsonify({"error": "Tipo de vía inválido"}), 400
 
         if fuel_price < 0 or fuel_price > MAX_FUEL_PRICE:
             return jsonify({"error": "Precio de combustible inválido"}), 400
@@ -114,16 +120,17 @@ def calculate_and_save_trip():
             climate_label = "unknown"
 
         # ===============================
-        # 🧭 SEGMENTOS (ELEVACIÓN)
+        # ⛰️ PERFIL Y SEGMENTOS DE ELEVACIÓN
         # ===============================
         try:
-            segments = get_route_elevation_segments(polyline)
-
+            decoded_points = decode_polyline(polyline)
+            reduced_points = reduce_points(decoded_points, max_points=100)
+            elevations = get_elevation_for_points(reduced_points)
+            elevation_profile = build_elevation_profile(reduced_points, elevations)
+            segments = build_elevation_segments(reduced_points, elevations)
             if not segments:
-                segments = [{
-                    "distance_km": distance_km,
-                    "grade_percent": 0
-                }]
+                raise ValueError("Perfil de elevación vacío")
+            elevation_source = ELEVATION_PROVIDER
 
         except Exception as e:
             print("❌ ERROR SEGMENTOS:", e)
@@ -131,33 +138,24 @@ def calculate_and_save_trip():
                 "distance_km": distance_km,
                 "grade_percent": 0
             }]
+            elevation_profile = []
+            elevation_source = "flat_fallback"
 
         # ===============================
         # 🛣️ ROAD GRADE (FIX CRÍTICO)
         # ===============================
         try:
-            avg_grade = sum(s.get("grade_percent", 0) for s in segments) / len(segments)
+            segment_distance = sum(s.get("distance_km", 0) for s in segments)
+            avg_grade = (
+                sum(s.get("grade_percent", 0) * s.get("distance_km", 0) for s in segments)
+                / segment_distance
+                if segment_distance > 0 else 0
+            )
         except Exception as e:
             print("⚠️ ERROR calculando road_grade:", e)
             avg_grade = 0
 
         road_grade = round(avg_grade, 2)
-
-        # ===============================
-        # ⛰️ PERFIL ELEVACIÓN
-        # ===============================
-        try:
-            decoded_points = decode_polyline(polyline)
-            reduced_points = reduce_points(decoded_points, max_points=100)
-            elevations = get_elevation_for_points(reduced_points)
-
-            elevation_profile = build_elevation_profile(
-                reduced_points,
-                elevations
-            )
-        except Exception as e:
-            print("❌ ERROR PERFIL:", e)
-            elevation_profile = []
 
         # ===============================
         # ⛽ CONSUMO
@@ -174,7 +172,8 @@ def calculate_and_save_trip():
             base_data = calculate_trip_consumption(
                 vehicle=vehicle,
                 total_km=distance_km,
-                highway_km=data.get("highway_km")
+                highway_km=data.get("highway_km"),
+                road_profile=road_profile,
             )
 
             base_consumption = float(base_data.get("base_consumption", 0))
@@ -187,9 +186,9 @@ def calculate_and_save_trip():
                 base_weight=base_weight,
                 climate=climate_label,
                 engine_type=fuel_type,
+                road_profile=road_profile,
             )
 
-            fuel_used = float(route_result.get("fuel_used", 0))
             adjusted_consumption = float(route_result.get("adjusted_fc", 0))
             consumption_segments = route_result.get("segments", [])
 
@@ -197,6 +196,19 @@ def calculate_and_save_trip():
             calibration_factor = max(0.7, min(calibration_factor, 1.3))
 
             adjusted_consumption *= calibration_factor
+            consumption_segments = [
+                {
+                    **segment,
+                    "consumption_l100km": round(
+                        segment["consumption_l100km"] * calibration_factor, 3
+                    ),
+                    "fuel_used": round(
+                        segment["fuel_used"] * calibration_factor, 4
+                    ),
+                }
+                for segment in consumption_segments
+            ]
+            fuel_used = (adjusted_consumption / 100) * distance_km
             total_cost = fuel_used * fuel_price
 
         # ===============================
@@ -216,6 +228,7 @@ def calculate_and_save_trip():
             distance=float(distance_km),
 
             road_grade=road_grade,  # 🔥 FIX
+            road_profile=road_profile,
 
             consumption_type=consumption_type,
             base_consumption=float(base_consumption),
@@ -252,8 +265,10 @@ def calculate_and_save_trip():
             "baseFC": round(base_consumption, 3),
             "weather": climate_label,
             "roadGrade": road_grade,
+            "roadProfile": road_profile,
             "segmentsAnalyzed": len(segments),
             "elevationProfile": elevation_profile,
+            "elevationSource": elevation_source,
             "consumptionProfile": consumption_segments,
             "vehicle": {
                 "make": vehicle.make,

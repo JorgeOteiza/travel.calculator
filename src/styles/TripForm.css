@@ -136,6 +136,27 @@
   background: #087f8c;
 }
 
+.currency-input {
+  position: relative;
+}
+
+.currency-input > span {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  left: 14px;
+  color: #087f8c;
+  font-size: 15px;
+  font-weight: 800;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.currency-input .custom-input {
+  width: 100%;
+  padding-left: 31px;
+}
+
 button.calculate-button {
   width: 100%;
   min-height: 48px;

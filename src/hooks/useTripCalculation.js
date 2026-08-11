@@ -25,6 +25,7 @@ export const useTripCalculation = (formData) => {
       extra_weight: Number(formData.extraWeight),
       passengers: Number(formData.passengers),
       fuel_price: Number(formData.fuelPrice),
+      road_profile: formData.roadProfile,
     };
 
     if (!payload.route_polyline || !payload.origin || !payload.destination) {

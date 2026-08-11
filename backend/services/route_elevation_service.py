@@ -2,13 +2,13 @@ import requests
 import random
 import math
 from typing import List, Dict
-from backend.config import GOOGLE_MAPS_API_KEY
+from backend.config import GOOGLE_MAPS_API_KEY, PAID_GOOGLE_APIS_ENABLED
 from backend.services.polyline_service import decode_polyline
 
 # ============================================================
 # 🔴 FEATURE FLAGS
 # ============================================================
-USE_REAL_APIS = False   # 🔥 False = SIN COSTO
+USE_REAL_APIS = False   # False = sin Google Elevation
 DEBUG_ELEVATION = True  # 🔍 logs
 
 MAX_POINTS = 100
@@ -70,6 +70,9 @@ def get_route_elevation_segments(
     polyline: str,
     segment_length_km: float = 1.0
 ) -> List[Dict]:
+
+    if USE_REAL_APIS and not PAID_GOOGLE_APIS_ENABLED:
+        raise RuntimeError("Google Elevation está bloqueado por configuración")
 
     if not polyline:
         raise ValueError("Polyline requerida")

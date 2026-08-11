@@ -100,6 +100,20 @@ const TripForm = ({
       </select>
       {errors.year && <span className="error-text">{errors.year}</span>}
 
+      <label htmlFor="roadProfile">Tipo de vía predominante</label>
+      <select
+        id="roadProfile"
+        name="roadProfile"
+        value={formData.roadProfile}
+        onChange={handleChange}
+        className="custom-input"
+      >
+        <option value="city">Ciudad / tráfico urbano</option>
+        <option value="mixed">Mixto</option>
+        <option value="highway">Autopista / carretera</option>
+        <option value="rural">Camino rural / caletera</option>
+      </select>
+
       {/* Tipo de combustible */}
       {!isElectric && (
         <>
@@ -135,17 +149,21 @@ const TripForm = ({
       {!isElectric && (
         <>
           <label htmlFor="fuelPrice">Precio por litro</label>
-          <input
-            type="number"
-            name="fuelPrice"
-            value={formData.fuelPrice ?? ""}
-            onChange={handleChange}
-            placeholder="Ej. 1.250"
-            min="0"
-            step="0.01"
-            className="custom-input"
-            required
-          />
+          <div className="currency-input">
+            <span aria-hidden="true">$</span>
+            <input
+              type="number"
+              name="fuelPrice"
+              value={formData.fuelPrice ?? ""}
+              onChange={handleChange}
+              placeholder="Ej. 1.250"
+              min="0"
+              step="1"
+              className="custom-input"
+              aria-label="Precio del combustible en pesos chilenos por litro"
+              required
+            />
+          </div>
         </>
       )}
 
