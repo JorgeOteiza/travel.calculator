@@ -3,6 +3,7 @@ import PropTypes from "prop-types";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
 import "../styles/TripCard.css";
+import { formatCLP } from "../utils/currency";
 
 import { API_BASE_URL } from "../config/api";
 
@@ -10,6 +11,7 @@ const TripCard = ({ trip, onDelete }) => {
   const [expanded, setExpanded] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
 
   const handleDelete = async () => {
     setDeleting(true);
@@ -21,7 +23,7 @@ const TripCard = ({ trip, onDelete }) => {
       onDelete(trip.id);
     } catch (error) {
       console.error("Error al eliminar viaje:", error);
-      alert("No se pudo eliminar el viaje.");
+      setDeleteError("No se pudo eliminar el viaje. Inténtalo nuevamente.");
     } finally {
       setDeleting(false);
       setShowModal(false);
@@ -51,10 +53,10 @@ const TripCard = ({ trip, onDelete }) => {
           <strong>Combustible:</strong> {trip.fuel_consumed} L
         </li>
         <li>
-          <strong>Costo:</strong> ${trip.total_cost}
+          <strong>Costo:</strong> {formatCLP(trip.total_cost)}
         </li>
         <li>
-          <strong>Precio/Litro:</strong> ${trip.fuel_price}
+          <strong>Precio/Litro:</strong> {formatCLP(trip.fuel_price)}
         </li>
         <li>
           <strong>Pasajeros:</strong> {trip.passengers}
@@ -93,6 +95,7 @@ const TripCard = ({ trip, onDelete }) => {
           Eliminar
         </button>
       </div>
+      {deleteError && <p className="trip-delete-error" role="alert">{deleteError}</p>}
 
       {/* MODAL */}
       <AnimatePresence>
@@ -109,7 +112,7 @@ const TripCard = ({ trip, onDelete }) => {
               animate={{ scale: 1 }}
               exit={{ scale: 0.8 }}
             >
-              <h4>¿Estás segura?</h4>
+              <h4>¿Eliminar este viaje?</h4>
               <p>Esta acción eliminará el viaje permanentemente.</p>
               <div className="modal-buttons">
                 <button onClick={() => setShowModal(false)}>Cancelar</button>

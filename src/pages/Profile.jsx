@@ -1,109 +1,57 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { API_BASE_URL } from "../config/api";
 import TripCard from "../components/TripCard";
+import { formatCLP } from "../utils/currency";
 import "../styles/Profile.css";
 import PropTypes from "prop-types";
 
-const Profile = ({ user }) => {
+const Profile = ({ user, authLoading }) => {
   const [trips, setTrips] = useState([]);
   const [sortBy, setSortBy] = useState("reciente");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!user) {
-      navigate("/login");
-      return;
-    }
-
+    if (authLoading) return;
+    if (!user) { navigate("/login"); return; }
     const fetchTrips = async () => {
       try {
         const token = localStorage.getItem("token");
-        const headers = { Authorization: `Bearer ${token}` };
-
-        const res = await axios.get(`${API_BASE_URL}/api/trips`, { headers });
-        setTrips(res.data);
-      } catch (error) {
-        console.error("Error al cargar viajes:", error);
-        navigate("/login");
-      }
+        const response = await axios.get(`${API_BASE_URL}/api/trips`, { headers: { Authorization: `Bearer ${token}` } });
+        setTrips(Array.isArray(response.data) ? response.data : []);
+      } catch {
+        setError("No pudimos cargar tu historial. Inténtalo nuevamente más tarde.");
+      } finally { setLoading(false); }
     };
-
     fetchTrips();
-  }, [user, navigate]);
+  }, [user, authLoading, navigate]);
 
-  const sortedTrips = [...trips].sort((a, b) => {
+  const sortedTrips = useMemo(() => [...trips].sort((a, b) => {
     if (sortBy === "costo") return b.total_cost - a.total_cost;
     if (sortBy === "distancia") return b.distance - a.distance;
-    if (sortBy === "reciente" && a.created_at && b.created_at)
-      return new Date(b.created_at) - new Date(a.created_at);
-    return 0;
-  });
+    return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+  }), [trips, sortBy]);
 
-  const handleDeleteTrip = (deletedId) => {
-    setTrips((prev) => prev.filter((trip) => trip.id !== deletedId));
-  };
+  const totals = useMemo(() => trips.reduce((summary, trip) => ({
+    distance: summary.distance + Number(trip.distance || 0),
+    fuel: summary.fuel + Number(trip.fuel_consumed || 0),
+    cost: summary.cost + Number(trip.total_cost || 0),
+  }), { distance: 0, fuel: 0, cost: 0 }), [trips]);
 
-  return (
-    <div className="profile-container">
-      {!user ? (
-        <p className="profile-loading">Cargando perfil...</p>
-      ) : (
-        <>
-          <h2>Perfil del Usuario</h2>
-          <p>
-            <strong>Nombre:</strong> {user.name}
-          </p>
-          <p>
-            <strong>Email:</strong> {user.email}
-          </p>
+  if (authLoading || !user) return <div className="profile-loading">Cargando perfil…</div>;
 
-          <div className="profile-section">
-            <h3 className="profile-subtitle">🧭 Historial de Viajes</h3>
-
-            <div className="profile-sort">
-              <label htmlFor="orden">Ordenar por:</label>
-              <select
-                id="orden"
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-              >
-                <option value="reciente">Más reciente</option>
-                <option value="costo">Mayor costo</option>
-                <option value="distancia">Mayor distancia</option>
-              </select>
-            </div>
-
-            {sortedTrips.length === 0 ? (
-              <p className="profile-message">No hay viajes registrados aún.</p>
-            ) : (
-              <div className="profile-trip-list">
-                {sortedTrips.map((trip) => (
-                  <TripCard
-                    key={trip.id}
-                    trip={trip}
-                    onDelete={handleDeleteTrip}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-
-          <button className="btn-back" onClick={() => navigate("/")}>
-            Volver al Inicio
-          </button>
-        </>
-      )}
-    </div>
-  );
+  return <div className="profile-page">
+    <header className="profile-hero"><div className="profile-avatar" aria-hidden="true">{user.name?.charAt(0).toUpperCase()}</div><div><span>Tu espacio de viajes</span><h1>{user.name}</h1><p>{user.email}</p></div><Link to="/calculadora">Calcular nuevo viaje</Link></header>
+    <section className="profile-stats"><article><span>Viajes guardados</span><strong>{trips.length}</strong></article><article><span>Distancia acumulada</span><strong>{totals.distance.toFixed(1)} km</strong></article><article><span>Combustible estimado</span><strong>{totals.fuel.toFixed(1)} L</strong></article><article><span>Costo estimado total</span><strong>{formatCLP(totals.cost)}</strong></article></section>
+    <section className="profile-history"><div className="history-heading"><div><span>Historial</span><h2>Tus viajes calculados</h2></div><label htmlFor="orden">Ordenar por<select id="orden" value={sortBy} onChange={(event) => setSortBy(event.target.value)}><option value="reciente">Más reciente</option><option value="costo">Mayor costo</option><option value="distancia">Mayor distancia</option></select></label></div>
+      {error && <div className="profile-error" role="alert">{error}</div>}
+      {loading ? <div className="profile-skeleton"><span/><span/><span/></div> : sortedTrips.length === 0 ? <div className="profile-empty"><span>🧭</span><h3>Aún no tienes viajes</h3><p>Tu próximo cálculo aparecerá aquí para que puedas revisarlo.</p><Link to="/calculadora">Crear primer cálculo</Link></div> : <div className="profile-trip-list">{sortedTrips.map((trip) => <TripCard key={trip.id} trip={trip} onDelete={(id) => setTrips((current) => current.filter((item) => item.id !== id))} />)}</div>}
+    </section>
+  </div>;
 };
 
-Profile.propTypes = {
-  user: PropTypes.shape({
-    name: PropTypes.string.isRequired,
-    email: PropTypes.string.isRequired,
-  }),
-};
-
+Profile.propTypes = { user: PropTypes.shape({ name: PropTypes.string.isRequired, email: PropTypes.string.isRequired }), authLoading: PropTypes.bool.isRequired };
 export default Profile;

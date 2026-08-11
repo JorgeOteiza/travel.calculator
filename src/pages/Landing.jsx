@@ -14,11 +14,12 @@ const Landing = () => {
     <div className="landing-page">
       <section className="landing-hero">
         <div className="hero-copy">
-          <span className="hero-kicker">Planificación inteligente de viajes</span>
-          <h1>Anticipa el consumo y costo real de tu próxima ruta.</h1>
+          <span className="hero-kicker">Una estimación más allá de distancia × consumo</span>
+          <h1>Calcula cuánto costará realmente tu ruta.</h1>
           <p>
-            Travel Calculator combina vehículo, distancia, clima, carga y elevación
-            para entregar una estimación explicable antes de salir.
+            Las calculadoras tradicionales usan un promedio fijo. Travel Calculator
+            analiza tu vehículo y divide la ruta en segmentos para ajustar el consumo
+            según pendiente, tipo de vía, clima, pasajeros, carga y precio actual del combustible.
           </p>
           <div className="hero-actions">
             <Link className="primary-cta" to="/calculadora">Calcular un viaje</Link>
@@ -27,9 +28,10 @@ const Landing = () => {
             </button>
           </div>
           <div className="hero-proof" aria-label="Características principales">
-            <span>✓ Rutas reales</span><span>✓ Perfil de elevación</span><span>✓ Clima</span>
+            <span>✓ Consumo por segmento</span><span>✓ Elevación real</span><span>✓ Resultado explicable</span>
           </div>
         </div>
+
         <div className="hero-preview" aria-hidden="true">
           <div className="preview-route"><span>A</span><i /><span>B</span></div>
           <div className="preview-metric"><small>Distancia</small><strong>42,1 km</strong></div>
@@ -39,9 +41,9 @@ const Landing = () => {
       </section>
 
       <section className="landing-features">
-        <article><span>01</span><h2>Datos del vehículo</h2><p>Usa consumo, motor y peso para construir una base realista.</p></article>
-        <article><span>02</span><h2>Contexto de ruta</h2><p>Analiza pendientes, distancia, pasajeros, carga y condiciones climáticas.</p></article>
-        <article><span>03</span><h2>Resultado explicable</h2><p>Visualiza métricas, elevación y consumo por segmento en una vista clara.</p></article>
+        <article><span>01</span><h2>Base específica del vehículo</h2><p>Considera consumo mixto o de carretera, combustible, motor, peso y calibración histórica.</p></article>
+        <article><span>02</span><h2>Cada tramo importa</h2><p>La ruta se divide en segmentos con pendientes positivas y negativas, elevación y tipo de vía predominante.</p></article>
+        <article><span>03</span><h2>Condiciones reales del viaje</h2><p>Ajusta por clima, tráfico urbano o carretera, pasajeros, equipaje y precio actual ingresado.</p></article>
       </section>
 
       <section className="landing-stack">

@@ -1,98 +1,44 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import LineChart from "../components/LineChart";
+import ShareModal from "../components/ShareModal";
+import { readStoredResult } from "../utils/resultStorage";
 import "../styles/Result.css";
-
-const readStoredResult = () => {
-  try {
-    return JSON.parse(sessionStorage.getItem("travelCalculator:lastResult"));
-  } catch {
-    return null;
-  }
-};
 
 const Result = () => {
   const location = useLocation();
   const result = location.state?.result || readStoredResult();
-  const [currency, setCurrency] = useState(result?.settings?.currency || "CLP");
-  const [distanceUnit, setDistanceUnit] = useState(result?.settings?.distanceUnit || "km");
-  const [notice, setNotice] = useState("");
+  const [showShare, setShowShare] = useState(false);
 
-  const distance = useMemo(() => {
-    if (!result) return 0;
-    return distanceUnit === "mi" ? result.distance * 0.621371 : result.distance;
-  }, [distanceUnit, result]);
+  if (!result) return <div className="empty-result"><span>🧭</span><h1>No hay un resultado disponible</h1><p>Realiza un cálculo para generar el resumen.</p><Link to="/calculadora">Ir a la calculadora</Link></div>;
 
-  if (!result) {
-    return (
-      <div className="empty-result">
-        <span>🧭</span><h1>No hay un resultado disponible</h1>
-        <p>Realiza un cálculo para generar el informe de tu viaje.</p>
-        <Link to="/calculadora">Ir a la calculadora</Link>
-      </div>
-    );
-  }
-
-  const costFormatter = new Intl.NumberFormat("es-CL", {
-    style: "currency",
-    currency,
-    maximumFractionDigits: currency === "CLP" ? 0 : 2,
-  });
-
-  const shareResult = async () => {
-    const text = `Viaje ${result.originLabel || "Origen"} → ${result.destinationLabel || "Destino"}: ${distance.toFixed(1)} ${distanceUnit}, ${result.fuelUsed} L.`;
-    try {
-      await navigator.clipboard.writeText(text);
-      setNotice("Resumen copiado al portapapeles.");
-    } catch {
-      setNotice("No fue posible copiar el resumen.");
-    }
-  };
+  const currency = result.settings?.currency || "CLP";
+  const cost = new Intl.NumberFormat("es-CL", { style: "currency", currency, maximumFractionDigits: currency === "CLP" ? 0 : 2 }).format(result.totalCost || 0);
 
   return (
-    <div className="result-page">
+    <div className="result-page quick-result-page">
       <header className="result-header">
-        <div>
-          <span className="result-kicker">Informe de viaje {result.isDemo && "· Demostración"}</span>
-          <h1>{result.originLabel || "Origen"} <span>→</span> {result.destinationLabel || "Destino"}</h1>
-          <p>Estimación basada en vehículo, carga, clima y perfil de ruta.</p>
+        <div className="result-heading-copy">
+          <span className="result-kicker">Resultado rápido {result.isDemo && "· Demostración"}</span>
+          <h1 title={`${result.originLabel} → ${result.destinationLabel}`}><span className="route-location">{result.originLabel || "Origen"}</span><i>→</i><span className="route-location">{result.destinationLabel || "Destino"}</span></h1>
+          <p>Tu estimación principal está lista. Puedes revisar el modelo completo cuando quieras.</p>
         </div>
         <div className="result-actions">
-          <button type="button" onClick={shareResult}>Compartir resumen</button>
+          <button type="button" onClick={() => setShowShare(true)}>Compartir resumen</button>
           <Link to="/calculadora">Nuevo cálculo</Link>
         </div>
       </header>
 
-      {notice && <div className="result-notice" role="status">{notice}</div>}
-
-      <section className="result-settings" aria-label="Preferencias de visualización">
-        <label>Moneda<select value={currency} onChange={(event) => setCurrency(event.target.value)}><option>CLP</option><option>USD</option><option>EUR</option></select></label>
-        <label>Distancia<select value={distanceUnit} onChange={(event) => setDistanceUnit(event.target.value)}><option value="km">Kilómetros</option><option value="mi">Millas</option></select></label>
-        <p>La moneda cambia el formato; no aplica conversión de tipo de cambio.</p>
+      <section className="quick-result-card">
+        <div className="quick-result-lead"><span>Costo estimado</span><strong>{cost}</strong><p>Basado en el precio de combustible ingresado.</p></div>
+        <div className="quick-metrics">
+          <article><span>Distancia</span><strong>{result.distance} km</strong></article>
+          <article><span>Combustible</span><strong>{result.fuelUsed} L</strong></article>
+          <article><span>Consumo ajustado</span><strong>{result.adjustedFC} L/100 km</strong></article>
+          <article><span>Condición</span><strong>{result.weather || "Sin datos"}</strong></article>
+        </div>
+        <div className="quick-result-cta"><div><strong>¿Quieres entender esta estimación?</strong><p>Consulta elevación, consumo por tramo, vehículo y factores aplicados.</p></div><Link to="/resultado/detalles" state={{ result }}>Ver más detalles</Link></div>
       </section>
-
-      <section className="metric-grid">
-        <article><span>Distancia</span><strong>{distance.toFixed(1)} {distanceUnit}</strong><small>Ruta calculada</small></article>
-        <article><span>Combustible</span><strong>{result.fuelUsed ?? 0} L</strong><small>{result.adjustedFC ?? 0} L/100 km ajustado</small></article>
-        <article className="metric-highlight"><span>Costo estimado</span><strong>{costFormatter.format(result.totalCost || 0)}</strong><small>Según precio ingresado</small></article>
-        <article><span>Clima</span><strong>{result.weather || "Sin datos"}</strong><small>Pendiente media {result.roadGrade ?? 0}%</small></article>
-      </section>
-
-      <section className="chart-grid">
-        <LineChart data={result.elevationProfile} valueKey="elevation" label="Perfil de elevación" unit="m" />
-        <LineChart data={result.consumptionProfile} valueKey="consumption_l100km" label="Consumo por segmento" unit="L/100 km" color="#ef8a3c" />
-      </section>
-
-      <section className="result-detail-grid">
-        <article>
-          <h2>Vehículo</h2>
-          <dl><div><dt>Marca y modelo</dt><dd>{result.vehicle?.make || "-"} {result.vehicle?.model || ""}</dd></div><div><dt>Año</dt><dd>{result.vehicle?.year || "-"}</dd></div><div><dt>Motor</dt><dd>{result.vehicle?.engine_cc ? `${result.vehicle.engine_cc} cc` : "-"}</dd></div><div><dt>Consumo base</dt><dd>{result.baseFC ?? "-"} L/100 km</dd></div></dl>
-        </article>
-        <article>
-          <h2>Cómo se calculó</h2>
-          <ol><li>Consumo base del vehículo.</li><li>Ajuste por pasajeros y carga.</li><li>Análisis de {result.segmentsAnalyzed || 0} segmentos.</li><li>Pendiente y elevación de la ruta.</li><li>Condiciones climáticas de origen.</li></ol>
-        </article>
-      </section>
+      {showShare && <ShareModal result={result} onClose={() => setShowShare(false)} />}
     </div>
   );
 };
