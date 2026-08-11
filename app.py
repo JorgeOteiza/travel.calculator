@@ -14,10 +14,16 @@ load_dotenv()
 def create_app():
     app = Flask(__name__)
 
+    cors_origins = [
+        origin.strip()
+        for origin in os.getenv("CORS_ORIGINS", "http://localhost:5173").split(",")
+        if origin.strip()
+    ]
+
     # 🔥 CORS GLOBAL (bien hecho)
     CORS(
         app,
-        resources={r"/api/*": {"origins": "http://localhost:5173"}},
+        resources={r"/api/*": {"origins": cors_origins}},
         supports_credentials=True
     )
 
@@ -37,9 +43,9 @@ def create_app():
     app.register_blueprint(main_bp, url_prefix="/api")
     app.register_blueprint(trip_calc_and_save_bp, url_prefix="/api")
 
-    print("🚀 Flask iniciado correctamente")
+    print("Flask iniciado correctamente")
     return app
 
 if __name__ == "__main__":
     app = create_app()
-    app.run(debug=True)
+    app.run(debug=app.config["DEBUG"])
