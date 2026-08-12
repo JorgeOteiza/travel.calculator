@@ -2,11 +2,13 @@ import { useState } from "react";
 import PropTypes from "prop-types";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import "../styles/TripCard.css";
 import { formatCLP } from "../utils/currency";
 import { formatDistance, formatLiters, formatPercentage, formatWeight } from "../utils/numberFormat";
 
 import { API_BASE_URL } from "../config/api";
+import { tripToResult } from "../utils/tripResultAdapter";
 
 const isCoordinateLabel = (value = "") => /^-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?$/.test(value.trim());
 
@@ -20,7 +22,8 @@ const compactLocation = (value) => {
     .join(", ");
 };
 
-const TripCard = ({ trip, onDelete }) => {
+const TripCard = ({ trip, onDelete, viewMode }) => {
+  const navigate = useNavigate();
   const [expanded, setExpanded] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -54,7 +57,7 @@ const TripCard = ({ trip, onDelete }) => {
 
   return (
     <motion.div
-      className="trip-card"
+      className={`trip-card ${viewMode === "list" ? "trip-card-list" : ""}`}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, x: -20 }}
@@ -78,7 +81,7 @@ const TripCard = ({ trip, onDelete }) => {
           <strong>Costo:</strong> {formatCLP(trip.total_cost)}
         </li>
         <li>
-          <strong>Precio/Litro:</strong> {formatCLP(trip.fuel_price)}
+          <strong>Precio/Litro:</strong><span className="fuel-price-detail">{formatCLP(trip.fuel_price)} {trip.fuel_octane && <small>{trip.fuel_octane.replace("gasoline_", "")} oct.</small>}</span>
         </li>
         <li>
           <strong>Pasajeros:</strong> {trip.passengers}
@@ -113,6 +116,9 @@ const TripCard = ({ trip, onDelete }) => {
       <div className="trip-actions">
         <button onClick={() => setExpanded(!expanded)}>
           {expanded ? "Ocultar detalles" : "Ver más"}
+        </button>
+        <button onClick={() => navigate("/resultado/detalles", { state: { result: tripToResult(trip) } })}>
+          Ver análisis
         </button>
         <button className="delete-btn" onClick={() => setShowModal(true)}>
           Eliminar
@@ -158,6 +164,7 @@ const TripCard = ({ trip, onDelete }) => {
 TripCard.propTypes = {
   trip: PropTypes.object.isRequired,
   onDelete: PropTypes.func.isRequired,
+  viewMode: PropTypes.oneOf(["grid", "list"]).isRequired,
 };
 
 export default TripCard;

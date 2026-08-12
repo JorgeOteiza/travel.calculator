@@ -1,16 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
+import PropTypes from "prop-types";
 import { API_BASE_URL } from "../config/api";
 import TripCard from "../components/TripCard";
 import { formatCLP } from "../utils/currency";
 import { formatDistance, formatLiters } from "../utils/numberFormat";
 import "../styles/Profile.css";
-import PropTypes from "prop-types";
 
 const Profile = ({ user, authLoading }) => {
   const [trips, setTrips] = useState([]);
   const [sortBy, setSortBy] = useState("reciente");
+  const [viewMode, setViewMode] = useState("grid");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const navigate = useNavigate();
@@ -47,9 +48,10 @@ const Profile = ({ user, authLoading }) => {
   return <div className="profile-page">
     <header className="profile-hero"><div className="profile-avatar" aria-hidden="true">{user.name?.charAt(0).toUpperCase()}</div><div><span>Tu espacio de viajes</span><h1>{user.name}</h1><p>{user.email}</p></div><Link to="/calculadora">Calcular nuevo viaje</Link></header>
     <section className="profile-stats"><article><span>Viajes guardados</span><strong>{trips.length}</strong></article><article><span>Distancia acumulada</span><strong>{formatDistance(totals.distance)} km</strong></article><article><span>Combustible estimado</span><strong>{formatLiters(totals.fuel)} L</strong></article><article><span>Costo estimado total</span><strong>{formatCLP(totals.cost)}</strong></article></section>
-    <section className="profile-history"><div className="history-heading"><div><span>Historial</span><h2>Tus viajes calculados</h2></div><label htmlFor="orden">Ordenar por<select id="orden" value={sortBy} onChange={(event) => setSortBy(event.target.value)}><option value="reciente">Más reciente</option><option value="costo">Mayor costo</option><option value="distancia">Mayor distancia</option></select></label></div>
+    <section className="profile-history">
+      <div className="history-heading"><div><span>Historial</span><h2>Tus viajes calculados</h2></div><div className="history-controls"><div className="view-toggle" role="group" aria-label="Vista del historial"><button type="button" className={viewMode === "grid" ? "active" : ""} onClick={() => setViewMode("grid")} aria-label="Vista de cuadrícula" title="Vista de cuadrícula"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/></svg></button><button type="button" className={viewMode === "list" ? "active" : ""} onClick={() => setViewMode("list")} aria-label="Vista de lista" title="Vista de lista"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h3v3H4zm5 0h11v3H9zM4 10.5h3v3H4zm5 0h11v3H9zM4 16h3v3H4zm5 0h11v3H9z"/></svg></button></div><label htmlFor="orden">Ordenar por<select id="orden" value={sortBy} onChange={(event) => setSortBy(event.target.value)}><option value="reciente">Más reciente</option><option value="costo">Mayor costo</option><option value="distancia">Mayor distancia</option></select></label></div></div>
       {error && <div className="profile-error" role="alert">{error}</div>}
-      {loading ? <div className="profile-skeleton"><span/><span/><span/></div> : sortedTrips.length === 0 ? <div className="profile-empty"><span>🧭</span><h3>Aún no tienes viajes</h3><p>Tu próximo cálculo aparecerá aquí para que puedas revisarlo.</p><Link to="/calculadora">Crear primer cálculo</Link></div> : <div className="profile-trip-list">{sortedTrips.map((trip) => <TripCard key={trip.id} trip={trip} onDelete={(id) => setTrips((current) => current.filter((item) => item.id !== id))} />)}</div>}
+      {loading ? <div className="profile-skeleton"><span/><span/><span/></div> : sortedTrips.length === 0 ? <div className="profile-empty"><span>🧭</span><h3>Aún no tienes viajes</h3><p>Tu próximo cálculo aparecerá aquí para que puedas revisarlo.</p><Link to="/calculadora">Crear primer cálculo</Link></div> : <div className={`profile-trip-list ${viewMode === "list" ? "is-list" : ""}`}>{sortedTrips.map((trip) => <TripCard key={trip.id} trip={trip} viewMode={viewMode} onDelete={(id) => setTrips((current) => current.filter((item) => item.id !== id))} />)}</div>}
     </section>
   </div>;
 };

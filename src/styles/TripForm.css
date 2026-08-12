@@ -122,6 +122,7 @@
 }
 
 .custom-select .custom-select__menu {
+  z-index: 30;
   overflow: hidden;
   border: 1px solid #dce5ee;
   border-radius: 13px;
@@ -140,6 +141,47 @@
   position: relative;
 }
 
+.fuel-fields-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+}
+
+.passenger-weight-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+}
+
+.compact-form-field { display: flex; min-width: 0; flex-direction: column; gap: 4px; }
+.trip-form .compact-form-field > label { margin-top: 7px; }
+
+.driving-style-choice {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+  margin: 8px 0 0;
+  padding: 0;
+  border: 0;
+}
+.driving-style-choice legend { grid-column: 1 / -1; width: 100%; margin: 0 0 5px; padding: 0; color: #34495a; font-size: 13px; font-weight: 700; }
+.driving-style-choice label { display: flex; min-width: 0; min-height: 58px; align-items: flex-start; align-self: stretch; gap: 6px; margin: 0; padding: 9px 7px; border: 1px solid #d4e0e7; border-radius: 11px; background: #f8fbfc; box-sizing: border-box; cursor: pointer; }
+.driving-style-choice label:has(input:checked) { border-color: #0b9aa7; background: #eefafb; }
+.driving-style-choice input { flex: none; margin: 3px 0 0; accent-color: #087f8c; }
+.driving-style-choice span,.driving-style-choice strong,.driving-style-choice small { display: block; min-width: 0; }
+.driving-style-choice strong { font-size: 11px; line-height: 1.3; }
+.driving-style-choice small { margin-top: 2px; color: #6b7e89; font-size: 9px; font-weight: 400; line-height: 1.3; }
+
+.fuel-field {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.trip-form .fuel-field > label { margin-top: 7px; }
+
 .currency-input > span {
   position: absolute;
   z-index: 1;
@@ -151,6 +193,30 @@
   transform: translateY(-50%);
   pointer-events: none;
 }
+
+.consumption-choice {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  flex-direction: column;
+  gap: 8px;
+  margin: 8px 0 0;
+  padding: 0;
+  border: 0;
+  box-sizing: border-box;
+}
+
+.consumption-choice legend { width: 100%; margin: 0 0 5px; padding: 0; color: #34495a; font-size: 13px; font-weight: 700; }
+.consumption-choice label { display: flex; width: 100%; min-width: 0; align-items: flex-start; gap: 10px; margin: 0; padding: 11px 12px; border: 1px solid #d4e0e7; border-radius: 12px; background: #f8fbfc; box-sizing: border-box; cursor: pointer; }
+.consumption-choice label:has(input:checked) { border-color: #0b9aa7; background: #eefafb; box-shadow: 0 0 0 2px rgba(11,154,167,.08); }
+.consumption-choice input { flex: 0 0 auto; margin: 3px 0 0; accent-color: #087f8c; }
+.consumption-choice label > span { min-width: 0; flex: 1; }
+.consumption-choice span,.consumption-choice strong,.consumption-choice small { display: block; }
+.consumption-choice strong { line-height: 1.3; }
+.consumption-choice small { margin-top: 3px; color: #6b7e89; font-size: 11px; font-weight: 400; line-height: 1.4; }
+.performance-input { position: relative; }
+.performance-input .custom-input { padding-right: 58px; }
+.performance-input span { position: absolute; top: 50%; right: 14px; color: #647985; font-size: 12px; font-weight: 700; transform: translateY(-50%); pointer-events: none; }
 
 .currency-input .custom-input {
   width: 100%;
@@ -255,6 +321,8 @@ button.calculate-button:disabled {
 }
 
 @media (max-width: 400px) {
+  .fuel-fields-row,.passenger-weight-row { grid-template-columns: 1fr; }
+  .driving-style-choice { grid-template-columns: 1fr; }
   .trip-form {
     padding: 17px;
   }

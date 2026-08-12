@@ -46,6 +46,22 @@
   box-shadow: 0 0 0 3px rgba(11, 154, 167, 0.12);
 }
 
+/* Google inserta las sugerencias fuera del árbol del mapa. Este nivel evita
+   que queden detrás del formulario, menú o mapa en dispositivos táctiles. */
+.pac-container {
+  z-index: 2400 !important;
+  overflow-y: auto;
+  max-height: min(42vh, 320px);
+  border: 1px solid #cbdbe3;
+  border-radius: 12px;
+  box-shadow: 0 16px 36px rgba(18, 43, 58, .2);
+  font-family: inherit;
+  touch-action: manipulation;
+}
+
+.pac-item { min-height: 44px; padding: 9px 12px; cursor: pointer; line-height: 1.35; }
+.pac-item:hover,.pac-item-selected { background: #e9f7f8; }
+
 .location-button {
   display: inline-flex;
   align-items: center;

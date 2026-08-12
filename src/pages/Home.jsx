@@ -18,11 +18,12 @@ const Home = () => {
     vehicleDetails, handleBrandSelect, handleModelSelect, handleYearSelect,
     handleChange, isLoadingBrands, isLoadingModels, dataWarning,
   } = useTripData({
-    brand: "", model: "", year: "", fuelType: "", fuelPrice: 0,
+    brand: "", model: "", year: "", fuelType: "", fuelPrice: "",
+    consumptionMode: "standard", userConsumptionKml: "",
     passengers: 1, extraWeight: 0, user: userFromStorage || null,
     locationCoords: null, destinationCoords: null, locationLabel: "",
     destinationLabel: "", climate: "", roadGrade: 0, route_polyline: "",
-    currency: "CLP", distanceUnit: "km", roadProfile: "mixed",
+    currency: "CLP", distanceUnit: "km", roadProfile: "mixed", drivingStyle: "moderate",
   });
 
   const { fetchWeather, weatherWarning } = useWeather(setFormData);
@@ -83,7 +84,9 @@ const Home = () => {
 
   return (
     <div className="home-container">
+      <nav className="calculator-shortcuts" aria-label="Secciones de la calculadora"><a href="#trip-form-section">Datos del viaje</a><a href="#trip-map-section">Origen y destino</a></nav>
       <div className="form-map-container no-results">
+        <div id="trip-form-section" className="form-section-anchor">
         <TripForm
           formData={formData} brandOptions={brandOptions} modelOptions={modelOptions}
           availableYears={availableYears} vehicleDetails={vehicleDetails}
@@ -93,13 +96,14 @@ const Home = () => {
           isLoadingBrands={isLoadingBrands} isLoadingModels={isLoadingModels}
           message={calculationError || weatherWarning || dataWarning}
         />
-        <GoogleMapSection
+        </div>
+        <div id="trip-map-section" className="map-section-anchor"><GoogleMapSection
           mapCenter={mapCenter} markers={markers} setMarkers={setMarkers}
           onLocationChange={handleLocationChange} onRequestLocation={requestCurrentLocation}
           onDeclineLocation={() => setLocationStatus("dismissed")}
           onCurrentAddressResolved={handleCurrentAddressResolved}
           locationStatus={locationStatus}
-        />
+        /></div>
       </div>
     </div>
   );

@@ -38,7 +38,7 @@ const GoogleMapSection = ({
 
       const map = new window.google.maps.Map(mapRef.current, {
         center: latestMapCenterRef.current,
-        zoom: 12,
+        zoom: 10,
         mapId: import.meta.env.VITE_MAP_ID,
         zoomControl: false,
         scrollwheel: true,
@@ -64,7 +64,11 @@ const GoogleMapSection = ({
       const setupAutocomplete = (inputRef, field) => {
         const autocomplete = new window.google.maps.places.Autocomplete(
           inputRef.current,
-          { fields: ["geometry", "formatted_address", "name"] },
+          {
+            fields: ["geometry", "formatted_address", "name"],
+            componentRestrictions: { country: "cl" },
+            types: ["geocode"],
+          },
         );
 
         autocomplete.addListener("place_changed", () => {
@@ -102,8 +106,8 @@ const GoogleMapSection = ({
     const map = mapInstanceRef.current;
     window.google.maps.event.trigger(map, "resize");
     map.panTo(mapCenter);
-    map.setZoom(16);
-  }, [mapCenter, mapReady]);
+    map.setZoom(locationStatus === "granted" ? 16 : 10);
+  }, [locationStatus, mapCenter, mapReady]);
 
   useEffect(() => {
     const currentLocation = markers[0];

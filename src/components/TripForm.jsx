@@ -114,90 +114,66 @@ const TripForm = ({
         <option value="rural">Camino rural / caletera</option>
       </select>
 
-      {/* Tipo de combustible */}
-      {!isElectric && (
-        <>
-          <label htmlFor="fuelType">Octanaje</label>
-          <Select
-            id="fuelType"
-            name="fuelType"
-            options={fuelTypeOptions}
-            value={
-              fuelTypeOptions.find((opt) => opt.value === formData.fuelType) ||
-              null
-            }
-            onChange={(selectedOption) =>
-              handleChange({
-                target: {
-                  name: "fuelType",
-                  value: selectedOption?.value || "",
-                },
-              })
-            }
-            placeholder="Selecciona el octanaje"
-            isClearable
-            className="custom-select"
-            classNamePrefix="custom-select"
-          />
-          {errors.fuelType && (
-            <span className="error-text">{errors.fuelType}</span>
-          )}
-        </>
-      )}
+      <fieldset className="driving-style-choice">
+        <legend>Ritmo de conducción</legend>
+        <label><input type="radio" name="drivingStyle" value="calm" checked={formData.drivingStyle === "calm"} onChange={handleChange} /><span><strong>Tranquilo</strong><small>Sin apuros</small></span></label>
+        <label><input type="radio" name="drivingStyle" value="moderate" checked={formData.drivingStyle === "moderate"} onChange={handleChange} /><span><strong>Moderado</strong><small>Ritmo normal</small></span></label>
+        <label><input type="radio" name="drivingStyle" value="hurried" checked={formData.drivingStyle === "hurried"} onChange={handleChange} /><span><strong>Apurado</strong><small>Más aceleraciones</small></span></label>
+      </fieldset>
+      {errors.drivingStyle && <span className="error-text">{errors.drivingStyle}</span>}
 
-      {/* Precio del combustible */}
+      <fieldset className="consumption-choice">
+        <legend>Rendimiento actual del vehículo</legend>
+        <label>
+          <input type="radio" name="consumptionMode" value="standard" checked={formData.consumptionMode === "standard"} onChange={handleChange} />
+          <span><strong>Usar estándar</strong><small>Usaremos el rendimiento registrado para este modelo.</small></span>
+        </label>
+        <label>
+          <input type="radio" name="consumptionMode" value="custom" checked={formData.consumptionMode === "custom"} onChange={handleChange} />
+          <span><strong>Usar rendimiento conocido</strong><small>Si conoces el rendimiento real de tu vehículo.</small></span>
+        </label>
+      </fieldset>
+      {formData.consumptionMode === "custom" && <>
+        <label htmlFor="userConsumptionKml">Rendimiento actual (km/L)</label>
+        <div className="performance-input">
+          <input id="userConsumptionKml" type="number" name="userConsumptionKml" value={formData.userConsumptionKml ?? ""} onChange={handleChange} placeholder="Ej. 12,5" min="2" max="40" step="0.1" className="custom-input" />
+          <span>km/L</span>
+        </div>
+        {errors.userConsumptionKml && <span className="error-text">{errors.userConsumptionKml}</span>}
+      </>}
+
       {!isElectric && (
-        <>
-          <label htmlFor="fuelPrice">Precio por litro</label>
-          <div className="currency-input">
-            <span aria-hidden="true">$</span>
-            <input
-              type="number"
-              name="fuelPrice"
-              value={formData.fuelPrice ?? ""}
-              onChange={handleChange}
-              placeholder="Ej. 1.250"
-              min="0"
-              step="1"
-              className="custom-input"
-              aria-label="Precio del combustible en pesos chilenos por litro"
-              required
+        <div className="fuel-fields-row">
+          <div className="fuel-field">
+            <label htmlFor="fuelType">Octanaje</label>
+            <Select
+              id="fuelType"
+              name="fuelType"
+              options={fuelTypeOptions}
+              value={fuelTypeOptions.find((opt) => opt.value === formData.fuelType) || null}
+              onChange={(selectedOption) => handleChange({ target: { name: "fuelType", value: selectedOption?.value || "" } })}
+              placeholder="Selecciona"
+              isClearable
+              className="custom-select"
+              classNamePrefix="custom-select"
             />
+            {errors.fuelType && <span className="error-text">{errors.fuelType}</span>}
           </div>
-        </>
+          <div className="fuel-field">
+            <label htmlFor="fuelPrice">Precio por litro</label>
+            <div className="currency-input">
+              <span aria-hidden="true">$</span>
+              <input id="fuelPrice" type="number" name="fuelPrice" value={formData.fuelPrice ?? ""} onChange={handleChange} placeholder="Ej. 1.250" min="0" step="1" className="custom-input" aria-label="Precio del combustible en pesos chilenos por litro" required />
+            </div>
+            {errors.fuelPrice && <span className="error-text">{errors.fuelPrice}</span>}
+          </div>
+        </div>
       )}
 
-      {/* Pasajeros */}
-      <label htmlFor="passengers">Número de pasajeros</label>
-      <input
-        type="number"
-        name="passengers"
-        value={formData.passengers ?? ""}
-        onChange={handleChange}
-        placeholder="Ej. 2"
-        min="1"
-        className="custom-input"
-        required
-      />
-      {errors.passengers && (
-        <span className="error-text">{errors.passengers}</span>
-      )}
-
-      {/* Peso extra */}
-      <label htmlFor="extraWeight">Peso adicional estimado (kg)</label>
-      <input
-        type="number"
-        name="extraWeight"
-        value={formData.extraWeight ?? ""}
-        onChange={handleChange}
-        placeholder="Equipaje, carga, etc."
-        min="0"
-        className="custom-input"
-        required
-      />
-      {errors.extraWeight && (
-        <span className="error-text">{errors.extraWeight}</span>
-      )}
+      <div className="passenger-weight-row">
+        <div className="compact-form-field"><label htmlFor="passengers">Número de pasajeros</label><input id="passengers" type="number" name="passengers" value={formData.passengers ?? ""} onChange={handleChange} placeholder="Ej. 2" min="1" className="custom-input" required />{errors.passengers && <span className="error-text">{errors.passengers}</span>}</div>
+        <div className="compact-form-field"><label htmlFor="extraWeight">Peso adicional (kg)</label><input id="extraWeight" type="number" name="extraWeight" value={formData.extraWeight ?? ""} onChange={handleChange} placeholder="Ej. 20" min="0" className="custom-input" required />{errors.extraWeight && <span className="error-text">{errors.extraWeight}</span>}</div>
+      </div>
 
       <div className="trip-preferences">
         <label htmlFor="currency">Moneda
