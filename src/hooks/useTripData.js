@@ -1,5 +1,21 @@
-import { useEffect, useState, useRef, useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
+
+const fallbackVehicles = [
+  { make: "Chery", model: "Tiggo 2 GLX", year: 2021 },
+  { make: "Chevrolet", model: "Groove", year: 2022 },
+  { make: "Chevrolet", model: "Spark", year: 2021 },
+  { make: "Hyundai", model: "Sonata", year: 2022 },
+  { make: "KIA", model: "Morning", year: 2020 },
+  { make: "McLaren", model: "650S", year: 2022 },
+  { make: "MG", model: "ZS", year: 2022 },
+  { make: "Suzuki", model: "Baleno", year: 2021 },
+  { make: "Toyota", model: "Corolla", year: 2018 },
+];
+
+const uniqueOptions = (values) => [...new Set(values)]
+  .sort((a, b) => String(a).localeCompare(String(b), "es", { sensitivity: "base" }))
+  .map((value) => ({ label: value, value }));
 
 const useTripData = (initialFormData) => {
   const [formData, setFormData] = useState({
@@ -7,144 +23,83 @@ const useTripData = (initialFormData) => {
     route_polyline: initialFormData.route_polyline || null,
     climate: initialFormData.climate || "mild",
   });
-
-
-  const [brandOptions, setBrandOptions] = useState([]);
-  const [modelOptions, setModelOptions] = useState([]);
+  const [vehicleCatalog, setVehicleCatalog] = useState([]);
   const [vehicleDetails, setVehicleDetails] = useState(null);
   const [isLoadingBrands, setIsLoadingBrands] = useState(true);
-  const [isLoadingModels, setIsLoadingModels] = useState(false);
   const [dataWarning, setDataWarning] = useState("");
-
   const lastFetchRef = useRef({ brand: null, model: null, year: null });
   const ignoreRef = useRef(false);
 
-  const brandCache = useRef({});
-  const modelCache = useRef({});
-
-  const defaultBrands = useMemo(
-    () => [
-      { label: "Chery", value: "Chery" },
-      { label: "Chevrolet", value: "Chevrolet" },
-      { label: "Suzuki", value: "Suzuki" },
-      { label: "KIA", value: "KIA" },
-      { label: "MG", value: "MG" },
-    ],
-    []
-  );
-
-  const defaultModels = useMemo(
-    () => ({
-      Chery: [{ label: "Tiggo 2 GLX", value: "Tiggo 2 GLX" }],
-      Chevrolet: [
-        { label: "Groove", value: "Groove" },
-        { label: "Spark", value: "Spark" },
-      ],
-      Suzuki: [{ label: "Baleno", value: "Baleno" }],
-      KIA: [{ label: "Morning", value: "Morning" }],
-      MG: [{ label: "ZS", value: "ZS" }],
-    }),
-    []
-  );
-
   useEffect(() => {
-    const fetchBrands = async () => {
-      if (brandCache.current.data) {
-        setBrandOptions(brandCache.current.data);
-        setIsLoadingBrands(false);
-        return;
-      }
-
+    const fetchAvailableVehicles = async () => {
       try {
-        const response = await axios.get("/api/cars/brands");
-        const apiBrands = Array.isArray(response.data) ? response.data : [];
-        const combined = [...defaultBrands, ...apiBrands].reduce((acc, b) => {
-          if (!acc.find((x) => x.value === b.value)) acc.push(b);
-          return acc;
-        }, []);
-        brandCache.current.data = combined;
-        setBrandOptions(combined);
+        const response = await axios.get("/api/cars/vehicles");
+        const vehicles = Array.isArray(response.data) ? response.data : [];
+        if (!vehicles.length) throw new Error("Catálogo vacío");
+        setVehicleCatalog(vehicles);
       } catch {
-        setBrandOptions(defaultBrands);
-        setDataWarning("NHTSA no está disponible; mostramos marcas locales.");
+        setVehicleCatalog(fallbackVehicles);
+        setDataWarning("No pudimos actualizar el catálogo; mostramos vehículos de demostración.");
       } finally {
         setIsLoadingBrands(false);
       }
     };
 
-    fetchBrands();
-  }, [defaultBrands]);
+    fetchAvailableVehicles();
+  }, []);
 
-  useEffect(() => {
-    if (!formData.brand) return;
+  const brandOptions = useMemo(
+    () => uniqueOptions(vehicleCatalog.map((vehicle) => vehicle.make)),
+    [vehicleCatalog],
+  );
 
-    const fetchModels = async () => {
-      setIsLoadingModels(true);
-      if (modelCache.current[formData.brand]) {
-        setModelOptions(modelCache.current[formData.brand]);
-        setIsLoadingModels(false);
-        return;
-      }
+  const modelOptions = useMemo(
+    () => uniqueOptions(
+      vehicleCatalog
+        .filter((vehicle) => vehicle.make === formData.brand)
+        .map((vehicle) => vehicle.model),
+    ),
+    [formData.brand, vehicleCatalog],
+  );
 
-      try {
-        const res = await axios.get(
-          `/api/cars/models?make_id=${encodeURIComponent(formData.brand)}`
-        );
-        const apiModels = res.data || [];
-        const localModels = defaultModels[formData.brand] || [];
-        const combined = [...localModels, ...apiModels].reduce((acc, m) => {
-          if (!acc.find((x) => x.value === m.value)) acc.push(m);
-          return acc;
-        }, []);
-        modelCache.current[formData.brand] = combined;
-        setModelOptions(combined);
-      } catch {
-        setModelOptions(defaultModels[formData.brand] || []);
-        setDataWarning("No pudimos consultar todos los modelos; mostramos datos locales.");
-      } finally {
-        setIsLoadingModels(false);
-      }
-    };
-
-    fetchModels();
-  }, [formData.brand, defaultModels]);
+  const availableYears = useMemo(
+    () => [...new Set(
+      vehicleCatalog
+        .filter((vehicle) => (
+          vehicle.make === formData.brand && vehicle.model === formData.model
+        ))
+        .map((vehicle) => Number(vehicle.year)),
+    )].sort((a, b) => b - a),
+    [formData.brand, formData.model, vehicleCatalog],
+  );
 
   const fetchVehicleDetails = useCallback(async () => {
     const { brand, model, year } = formData;
     if (!brand || !model || !year) return;
 
-    const alreadyFetched =
-      brand === lastFetchRef.current.brand &&
-      model === lastFetchRef.current.model &&
-      year === lastFetchRef.current.year;
-
+    const alreadyFetched = brand === lastFetchRef.current.brand
+      && model === lastFetchRef.current.model
+      && year === lastFetchRef.current.year;
     if (alreadyFetched || ignoreRef.current) return;
 
     lastFetchRef.current = { brand, model, year };
     ignoreRef.current = true;
 
     try {
-      const res = await axios.get(
-        `/api/cars/model_details?make=${encodeURIComponent(
-          brand
-        )}&model=${encodeURIComponent(model)}&year=${year}`
+      const response = await axios.get(
+        `/api/cars/model_details?make=${encodeURIComponent(brand)}&model=${encodeURIComponent(model)}&year=${year}`,
       );
-
-      if (res.status === 200 && res.data) {
-        setVehicleDetails(res.data);
-
-        if (res.data.fuel_type?.toLowerCase().includes("electric")) {
-          setFormData((prev) => ({
-            ...prev,
-            fuelType: "",
-            fuelPrice: "",
-          }));
+      if (response.status === 200 && response.data) {
+        setVehicleDetails(response.data);
+        if (response.data.fuel_type?.toLowerCase().includes("electric")) {
+          setFormData((previous) => ({ ...previous, fuelType: "", fuelPrice: "" }));
         }
       }
+    } catch (error) {
+      setVehicleDetails(null);
+      setDataWarning(error.response?.data?.error || "No pudimos cargar los datos del vehículo.");
     } finally {
-      setTimeout(() => {
-        ignoreRef.current = false;
-      }, 800);
+      setTimeout(() => { ignoreRef.current = false; }, 300);
     }
   }, [formData]);
 
@@ -152,39 +107,31 @@ const useTripData = (initialFormData) => {
     fetchVehicleDetails();
   }, [fetchVehicleDetails]);
 
-  const availableYears =
-    formData.brand && formData.model
-      ? Array.from({ length: 30 }, (_, i) => new Date().getFullYear() - i)
-      : [];
-
-  const handleBrandSelect = (opt) => {
-    setFormData((p) => ({
-      ...p,
-      brand: opt?.value || "",
+  const handleBrandSelect = (option) => {
+    setFormData((previous) => ({
+      ...previous,
+      brand: option?.value || "",
       model: "",
       year: "",
     }));
     setVehicleDetails(null);
-    setModelOptions([]);
   };
 
-  const handleModelSelect = (opt) => {
-    setFormData((p) => ({ ...p, model: opt?.value || "", year: "" }));
+  const handleModelSelect = (option) => {
+    setFormData((previous) => ({
+      ...previous,
+      model: option?.value || "",
+      year: "",
+    }));
     setVehicleDetails(null);
   };
 
   const handleYearSelect = (year) => {
-    setFormData((p) => ({ ...p, year: String(year) }));
+    setFormData((previous) => ({ ...previous, year: String(year) }));
   };
 
-  // ✅ FIX DEFINITIVO DEL "0"
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value, // ← SIEMPRE string
-    }));
+  const handleChange = ({ target: { name, value } }) => {
+    setFormData((previous) => ({ ...previous, [name]: value }));
   };
 
   return {
@@ -199,7 +146,7 @@ const useTripData = (initialFormData) => {
     handleYearSelect,
     handleChange,
     isLoadingBrands,
-    isLoadingModels,
+    isLoadingModels: false,
     dataWarning,
   };
 };

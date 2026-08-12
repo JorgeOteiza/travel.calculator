@@ -45,15 +45,14 @@ def calculate_fuel_consumption(
         terrain_penalty = 0.22
     elif 2 <= road_grade < 6 and distance_km >= 40:
         terrain_penalty = 0.10
-    elif abs(road_grade) < 2 and distance_km < 60:
-        terrain_penalty = 0.08
+    elif abs(road_grade) < 2:
+        terrain_penalty = 0.0
 
     # =========================
     # 5. CLIMA
     # =========================
     CLIMATE = {
         "normal": 0.00,
-        "rain": 0.05,
         "cold": 0.07,
         "hot": 0.04,
         "windy": 0.06,

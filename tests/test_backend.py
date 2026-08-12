@@ -1,5 +1,6 @@
 import os
 import unittest
+from datetime import datetime
 from unittest.mock import Mock, patch
 
 os.environ["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
@@ -8,6 +9,7 @@ os.environ["DEBUG"] = "False"
 
 from app import create_app
 from backend.extensions import db
+from backend.models import Vehicle
 from backend.utils.trip_calculation import (
     calculate_fuel_consumption,
     calculate_trip_from_segments,
@@ -15,9 +17,38 @@ from backend.utils.trip_calculation import (
 from backend.services.elevation_profile_chart_service import build_elevation_segments
 from backend.services.elevation_profile import get_elevation_for_points
 from backend.services.weather_service import get_weather_from_coords
+from backend.services.driving_conditions_service import calculate_operating_conditions
 
 
 class CalculationTests(unittest.TestCase):
+    def test_short_city_trip_in_peak_hour_has_highest_operating_factor(self):
+        peak = calculate_operating_conditions(
+            distance_km=5.7,
+            road_profile="city",
+            departure_time=datetime(2026, 8, 11, 18, 0),
+        )
+        off_peak = calculate_operating_conditions(
+            distance_km=5.7,
+            road_profile="city",
+            departure_time=datetime(2026, 8, 11, 11, 0),
+        )
+        long_trip = calculate_operating_conditions(
+            distance_km=30,
+            road_profile="city",
+            departure_time=datetime(2026, 8, 11, 11, 0),
+        )
+        self.assertEqual(peak["traffic_level"], "hora punta")
+        self.assertGreater(peak["operating_factor"], off_peak["operating_factor"])
+        self.assertGreater(off_peak["operating_factor"], long_trip["operating_factor"])
+
+    def test_highway_does_not_receive_urban_peak_penalty(self):
+        conditions = calculate_operating_conditions(
+            distance_km=30,
+            road_profile="highway",
+            departure_time=datetime(2026, 8, 11, 18, 0),
+        )
+        self.assertEqual(conditions["traffic_factor"], 1.0)
+
     def test_flat_route_has_positive_consumption(self):
         value = calculate_fuel_consumption(
             base_fc=7.0,
@@ -28,6 +59,7 @@ class CalculationTests(unittest.TestCase):
             distance_km=20,
         )
         self.assertGreater(value, 0)
+        self.assertEqual(value, 7.0)
 
     def test_uphill_consumes_more_than_flat(self):
         common = dict(
@@ -149,6 +181,40 @@ class AuthenticationTests(unittest.TestCase):
         client = self.app.test_client()
         self.assertEqual(client.get("/api/elevation?origin=1,1&destination=2,2").status_code, 403)
         self.assertEqual(client.get("/api/distance?origin=1,1&destination=2,2").status_code, 403)
+
+    def test_vehicle_catalog_only_exposes_calculation_ready_records(self):
+        with self.app.app_context():
+            ready = Vehicle(
+                make="Test Ready",
+                model="Complete",
+                year=2026,
+                fuel_type="gasoline",
+                weight_kg=1200,
+                lkm_mixed=7.0,
+            )
+            incomplete = Vehicle(
+                make="Test Incomplete",
+                model="Missing consumption",
+                year=2026,
+                fuel_type="unknown",
+                weight_kg=0,
+                lkm_mixed=None,
+            )
+            db.session.add_all([ready, incomplete])
+            db.session.commit()
+
+        client = self.app.test_client()
+        response = client.get("/api/cars/vehicles")
+        self.assertEqual(response.status_code, 200)
+        vehicles = response.get_json()
+        self.assertTrue(any(vehicle["make"] == "Test Ready" for vehicle in vehicles))
+        self.assertFalse(any(vehicle["make"] == "Test Incomplete" for vehicle in vehicles))
+
+        unavailable = client.get(
+            "/api/cars/model_details"
+            "?make=Test%20Incomplete&model=Missing%20consumption&year=2026"
+        )
+        self.assertEqual(unavailable.status_code, 422)
 
 
 if __name__ == "__main__":

@@ -8,6 +8,23 @@ class ConsumptionError(Exception):
     pass
 
 
+def get_vehicle_data_issues(vehicle) -> list[str]:
+    """Retorna los datos mínimos que impiden calcular con un vehículo."""
+    issues = []
+    if not vehicle.lkm_mixed or vehicle.lkm_mixed <= 0:
+        issues.append("consumo mixto")
+    if not vehicle.weight_kg or vehicle.weight_kg <= 0:
+        issues.append("peso")
+    fuel_type = (vehicle.fuel_type or "").strip().lower()
+    if not fuel_type or fuel_type == "unknown":
+        issues.append("tipo de combustible")
+    return issues
+
+
+def is_vehicle_calculation_ready(vehicle) -> bool:
+    return not get_vehicle_data_issues(vehicle)
+
+
 def resolve_consumption_type(
     total_km: float,
     highway_km: float | None

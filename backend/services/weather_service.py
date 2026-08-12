@@ -42,7 +42,7 @@ def get_weather_from_coords(coords):
         }
     except Exception as error:
         return {
-            "climate": "mild",
+            "climate": "normal",
             "raw": None,
             "source": "fallback_due_to_exception",
             "error": str(error),

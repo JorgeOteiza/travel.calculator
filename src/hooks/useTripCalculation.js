@@ -21,11 +21,14 @@ export const useTripCalculation = (formData) => {
       year: Number(formData.year),
       origin: formData.locationCoords,
       destination: formData.destinationCoords,
+      origin_label: formData.locationLabel,
+      destination_label: formData.destinationLabel,
       route_polyline: formData.route_polyline,
       extra_weight: Number(formData.extraWeight),
       passengers: Number(formData.passengers),
       fuel_price: Number(formData.fuelPrice),
       road_profile: formData.roadProfile,
+      local_hour: new Date().getHours(),
     };
 
     if (!payload.route_polyline || !payload.origin || !payload.destination) {

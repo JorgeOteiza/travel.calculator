@@ -6,7 +6,12 @@ from sqlalchemy.exc import SQLAlchemyError
 from backend.models import db, Trip, Vehicle, UserVehicle
 from backend.services.distance_service import get_distance_km
 from backend.services.weather_service import get_weather_from_coords
-from backend.services.consumption_service import calculate_trip_consumption
+from backend.services.consumption_service import (
+    ConsumptionError,
+    calculate_trip_consumption,
+    get_vehicle_data_issues,
+)
+from backend.services.driving_conditions_service import calculate_operating_conditions
 from backend.utils.trip_calculation import calculate_trip_from_segments
 
 from backend.services.polyline_service import decode_polyline, reduce_points
@@ -60,6 +65,11 @@ def calculate_and_save_trip():
         extra_weight = float(data.get("extra_weight") or 0)
         fuel_price = float(data.get("fuel_price") or 0)
         road_profile = str(data.get("road_profile") or "mixed").lower()
+        local_hour = data.get("local_hour")
+        if local_hour is not None:
+            local_hour = int(local_hour)
+            if not 0 <= local_hour <= 23:
+                return jsonify({"error": "Hora local inválida"}), 400
         if road_profile not in {"city", "mixed", "highway", "rural"}:
             return jsonify({"error": "Tipo de vía inválido"}), 400
 
@@ -68,6 +78,8 @@ def calculate_and_save_trip():
 
         origin = data["origin"]
         destination = data["destination"]
+        origin_label = str(data.get("origin_label") or "").strip()[:255]
+        destination_label = str(data.get("destination_label") or "").strip()[:255]
         polyline = data["route_polyline"]
 
         if not origin or not destination:
@@ -87,6 +99,13 @@ def calculate_and_save_trip():
 
         if not vehicle:
             return jsonify({"error": "Vehículo no encontrado"}), 404
+
+        vehicle_issues = get_vehicle_data_issues(vehicle)
+        if vehicle_issues:
+            return jsonify({
+                "error": "Vehículo sin datos suficientes para calcular",
+                "missing": vehicle_issues,
+            }), 422
 
         fuel_type = vehicle.fuel_type or "gasoline"
         is_electric = "electric" in fuel_type.lower()
@@ -192,6 +211,26 @@ def calculate_and_save_trip():
             adjusted_consumption = float(route_result.get("adjusted_fc", 0))
             consumption_segments = route_result.get("segments", [])
 
+            operating_conditions = calculate_operating_conditions(
+                distance_km=distance_km,
+                road_profile=road_profile,
+                departure_hour=local_hour,
+            )
+            operating_factor = operating_conditions["operating_factor"]
+            adjusted_consumption *= operating_factor
+            consumption_segments = [
+                {
+                    **segment,
+                    "consumption_l100km": round(
+                        segment["consumption_l100km"] * operating_factor, 3
+                    ),
+                    "fuel_used": round(
+                        segment["fuel_used"] * operating_factor, 4
+                    ),
+                }
+                for segment in consumption_segments
+            ]
+
             calibration_factor = float(vehicle.calibration_factor or 1.0)
             calibration_factor = max(0.7, min(calibration_factor, 1.3))
 
@@ -225,6 +264,8 @@ def calculate_and_save_trip():
             total_weight=float(total_weight),
             passengers=int(passengers),
             location=f"{origin.get('lat')},{origin.get('lng')}",
+            origin_label=origin_label or f"{origin.get('lat')},{origin.get('lng')}",
+            destination_label=destination_label or f"{destination.get('lat')},{destination.get('lng')}",
             distance=float(distance_km),
 
             road_grade=road_grade,  # 🔥 FIX
@@ -270,6 +311,17 @@ def calculate_and_save_trip():
             "elevationProfile": elevation_profile,
             "elevationSource": elevation_source,
             "consumptionProfile": consumption_segments,
+            "operatingConditions": (
+                operating_conditions if not is_electric else {
+                    "departure_hour": None,
+                    "traffic_level": "no aplica",
+                    "traffic_factor": 1.0,
+                    "short_trip_factor": 1.0,
+                    "operating_factor": 1.0,
+                    "is_short_trip": False,
+                    "method": "no aplica a vehículo eléctrico",
+                }
+            ),
             "vehicle": {
                 "make": vehicle.make,
                 "model": vehicle.model,
@@ -282,6 +334,9 @@ def calculate_and_save_trip():
             "origin": origin,
             "destination": destination,
         }), 201
+
+    except ConsumptionError as e:
+        return jsonify({"error": str(e)}), 422
 
     except SQLAlchemyError as e:
         db.session.rollback()
