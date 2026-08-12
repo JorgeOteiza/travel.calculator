@@ -1,107 +1,74 @@
-# Changelog - Travel Calculator
+# Changelog
 
-Registro de cambios importantes del proyecto.
+Los cambios relevantes de Travel Calculator se documentan en este archivo. El formato sigue los principios de [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
----
+## [Unreleased]
 
-## [2024-12-21/22] - Refactorización de Código y Mejoras de Seguridad
+### Pendiente
 
-### 🔒 Seguridad
-- **Removido `.env` del repositorio** para proteger API keys y credenciales
-- **Creado `.env.example`** como plantilla de configuración
-- **Corregida duplicación de Bcrypt** en `auth_routes.py` - ahora usa la instancia inicializada correctamente
+- Despliegue público de frontend, API y PostgreSQL.
+- Pruebas automatizadas del frontend.
+- Calibración del modelo con consumos reales.
 
-### 🧹 Limpieza de Código
-- **Centralizada configuración de APIs** en `src/config/api.js`
-  - Eliminadas 11 duplicaciones de `VITE_BACKEND_URL`
-  - Archivos actualizados: App.jsx, Login.jsx, Register.jsx, Profile.jsx, Navbar.jsx, TripCard.jsx, useTripCalculation.js, useWeather.js, auth.js
-- **Eliminado `Root.jsx`** - componente wrapper innecesario
-- **Eliminado `src/constants/env.js`** - reemplazado por configuración centralizada
-- **Removidas llamadas redundantes a `load_dotenv()`** en archivos de rutas:
-  - `backend/routes/distance_routes.py`
-  - `backend/routes/elevation_routes.py`
-  - `backend/routes/weather_routes.py`
+## [2026-08-11]
 
-### ⚡ Optimización de Performance
-- **Eliminado doble fetch en Login.jsx**
-  - Antes: Login → setTimeout → Fetch user → Navigate
-  - Después: Login → Navigate (directo)
-  - Mejora: -500ms en tiempo de login, -50% requests
+### Añadido
 
-### 🐛 Correcciones
-- **Corregidos nombres de archivos CSS** para consistencia:
-  - `app.css` → `App.css`
-  - `tripResults.css` → `TripResults.css`
+- Catálogo dinámico de vehículos aptos para cálculo, derivado de PostgreSQL.
+- Origen y destino persistidos con nombres reales para el historial del perfil.
+- Migración `c47a12e9d630` para las etiquetas de ruta de cada viaje.
+- Landing pública y resultado demostrativo sin registro.
+- Rutas SPA `/resultado` y `/resultado/detalles`.
+- Resumen rápido, métricas, perfil de elevación y consumo por segmento.
+- Modal para compartir mediante WhatsApp, Instagram, TikTok, Facebook y correo.
+- Perfil vial urbano, mixto, carretera y rural.
+- Migración `b91f4c21d8a0` para guardar `road_profile`.
+- Dirección real obtenida desde la ubicación actual.
+- Controles de zoom y arrastre del mapa.
+- Formato CLP para resultados, historial y precio por litro.
+- Capturas y documentación orientadas a portafolio.
 
-### 📊 Estadísticas
-- **Commit:** `9172868`
-- **Archivos modificados:** 21
-- **Líneas agregadas:** 89
-- **Líneas eliminadas:** 98
-- **Balance neto:** -9 líneas (código más limpio)
+### Cambiado
 
----
+- Los selectores de marca, modelo y año sólo muestran combinaciones realmente calculables.
+- Los vehículos incompletos responden `422` en lugar de generar un error interno `500`.
+- El fallback climático ahora es neutral y las rutas planas ya no reciben una penalización fija del 8 %.
+- Clima y elevación migrados a Open-Meteo como proveedor predeterminado.
+- Modelo de consumo refinado por pendiente, clima, carga, pasajeros y perfil vial.
+- Resultados separados entre resumen inmediato y análisis explicable.
+- Rediseño responsive de navegación, Landing, About, calculadora, resultados y Profile.
+- Dependencias frontend actualizadas y auditoría npm reducida a 0 vulnerabilidades conocidas.
+- Timestamps actualizados para evitar el uso de `datetime.utcnow()` deprecado.
 
-## Próximas Mejoras Sugeridas
+### Seguridad
 
-### 🔴 Prioridad Alta
-- [ ] Implementar logger utility para reemplazar console.log/print (58 ocurrencias)
-- [ ] Mejorar validación de formularios con rangos y formatos
-- [ ] Crear constantes para valores hardcoded (6.5, 1200)
+- Endpoints pagados de Google bloqueados por defecto en el backend.
+- Nueva variable `PAID_GOOGLE_APIS_ENABLED=False`.
+- La documentación exige restricciones de dominio y cuota para Google Maps.
 
-### 🟡 Prioridad Media
-- [ ] Implementar Axios interceptor para manejo automático de tokens
-- [ ] Agregar paginación en endpoint `/api/trips`
-- [ ] Crear manejo de errores centralizado
-- [ ] Agregar índices en base de datos para queries frecuentes
+### Pruebas
 
-### 🟢 Prioridad Baja
-- [ ] Optimizar queries N+1 con joinedload
-- [ ] Agregar tests unitarios para endpoints críticos
-- [ ] Documentar API con Swagger/OpenAPI
+- 11 pruebas backend para autenticación, consumo, pendiente, carga, clima, perfil vial y proveedores.
+- Verificación de lint, build, migraciones y auditoría de dependencias.
 
----
+## [2024-12-22]
 
-## Notas Técnicas
+### Añadido
 
-### Configuración de Entorno
-- **Archivo `.env` NO está en Git** (protegido por `.gitignore`)
-- **Usar `.env.example` como plantilla** para configuración local
-- **Variables requeridas:**
-  - `SQLALCHEMY_DATABASE_URI` - Conexión a PostgreSQL
-  - `JWT_SECRET_KEY` - Clave secreta para tokens
-  - `VITE_GOOGLE_MAPS_API_KEY` - API de Google Maps
-  - `VITE_MAP_ID` - ID del mapa de Google
-  - `VITE_OPENWEATHERMAP_API_KEY` - API del clima
-  - `VITE_BACKEND_URL` - URL del backend (default: http://localhost:5000)
+- Plantilla `.env.example`.
+- Configuración centralizada de API en `src/config/api.js`.
 
-### Comandos de Desarrollo
-```bash
-# Backend
-pipenv install
-pipenv run backend
+### Cambiado
 
-# Frontend
-npm install
-npm run dev
+- Flujo de login simplificado para evitar una consulta duplicada.
+- Inicialización de Bcrypt corregida y compartida desde extensiones.
+- Nombres de hojas de estilo normalizados.
 
-# Build de producción
-npm run build
-```
+### Eliminado
 
-### Estructura de Configuración
-```
-src/config/
-  └── api.js          # Configuración centralizada de APIs
+- Credenciales locales del repositorio.
+- Componentes y archivos de configuración redundantes.
 
-backend/
-  ├── extensions.py   # Instancias de Flask (db, bcrypt, migrate)
-  └── routes/         # Blueprints de rutas
-```
+## Convenciones
 
----
-
-## Créditos
-- **Desarrollador Principal:** Jorge Cancino Oteíza
-- **Asistencia Técnica:** Ona (AI Agent)
-- **Fecha:** 21-22 Diciembre 2024
+Las categorías utilizadas son `Añadido`, `Cambiado`, `Corregido`, `Eliminado`, `Seguridad` y `Pruebas`. Las versiones futuras deben incluir fecha ISO (`AAAA-MM-DD`) y, cuando exista, enlace a la etiqueta o release correspondiente.
