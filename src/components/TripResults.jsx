@@ -1,8 +1,7 @@
 import PropTypes from "prop-types";
 import "../styles/TripResults.css";
-
-const formatValue = (value, unit = "") =>
-  value !== undefined && value !== null ? `${value} ${unit}`.trim() : "-";
+import { formatCLP } from "../utils/currency";
+import { formatConsumption, formatDistance, formatLiters, formatNumber, formatPercentage, formatWeight } from "../utils/numberFormat";
 
 const TripResults = ({ results }) => {
   if (!results) return null;
@@ -31,24 +30,24 @@ const TripResults = ({ results }) => {
 
         <ul>
           <li>
-            <strong>Distancia:</strong> {formatValue(distance, "km")}
+            <strong>Distancia:</strong> {formatDistance(distance)} km
           </li>
 
           <li>
-            <strong>Consumo base:</strong> {formatValue(baseFC, "L/100km")}
+            <strong>Consumo base:</strong> {formatConsumption(baseFC)} L/100 km
           </li>
 
           <li>
             <strong>Consumo ajustado:</strong>{" "}
-            {formatValue(adjustedFC, "L/100km")}
+            {formatConsumption(adjustedFC)} L/100 km
           </li>
 
           <li>
-            <strong>Consumo total:</strong> {formatValue(fuelUsed, "litros")}
+            <strong>Consumo total:</strong> {formatLiters(fuelUsed)} litros
           </li>
 
           <li>
-            <strong>Costo total:</strong> {formatValue(totalCost, "$")}
+            <strong>Costo total:</strong> {formatCLP(totalCost)}
           </li>
 
           <li>
@@ -56,7 +55,7 @@ const TripResults = ({ results }) => {
           </li>
 
           <li>
-            <strong>Pendiente promedio:</strong> {roadGrade || "-"}
+            <strong>Pendiente promedio:</strong> {formatPercentage(roadGrade)}%
           </li>
 
           <li>
@@ -117,16 +116,16 @@ const TripResults = ({ results }) => {
 
             <li>
               <strong>Cilindrada:</strong>{" "}
-              {formatValue(vehicle.engine_cc, "cc")}
+              {formatNumber(vehicle.engine_cc, { maximumFractionDigits: 0 })} cc
             </li>
 
             <li>
-              <strong>Peso:</strong> {formatValue(vehicle.weight_kg, "kg")}
+              <strong>Peso:</strong> {formatWeight(vehicle.weight_kg)} kg
             </li>
 
             <li>
               <strong>Consumo mixto:</strong>{" "}
-              {formatValue(vehicle.lkm_mixed, "L/100km")}
+              {formatConsumption(vehicle.lkm_mixed)} L/100 km
             </li>
           </ul>
         </div>

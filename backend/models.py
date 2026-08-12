@@ -127,6 +127,8 @@ class Trip(db.Model):
     passengers = db.Column(db.Integer, nullable=False)
 
     location = db.Column(db.String(255), nullable=False)
+    origin_label = db.Column(db.String(255), nullable=True)
+    destination_label = db.Column(db.String(255), nullable=True)
     distance = db.Column(db.Float, nullable=False)
 
     road_grade = db.Column(db.Float, nullable=False)
@@ -182,6 +184,8 @@ class Trip(db.Model):
             "passengers": self.passengers,
 
             "location": self.location,
+            "origin_label": self.origin_label,
+            "destination_label": self.destination_label,
             "distance": self.distance,
 
             "road_grade": self.road_grade,

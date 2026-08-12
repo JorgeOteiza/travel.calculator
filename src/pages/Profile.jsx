@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { API_BASE_URL } from "../config/api";
 import TripCard from "../components/TripCard";
 import { formatCLP } from "../utils/currency";
+import { formatDistance, formatLiters } from "../utils/numberFormat";
 import "../styles/Profile.css";
 import PropTypes from "prop-types";
 
@@ -45,7 +46,7 @@ const Profile = ({ user, authLoading }) => {
 
   return <div className="profile-page">
     <header className="profile-hero"><div className="profile-avatar" aria-hidden="true">{user.name?.charAt(0).toUpperCase()}</div><div><span>Tu espacio de viajes</span><h1>{user.name}</h1><p>{user.email}</p></div><Link to="/calculadora">Calcular nuevo viaje</Link></header>
-    <section className="profile-stats"><article><span>Viajes guardados</span><strong>{trips.length}</strong></article><article><span>Distancia acumulada</span><strong>{totals.distance.toFixed(1)} km</strong></article><article><span>Combustible estimado</span><strong>{totals.fuel.toFixed(1)} L</strong></article><article><span>Costo estimado total</span><strong>{formatCLP(totals.cost)}</strong></article></section>
+    <section className="profile-stats"><article><span>Viajes guardados</span><strong>{trips.length}</strong></article><article><span>Distancia acumulada</span><strong>{formatDistance(totals.distance)} km</strong></article><article><span>Combustible estimado</span><strong>{formatLiters(totals.fuel)} L</strong></article><article><span>Costo estimado total</span><strong>{formatCLP(totals.cost)}</strong></article></section>
     <section className="profile-history"><div className="history-heading"><div><span>Historial</span><h2>Tus viajes calculados</h2></div><label htmlFor="orden">Ordenar por<select id="orden" value={sortBy} onChange={(event) => setSortBy(event.target.value)}><option value="reciente">Más reciente</option><option value="costo">Mayor costo</option><option value="distancia">Mayor distancia</option></select></label></div>
       {error && <div className="profile-error" role="alert">{error}</div>}
       {loading ? <div className="profile-skeleton"><span/><span/><span/></div> : sortedTrips.length === 0 ? <div className="profile-empty"><span>🧭</span><h3>Aún no tienes viajes</h3><p>Tu próximo cálculo aparecerá aquí para que puedas revisarlo.</p><Link to="/calculadora">Crear primer cálculo</Link></div> : <div className="profile-trip-list">{sortedTrips.map((trip) => <TripCard key={trip.id} trip={trip} onDelete={(id) => setTrips((current) => current.filter((item) => item.id !== id))} />)}</div>}

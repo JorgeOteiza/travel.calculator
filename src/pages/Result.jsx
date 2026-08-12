@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import ShareModal from "../components/ShareModal";
 import { readStoredResult } from "../utils/resultStorage";
+import { formatConsumption, formatDistance, formatLiters } from "../utils/numberFormat";
 import "../styles/Result.css";
 
 const Result = () => {
@@ -31,9 +32,9 @@ const Result = () => {
       <section className="quick-result-card">
         <div className="quick-result-lead"><span>Costo estimado</span><strong>{cost}</strong><p>Basado en el precio de combustible ingresado.</p></div>
         <div className="quick-metrics">
-          <article><span>Distancia</span><strong>{result.distance} km</strong></article>
-          <article><span>Combustible</span><strong>{result.fuelUsed} L</strong></article>
-          <article><span>Consumo ajustado</span><strong>{result.adjustedFC} L/100 km</strong></article>
+          <article><span>Distancia</span><strong>{formatDistance(result.distance)} km</strong></article>
+          <article><span>Combustible</span><strong>{formatLiters(result.fuelUsed)} L</strong></article>
+          <article><span>Consumo ajustado</span><strong>{formatConsumption(result.adjustedFC)} L/100 km</strong></article>
           <article><span>Condición</span><strong>{result.weather || "Sin datos"}</strong></article>
         </div>
         <div className="quick-result-cta"><div><strong>¿Quieres entender esta estimación?</strong><p>Consulta elevación, consumo por tramo, vehículo y factores aplicados.</p></div><Link to="/resultado/detalles" state={{ result }}>Ver más detalles</Link></div>

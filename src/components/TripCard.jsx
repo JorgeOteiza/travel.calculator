@@ -4,14 +4,36 @@ import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
 import "../styles/TripCard.css";
 import { formatCLP } from "../utils/currency";
+import { formatDistance, formatLiters, formatPercentage, formatWeight } from "../utils/numberFormat";
 
 import { API_BASE_URL } from "../config/api";
+
+const isCoordinateLabel = (value = "") => /^-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?$/.test(value.trim());
+
+const compactLocation = (value) => {
+  if (!value || isCoordinateLabel(value)) return "";
+  return value
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .slice(0, 2)
+    .join(", ");
+};
 
 const TripCard = ({ trip, onDelete }) => {
   const [expanded, setExpanded] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
+  const originLabel = compactLocation(trip.origin_label);
+  const destinationLabel = compactLocation(trip.destination_label);
+  const hasRouteLabels = Boolean(originLabel && destinationLabel);
+  const routeReference = hasRouteLabels
+    ? `${originLabel} → ${destinationLabel}`
+    : "Ruta anterior";
+  const fullRoute = hasRouteLabels
+    ? `${trip.origin_label} → ${trip.destination_label}`
+    : "Este viaje se guardó antes de incorporar nombres de origen y destino.";
 
   const handleDelete = async () => {
     setDeleting(true);
@@ -47,10 +69,10 @@ const TripCard = ({ trip, onDelete }) => {
 
       <ul className="trip-list">
         <li>
-          <strong>Distancia:</strong> {trip.distance} km
+          <strong>Distancia:</strong> {formatDistance(trip.distance)} km
         </li>
         <li>
-          <strong>Combustible:</strong> {trip.fuel_consumed} L
+          <strong>Combustible:</strong> {formatLiters(trip.fuel_consumed)} L
         </li>
         <li>
           <strong>Costo:</strong> {formatCLP(trip.total_cost)}
@@ -60,6 +82,10 @@ const TripCard = ({ trip, onDelete }) => {
         </li>
         <li>
           <strong>Pasajeros:</strong> {trip.passengers}
+        </li>
+        <li>
+          <strong>Ruta:</strong>
+          <span className="trip-location-summary" title={fullRoute}>{routeReference}</span>
         </li>
 
         <AnimatePresence>
@@ -71,16 +97,13 @@ const TripCard = ({ trip, onDelete }) => {
               transition={{ duration: 0.3 }}
             >
               <li>
-                <strong>Peso total:</strong> {trip.total_weight} kg
+                <strong>Peso total:</strong> {formatWeight(trip.total_weight)} kg
               </li>
               <li>
                 <strong>Clima:</strong> {trip.weather}
               </li>
               <li>
-                <strong>Pendiente:</strong> {trip.road_grade}%
-              </li>
-              <li>
-                <strong>Ubicación:</strong> {trip.location}
+                <strong>Pendiente:</strong> {formatPercentage(trip.road_grade)}%
               </li>
             </motion.div>
           )}
