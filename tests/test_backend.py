@@ -49,6 +49,12 @@ class CalculationTests(unittest.TestCase):
         )
         self.assertEqual(conditions["traffic_factor"], 1.0)
 
+    def test_hurried_driving_consumes_more_than_calm_driving(self):
+        common = dict(distance_km=12, road_profile="mixed", departure_hour=14)
+        calm = calculate_operating_conditions(driving_style="calm", **common)
+        hurried = calculate_operating_conditions(driving_style="hurried", **common)
+        self.assertLess(calm["operating_factor"], hurried["operating_factor"])
+
     def test_flat_route_has_positive_consumption(self):
         value = calculate_fuel_consumption(
             base_fc=7.0,

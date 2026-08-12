@@ -64,7 +64,24 @@ def calculate_and_save_trip():
 
         extra_weight = float(data.get("extra_weight") or 0)
         fuel_price = float(data.get("fuel_price") or 0)
+        fuel_octane = str(data.get("fuel_octane") or "").strip()[:20] or None
+        consumption_mode = str(data.get("consumption_mode") or "standard").lower()
+        if consumption_mode not in {"standard", "custom"}:
+            return jsonify({"error": "Origen del rendimiento inválido"}), 400
+        user_consumption_kml = data.get("user_consumption_kml")
+        if consumption_mode == "custom":
+            try:
+                user_consumption_kml = float(user_consumption_kml)
+            except (TypeError, ValueError):
+                return jsonify({"error": "Ingresa un rendimiento actual válido"}), 400
+            if not 2 <= user_consumption_kml <= 40:
+                return jsonify({"error": "El rendimiento debe estar entre 2 y 40 km/L"}), 400
+        else:
+            user_consumption_kml = None
         road_profile = str(data.get("road_profile") or "mixed").lower()
+        driving_style = str(data.get("driving_style") or "moderate").lower()
+        if driving_style not in {"calm", "moderate", "hurried"}:
+            return jsonify({"error": "Estilo de conducción inválido"}), 400
         local_hour = data.get("local_hour")
         if local_hour is not None:
             local_hour = int(local_hour)
@@ -196,6 +213,8 @@ def calculate_and_save_trip():
             )
 
             base_consumption = float(base_data.get("base_consumption", 0))
+            if user_consumption_kml is not None:
+                base_consumption = 100 / user_consumption_kml
             consumption_type = base_data.get("consumption_type", "mixed")
 
             route_result = calculate_trip_from_segments(
@@ -215,6 +234,7 @@ def calculate_and_save_trip():
                 distance_km=distance_km,
                 road_profile=road_profile,
                 departure_hour=local_hour,
+                driving_style=driving_style,
             )
             operating_factor = operating_conditions["operating_factor"]
             adjusted_consumption *= operating_factor
@@ -261,6 +281,7 @@ def calculate_and_save_trip():
             year=vehicle.year,
             fuel_type=fuel_type,
             fuel_price=float(fuel_price),
+            fuel_octane=fuel_octane,
             total_weight=float(total_weight),
             passengers=int(passengers),
             location=f"{origin.get('lat')},{origin.get('lng')}",
@@ -270,12 +291,20 @@ def calculate_and_save_trip():
 
             road_grade=road_grade,  # 🔥 FIX
             road_profile=road_profile,
+            driving_style=driving_style,
 
             consumption_type=consumption_type,
             base_consumption=float(base_consumption),
             expected_consumption=float(adjusted_consumption),
             adjusted_consumption=float(adjusted_consumption),
+            user_consumption_kml=user_consumption_kml,
+            consumption_source=consumption_mode,
             calibration_factor_used=float(vehicle.calibration_factor or 1.0),
+            elevation_profile=elevation_profile,
+            consumption_profile=consumption_segments,
+            elevation_source=elevation_source,
+            segments_analyzed=len(segments),
+            operating_conditions=(operating_conditions if not is_electric else None),
             fuel_consumed=float(fuel_used),
             total_cost=float(total_cost),
             weather=climate_label,
@@ -304,9 +333,13 @@ def calculate_and_save_trip():
             "totalCost": round(total_cost, 2),
             "adjustedFC": round(adjusted_consumption, 3),
             "baseFC": round(base_consumption, 3),
+            "fuelOctane": fuel_octane,
+            "userConsumptionKml": user_consumption_kml,
+            "consumptionSource": consumption_mode,
             "weather": climate_label,
             "roadGrade": road_grade,
             "roadProfile": road_profile,
+            "drivingStyle": driving_style,
             "segmentsAnalyzed": len(segments),
             "elevationProfile": elevation_profile,
             "elevationSource": elevation_source,

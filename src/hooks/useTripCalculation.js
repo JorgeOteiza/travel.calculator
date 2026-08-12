@@ -27,7 +27,13 @@ export const useTripCalculation = (formData) => {
       extra_weight: Number(formData.extraWeight),
       passengers: Number(formData.passengers),
       fuel_price: Number(formData.fuelPrice),
+      fuel_octane: formData.fuelType,
+      consumption_mode: formData.consumptionMode,
+      user_consumption_kml: formData.consumptionMode === "custom"
+        ? Number(formData.userConsumptionKml)
+        : null,
       road_profile: formData.roadProfile,
+      driving_style: formData.drivingStyle,
       local_hour: new Date().getHours(),
     };
 

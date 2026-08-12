@@ -45,6 +45,18 @@ export const validateTripForm = (formData) => {
     errors.fuelPrice = "Ingresa un precio de combustible válido";
   }
 
+  if (!formData.fuelType) errors.fuelType = "Selecciona el octanaje";
+
+  if (formData.consumptionMode === "custom") {
+    const performance = Number(formData.userConsumptionKml);
+    if (Number.isNaN(performance) || performance < 2 || performance > 40) {
+      errors.userConsumptionKml = "Ingresa un rendimiento entre 2 y 40 km/L";
+    }
+  }
+  if (!["calm", "moderate", "hurried"].includes(formData.drivingStyle)) {
+    errors.drivingStyle = "Selecciona un ritmo de conducción válido";
+  }
+
   return errors;
 };
 

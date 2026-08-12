@@ -119,6 +119,7 @@ class Trip(db.Model):
 
     fuel_type = db.Column(db.String(50), nullable=False)
     fuel_price = db.Column(db.Float, nullable=True)
+    fuel_octane = db.Column(db.String(20), nullable=True)
 
     # ======================
     # ⚖️ Carga y viaje
@@ -133,6 +134,7 @@ class Trip(db.Model):
 
     road_grade = db.Column(db.Float, nullable=False)
     road_profile = db.Column(db.String(20), nullable=False, default="mixed")
+    driving_style = db.Column(db.String(20), nullable=False, default="moderate")
     weather = db.Column(db.String(50), nullable=False)
 
     # ======================
@@ -146,6 +148,14 @@ class Trip(db.Model):
     calibration_factor_used = db.Column(db.Float)
 
     real_consumption = db.Column(db.Float, nullable=True)        # input usuario
+    user_consumption_kml = db.Column(db.Float, nullable=True)
+    consumption_source = db.Column(db.String(20), nullable=False, default="standard")
+
+    elevation_profile = db.Column(db.JSON, nullable=True)
+    consumption_profile = db.Column(db.JSON, nullable=True)
+    elevation_source = db.Column(db.String(50), nullable=True)
+    segments_analyzed = db.Column(db.Integer, nullable=True)
+    operating_conditions = db.Column(db.JSON, nullable=True)
 
     # ======================
     # ⛽ Resultado económico
@@ -179,6 +189,7 @@ class Trip(db.Model):
 
             "fuel_type": self.fuel_type,
             "fuel_price": self.fuel_price,
+            "fuel_octane": self.fuel_octane,
 
             "total_weight": self.total_weight,
             "passengers": self.passengers,
@@ -190,6 +201,7 @@ class Trip(db.Model):
 
             "road_grade": self.road_grade,
             "road_profile": self.road_profile,
+            "driving_style": self.driving_style,
             "weather": self.weather,
 
             "consumption_type": self.consumption_type,
@@ -197,7 +209,15 @@ class Trip(db.Model):
             "expected_consumption": self.expected_consumption,
             "adjusted_consumption": self.adjusted_consumption,
             "real_consumption": self.real_consumption,
+            "user_consumption_kml": self.user_consumption_kml,
+            "consumption_source": self.consumption_source,
             "calibration_factor_used": self.calibration_factor_used,
+
+            "elevation_profile": self.elevation_profile,
+            "consumption_profile": self.consumption_profile,
+            "elevation_source": self.elevation_source,
+            "segments_analyzed": self.segments_analyzed,
+            "operating_conditions": self.operating_conditions,
 
             "fuel_consumed": self.fuel_consumed,
             "total_cost": self.total_cost,

@@ -7,6 +7,7 @@ def calculate_operating_conditions(
     road_profile: str,
     departure_time: datetime | None = None,
     departure_hour: int | None = None,
+    driving_style: str = "moderate",
 ) -> dict:
     """Modela arranque en frío y congestión horaria sin una API pagada."""
     if departure_hour is not None and not 0 <= departure_hour <= 23:
@@ -17,6 +18,11 @@ def calculate_operating_conditions(
         else (departure_time or datetime.now()).hour
     )
     profile = (road_profile or "mixed").lower()
+    style = (driving_style or "moderate").lower()
+    style_factors = {"calm": 0.96, "moderate": 1.0, "hurried": 1.12}
+    if style not in style_factors:
+        raise ValueError("Estilo de conducción inválido")
+    driving_style_factor = style_factors[style]
 
     short_trip_factor = 1.0
     if distance_km < 15:
@@ -45,7 +51,9 @@ def calculate_operating_conditions(
         "traffic_level": traffic_level,
         "traffic_factor": round(traffic_factor, 3),
         "short_trip_factor": round(short_trip_factor, 3),
-        "operating_factor": round(short_trip_factor * traffic_factor, 3),
+        "driving_style": style,
+        "driving_style_factor": driving_style_factor,
+        "operating_factor": round(short_trip_factor * traffic_factor * driving_style_factor, 3),
         "is_short_trip": distance_km < 15,
         "method": "heurística local; no usa tráfico en tiempo real",
     }
