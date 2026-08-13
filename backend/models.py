@@ -149,6 +149,7 @@ class Trip(db.Model):
 
     real_consumption = db.Column(db.Float, nullable=True)        # input usuario
     user_consumption_kml = db.Column(db.Float, nullable=True)
+    consumption_reference_profile = db.Column(db.String(20), nullable=True)
     consumption_source = db.Column(db.String(20), nullable=False, default="standard")
 
     elevation_profile = db.Column(db.JSON, nullable=True)
@@ -210,6 +211,7 @@ class Trip(db.Model):
             "adjusted_consumption": self.adjusted_consumption,
             "real_consumption": self.real_consumption,
             "user_consumption_kml": self.user_consumption_kml,
+            "consumption_reference_profile": self.consumption_reference_profile,
             "consumption_source": self.consumption_source,
             "calibration_factor_used": self.calibration_factor_used,
 

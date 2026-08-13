@@ -12,6 +12,7 @@ from backend.services.consumption_service import (
     get_vehicle_data_issues,
 )
 from backend.services.driving_conditions_service import calculate_operating_conditions
+from backend.services.custom_consumption_service import adapt_user_consumption
 from backend.utils.trip_calculation import calculate_trip_from_segments
 
 from backend.services.polyline_service import decode_polyline, reduce_points
@@ -69,6 +70,9 @@ def calculate_and_save_trip():
         if consumption_mode not in {"standard", "custom"}:
             return jsonify({"error": "Origen del rendimiento inválido"}), 400
         user_consumption_kml = data.get("user_consumption_kml")
+        consumption_reference_profile = str(
+            data.get("consumption_reference_profile") or "mixed"
+        ).lower()
         if consumption_mode == "custom":
             try:
                 user_consumption_kml = float(user_consumption_kml)
@@ -76,8 +80,11 @@ def calculate_and_save_trip():
                 return jsonify({"error": "Ingresa un rendimiento actual válido"}), 400
             if not 2 <= user_consumption_kml <= 40:
                 return jsonify({"error": "El rendimiento debe estar entre 2 y 40 km/L"}), 400
+            if consumption_reference_profile not in {"city", "mixed", "highway", "rural"}:
+                return jsonify({"error": "Contexto del rendimiento inválido"}), 400
         else:
             user_consumption_kml = None
+            consumption_reference_profile = None
         road_profile = str(data.get("road_profile") or "mixed").lower()
         driving_style = str(data.get("driving_style") or "moderate").lower()
         if driving_style not in {"calm", "moderate", "hurried"}:
@@ -213,8 +220,15 @@ def calculate_and_save_trip():
             )
 
             base_consumption = float(base_data.get("base_consumption", 0))
+            custom_consumption_context = None
             if user_consumption_kml is not None:
-                base_consumption = 100 / user_consumption_kml
+                custom_consumption_context = adapt_user_consumption(
+                    consumption_kml=user_consumption_kml,
+                    reference_profile=consumption_reference_profile,
+                    target_profile=road_profile,
+                    distance_km=distance_km,
+                )
+                base_consumption = custom_consumption_context["base_l100km"]
             consumption_type = base_data.get("consumption_type", "mixed")
 
             route_result = calculate_trip_from_segments(
@@ -232,7 +246,7 @@ def calculate_and_save_trip():
 
             operating_conditions = calculate_operating_conditions(
                 distance_km=distance_km,
-                road_profile=road_profile,
+                road_profile=("context_adjusted" if custom_consumption_context else road_profile),
                 departure_hour=local_hour,
                 driving_style=driving_style,
             )
@@ -298,6 +312,7 @@ def calculate_and_save_trip():
             expected_consumption=float(adjusted_consumption),
             adjusted_consumption=float(adjusted_consumption),
             user_consumption_kml=user_consumption_kml,
+            consumption_reference_profile=consumption_reference_profile,
             consumption_source=consumption_mode,
             calibration_factor_used=float(vehicle.calibration_factor or 1.0),
             elevation_profile=elevation_profile,
@@ -335,6 +350,8 @@ def calculate_and_save_trip():
             "baseFC": round(base_consumption, 3),
             "fuelOctane": fuel_octane,
             "userConsumptionKml": user_consumption_kml,
+            "consumptionReferenceProfile": consumption_reference_profile,
+            "customConsumptionContext": custom_consumption_context if not is_electric else None,
             "consumptionSource": consumption_mode,
             "weather": climate_label,
             "roadGrade": road_grade,

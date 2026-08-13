@@ -18,9 +18,34 @@ from backend.services.elevation_profile_chart_service import build_elevation_seg
 from backend.services.elevation_profile import get_elevation_for_points
 from backend.services.weather_service import get_weather_from_coords
 from backend.services.driving_conditions_service import calculate_operating_conditions
+from backend.services.custom_consumption_service import adapt_user_consumption
 
 
 class CalculationTests(unittest.TestCase):
+    def test_custom_city_consumption_improves_on_long_highway(self):
+        city = adapt_user_consumption(
+            consumption_kml=9.4,
+            reference_profile="city",
+            target_profile="city",
+            distance_km=20,
+        )
+        highway = adapt_user_consumption(
+            consumption_kml=9.4,
+            reference_profile="city",
+            target_profile="highway",
+            distance_km=100,
+        )
+        self.assertAlmostEqual(city["adapted_kml"], 9.4, places=1)
+        self.assertGreater(highway["adapted_kml"], city["adapted_kml"])
+
+    def test_custom_mixed_consumption_is_between_city_and_long_highway(self):
+        common = dict(consumption_kml=9.4, reference_profile="mixed")
+        city = adapt_user_consumption(target_profile="city", distance_km=20, **common)
+        mixed = adapt_user_consumption(target_profile="mixed", distance_km=20, **common)
+        highway = adapt_user_consumption(target_profile="highway", distance_km=100, **common)
+        self.assertLess(city["adapted_kml"], mixed["adapted_kml"])
+        self.assertLess(mixed["adapted_kml"], highway["adapted_kml"])
+
     def test_short_city_trip_in_peak_hour_has_highest_operating_factor(self):
         peak = calculate_operating_conditions(
             distance_km=5.7,
