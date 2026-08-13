@@ -10,7 +10,7 @@
 
 .form-map-container {
   display: grid;
-  width: min(100%, 1580px);
+  width: min(100%, 1840px);
   min-height: 650px;
   margin: 0 auto;
   gap: 22px;
@@ -18,15 +18,17 @@
 }
 
 .form-section-anchor,.map-section-anchor { min-width: 0; height: 100%; scroll-margin-top: 86px; }
-.calculator-shortcuts { display: none; width: min(100%, 1580px); margin: 0 auto 12px; gap: 8px; }
-.calculator-shortcuts a { flex: 1; padding: 10px 12px; border: 1px solid #cbdce4; border-radius: 11px; background: rgba(255,255,255,.9); color: #245064; font-size: 12px; font-weight: 750; text-align: center; text-decoration: none; }
+.calculator-shortcuts { display: none; width: min(100%, 1840px); margin: 0 auto 12px; gap: 8px; }
+.calculator-shortcuts a,.calculator-shortcuts button { flex: 1; padding: 10px 12px; border: 1px solid #cbdce4; border-radius: 11px; background: rgba(255,255,255,.9); color: #245064; cursor:pointer; font-size: 12px; font-weight: 750; text-align: center; text-decoration: none; }
+.trip-panel-toggle { display: none; }
+.trip-form-collapsible { height: 100%; }
 
 .form-map-container.no-results {
-  grid-template-columns: minmax(300px, 350px) minmax(0, 1fr);
+  grid-template-columns: minmax(340px, 390px) minmax(0, 1fr);
 }
 
 .form-map-container.with-results {
-  grid-template-columns: minmax(290px, 330px) minmax(480px, 1fr) minmax(300px, 350px);
+  grid-template-columns: minmax(330px, 370px) minmax(520px, 1fr) minmax(320px, 380px);
 }
 
 .map-wrapper {
@@ -58,7 +60,7 @@
 }
 
 @media (max-width: 920px) {
-  .calculator-shortcuts { display: flex; position: sticky; z-index: 20; top: 8px; }
+  .calculator-shortcuts { display: flex; }
   .home-container {
     padding: 18px;
   }
@@ -69,6 +71,24 @@
     grid-template-columns: 1fr;
     min-height: auto;
   }
+
+  .form-section-anchor,
+  .map-section-anchor {
+    width: 100%;
+    height: auto;
+  }
+
+  .collapsible-trip-panel { height: auto; border: 1px solid #d2dee7; border-radius: 20px; background: rgba(255,255,255,.96); box-shadow: 0 14px 35px rgba(20,45,70,.09); }
+  .trip-panel-toggle { display:flex; width:100%; min-height:58px; align-items:center; justify-content:space-between; gap:14px; padding:9px 14px; border:0; border-radius:20px; background:transparent; color:#203b4a; cursor:pointer; text-align:left; }
+  .trip-panel-toggle span,.trip-panel-toggle small,.trip-panel-toggle strong { display:block; min-width:0; }
+  .trip-panel-toggle small { color:#087f8c; font-size:10px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
+  .trip-panel-toggle strong { overflow:hidden; margin-top:2px; font-size:14px; text-overflow:ellipsis; white-space:nowrap; }
+  .trip-panel-toggle i { display:grid; width:32px; height:32px; flex:none; place-items:center; border-radius:50%; background:#e8f6f7; color:#087f8c; font-size:18px; font-style:normal; transition:transform 180ms ease; }
+  .is-collapsed .trip-panel-toggle i { transform:rotate(180deg); }
+  .trip-form-collapsible { display:grid; grid-template-rows:1fr; overflow:hidden; height:auto; opacity:1; transition:grid-template-rows 220ms ease,opacity 160ms ease; }
+  .trip-form-collapsible > .trip-form { min-height:0; overflow:hidden; }
+  .is-collapsed .trip-form-collapsible { display:none; opacity:0; }
+  .collapsible-trip-panel .trip-form { border:0; border-top:1px solid #e1e9ed; border-radius:0 0 20px 20px; box-shadow:none; }
 
   .trip-form,
   .map-wrapper,
@@ -81,8 +101,18 @@
   }
 
   .map-wrapper {
-    min-height: 540px;
+    width: 100%;
+    height: auto;
+    min-height: 0;
+    aspect-ratio: 4 / 3;
+    border-radius: 20px;
   }
+}
+
+@media (min-width: 1500px) {
+  .home-container { padding-inline: clamp(24px, 2.2vw, 46px); }
+  .form-map-container { gap: clamp(22px, 1.7vw, 32px); }
+  .map-wrapper { min-height: clamp(680px, calc(100vh - 190px), 920px); }
 }
 
 @media (max-width: 560px) {
@@ -95,17 +125,29 @@
   }
 
   .map-wrapper {
-    min-height: 460px;
+    min-height: 0;
+    aspect-ratio: 1 / 1;
     border-radius: 20px;
   }
 }
 
 @media (max-width: 400px) {
   .home-container {
-    padding: 6px;
+    padding: 8px;
   }
 
   .map-wrapper {
-    min-height: 430px;
+    min-height: 0;
+    aspect-ratio: 4 / 5;
   }
+
+  .calculator-shortcuts { margin-bottom:8px; }
+  .calculator-shortcuts a,.calculator-shortcuts button { min-height:42px; padding:8px; }
+  .trip-panel-toggle { min-height:54px; padding:8px 12px; }
+}
+
+@media (min-width: 360px) and (max-width: 430px) {
+  .form-map-container { gap: 10px; }
+  .collapsible-trip-panel { border-radius: 18px; }
+  .collapsible-trip-panel .trip-form { border-radius: 0 0 18px 18px; }
 }

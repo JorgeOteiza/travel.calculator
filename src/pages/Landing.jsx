@@ -18,8 +18,8 @@ const Landing = () => {
           <h1>Calcula cuánto costará realmente tu ruta.</h1>
           <p>
             Las calculadoras tradicionales usan un promedio fijo. Travel Calculator
-            analiza tu vehículo y divide la ruta en segmentos para ajustar el consumo
-            según pendiente, tipo de vía, clima, pasajeros, carga y precio actual del combustible.
+            combina los datos de tu vehículo con cada tramo de la ruta para ajustar el consumo
+            según pendiente, tipo de vía, clima, tráfico estimado, carga, ritmo de conducción y precio del combustible.
           </p>
           <div className="hero-actions">
             <Link className="primary-cta" to="/calculadora">Calcular un viaje</Link>
@@ -28,7 +28,7 @@ const Landing = () => {
             </button>
           </div>
           <div className="hero-proof" aria-label="Características principales">
-            <span>✓ Consumo por segmento</span><span>✓ Elevación real</span><span>✓ Resultado explicable</span>
+            <span>✓ Rendimiento contextual</span><span>✓ Consumo por segmento</span><span>✓ Resultado explicable</span>
           </div>
         </div>
 
@@ -41,14 +41,14 @@ const Landing = () => {
       </section>
 
       <section className="landing-features">
-        <article><span>01</span><h2>Base específica del vehículo</h2><p>Considera consumo mixto o de carretera, combustible, motor, peso y calibración histórica.</p></article>
+        <article><span>01</span><h2>Base adaptada al vehículo</h2><p>Usa el rendimiento estándar del modelo o el dato real que conoces y lo adapta al contexto donde fue medido.</p></article>
         <article><span>02</span><h2>Cada tramo importa</h2><p>La ruta se divide en segmentos con pendientes positivas y negativas, elevación y tipo de vía predominante.</p></article>
-        <article><span>03</span><h2>Condiciones reales del viaje</h2><p>Ajusta por clima, tráfico urbano o carretera, pasajeros, equipaje y precio actual ingresado.</p></article>
+        <article><span>03</span><h2>Condiciones del viaje</h2><p>Ajusta por clima, tráfico según horario, trayectos cortos, pasajeros, carga y ritmo de conducción.</p></article>
       </section>
 
       <section className="landing-stack">
         <p>Construido con</p>
-        <div><span>React</span><span>Flask</span><span>PostgreSQL</span><span>Google Maps</span><span>OpenWeather</span></div>
+        <div><span>React</span><span>Flask</span><span>PostgreSQL</span><span>Google Maps</span><span>Open-Meteo</span></div>
       </section>
     </div>
   );

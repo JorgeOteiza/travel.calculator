@@ -94,8 +94,10 @@
 
 @media (max-width: 560px) {
   .trip-results-card {
-    padding: 20px;
+    padding: 16px;
   }
+
+  .trip-results-card h2 { margin-bottom:14px; font-size:21px; }
 
   .trip-results-card > ul li,
   .vehicle-details li {

@@ -38,7 +38,7 @@ const TripForm = ({
       <div className="trip-form-header">
         <span className="trip-form-eyebrow">Planifica tu ruta</span>
         <h1>Calcula tu viaje</h1>
-        <p>Completa los datos para estimar consumo y costo.</p>
+        <p>Combina tu vehículo, rendimiento y condiciones de conducción.</p>
       </div>
 
       {isLoadingBrands && (
@@ -123,23 +123,30 @@ const TripForm = ({
       {errors.drivingStyle && <span className="error-text">{errors.drivingStyle}</span>}
 
       <fieldset className="consumption-choice">
-        <legend>Rendimiento actual del vehículo</legend>
+        <legend>Base de rendimiento del vehículo</legend>
         <label>
           <input type="radio" name="consumptionMode" value="standard" checked={formData.consumptionMode === "standard"} onChange={handleChange} />
-          <span><strong>Usar estándar</strong><small>Usaremos el rendimiento registrado para este modelo.</small></span>
+          <span><strong>Usar dato estándar</strong><small>Usaremos el rendimiento disponible para este modelo.</small></span>
         </label>
         <label>
           <input type="radio" name="consumptionMode" value="custom" checked={formData.consumptionMode === "custom"} onChange={handleChange} />
-          <span><strong>Usar rendimiento conocido</strong><small>Si conoces el rendimiento real de tu vehículo.</small></span>
+          <span><strong>Ingresar rendimiento real</strong><small>Si conoces cuántos kilómetros recorre por litro.</small></span>
         </label>
       </fieldset>
       {formData.consumptionMode === "custom" && <>
-        <label htmlFor="userConsumptionKml">Rendimiento actual (km/L)</label>
-        <div className="performance-input">
-          <input id="userConsumptionKml" type="number" name="userConsumptionKml" value={formData.userConsumptionKml ?? ""} onChange={handleChange} placeholder="Ej. 12,5" min="2" max="40" step="0.1" className="custom-input" />
-          <span>km/L</span>
+        <div className="custom-consumption-row">
+          <div className="compact-form-field">
+            <label htmlFor="userConsumptionKml">Rendimiento actual</label>
+            <div className="performance-input"><input id="userConsumptionKml" type="number" name="userConsumptionKml" value={formData.userConsumptionKml ?? ""} onChange={handleChange} placeholder="Ej. 9,4" min="2" max="40" step="0.1" className="custom-input" /><span>km/L</span></div>
+            {errors.userConsumptionKml && <span className="error-text">{errors.userConsumptionKml}</span>}
+          </div>
+          <div className="compact-form-field">
+            <label htmlFor="consumptionReferenceProfile">¿Dónde lo mediste?</label>
+            <select id="consumptionReferenceProfile" name="consumptionReferenceProfile" value={formData.consumptionReferenceProfile} onChange={handleChange} className="custom-input"><option value="city">Ciudad</option><option value="mixed">Uso mixto</option><option value="highway">Carretera</option><option value="rural">Camino rural</option></select>
+            {errors.consumptionReferenceProfile && <span className="error-text">{errors.consumptionReferenceProfile}</span>}
+          </div>
         </div>
-        {errors.userConsumptionKml && <span className="error-text">{errors.userConsumptionKml}</span>}
+        <small className="performance-help">Adaptaremos ese rendimiento al tipo de vía y a las condiciones de la ruta calculada.</small>
       </>}
 
       {!isElectric && (

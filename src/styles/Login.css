@@ -10,13 +10,18 @@
 
 @media (max-width: 480px) {
   .login-container {
-    min-height: calc(100vh - 160px);
-    padding: 12px;
+    min-height: calc(100dvh - 132px);
+    padding: 10px;
   }
 
   .login-form {
-    padding: 24px 18px;
+    padding: 24px 17px;
+    border-radius: 18px;
   }
+
+  .login-form h2 { margin-bottom:14px; font-size:1.55rem; }
+  .login-form input { min-height:46px; margin:7px 0; }
+  .login-form button { min-height:46px; }
 }
 
 .login-form {

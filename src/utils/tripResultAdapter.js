@@ -18,6 +18,7 @@ export const tripToResult = (trip) => ({
   destinationLabel: trip.destination_label || "Destino no guardado",
   fuelOctane: trip.fuel_octane,
   userConsumptionKml: trip.user_consumption_kml,
+  consumptionReferenceProfile: trip.consumption_reference_profile,
   consumptionSource: trip.consumption_source || "standard",
   vehicle: { make: trip.brand, model: trip.model, year: trip.year, fuel_type: trip.fuel_type },
   settings: { currency: "CLP", distanceUnit: "km" },

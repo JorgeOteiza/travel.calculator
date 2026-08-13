@@ -19,7 +19,7 @@ const Home = () => {
     handleChange, isLoadingBrands, isLoadingModels, dataWarning,
   } = useTripData({
     brand: "", model: "", year: "", fuelType: "", fuelPrice: "",
-    consumptionMode: "standard", userConsumptionKml: "",
+    consumptionMode: "standard", userConsumptionKml: "", consumptionReferenceProfile: "city",
     passengers: 1, extraWeight: 0, user: userFromStorage || null,
     locationCoords: null, destinationCoords: null, locationLabel: "",
     destinationLabel: "", climate: "", roadGrade: 0, route_polyline: "",
@@ -31,6 +31,7 @@ const Home = () => {
   const [markers, setMarkers] = useState([]);
   const [errors, setErrors] = useState({});
   const [locationStatus, setLocationStatus] = useState("idle");
+  const [isFormExpanded, setIsFormExpanded] = useState(true);
 
   const { handleLocationChange } = useTripFormHandlers(
     setFormData, setMapCenter, fetchWeather,
@@ -82,12 +83,31 @@ const Home = () => {
     navigate("/resultado", { state: { result: enrichedResult } });
   };
 
+  const vehicleSummary = formData.brand && formData.model
+    ? `${formData.brand} ${formData.model}${formData.year ? ` · ${formData.year}` : ""}`
+    : "Configura vehículo, consumo y carga";
+
+  const showTripForm = () => {
+    setIsFormExpanded(true);
+    window.requestAnimationFrame(() => {
+      document.getElementById("trip-form-section")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
+  };
+
   return (
     <div className="home-container">
-      <nav className="calculator-shortcuts" aria-label="Secciones de la calculadora"><a href="#trip-form-section">Datos del viaje</a><a href="#trip-map-section">Origen y destino</a></nav>
+      <nav className="calculator-shortcuts" aria-label="Secciones de la calculadora"><button type="button" onClick={showTripForm}>Datos del viaje</button><a href="#trip-map-section">Origen y destino</a></nav>
       <div className="form-map-container no-results">
-        <div id="trip-form-section" className="form-section-anchor">
-        <TripForm
+        <section id="trip-form-section" className={`form-section-anchor collapsible-trip-panel${isFormExpanded ? " is-expanded" : " is-collapsed"}`}>
+        <button type="button" className="trip-panel-toggle" onClick={() => setIsFormExpanded((expanded) => !expanded)} aria-expanded={isFormExpanded} aria-controls="trip-form-content">
+          <span><small>Datos del viaje</small><strong>{isFormExpanded ? "Ocultar formulario" : vehicleSummary}</strong></span>
+          <i aria-hidden="true">⌃</i>
+        </button>
+        <div id="trip-form-content" className="trip-form-collapsible" aria-hidden={!isFormExpanded}>
+          <TripForm
           formData={formData} brandOptions={brandOptions} modelOptions={modelOptions}
           availableYears={availableYears} vehicleDetails={vehicleDetails}
           handleBrandSelect={handleBrandSelect} handleModelSelect={handleModelSelect}
@@ -95,8 +115,9 @@ const Home = () => {
           calculateTrip={handleSubmit} errors={errors} isCalculating={isCalculating}
           isLoadingBrands={isLoadingBrands} isLoadingModels={isLoadingModels}
           message={calculationError || weatherWarning || dataWarning}
-        />
+          />
         </div>
+        </section>
         <div id="trip-map-section" className="map-section-anchor"><GoogleMapSection
           mapCenter={mapCenter} markers={markers} setMarkers={setMarkers}
           onLocationChange={handleLocationChange} onRequestLocation={requestCurrentLocation}

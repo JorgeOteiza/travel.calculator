@@ -10,13 +10,18 @@
 
 @media (max-width: 480px) {
   .register-container {
-    min-height: calc(100vh - 160px);
-    padding: 12px;
+    min-height: calc(100dvh - 132px);
+    padding: 10px;
   }
 
   .register-form {
-    padding: 24px 18px;
+    padding: 24px 17px;
+    border-radius: 18px;
   }
+
+  .register-form h2 { margin-bottom:14px; font-size:1.55rem; }
+  .register-form input { min-height:46px; margin:7px 0; }
+  .register-form button { min-height:46px; }
 }
 
 .register-form {

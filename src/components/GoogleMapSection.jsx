@@ -15,10 +15,11 @@ const GoogleMapSection = ({
   mapCenter,
 }) => {
   const mapRef = useRef(null);
-  const originInputRef = useRef(null);
-  const destinationInputRef = useRef(null);
-
   const mapInstanceRef = useRef(null);
+  const autocompleteServiceRef = useRef(null);
+  const placesServiceRef = useRef(null);
+  const autocompleteTimersRef = useRef({});
+  const sessionTokensRef = useRef({});
   const directionsServiceRef = useRef(null);
   const directionsRendererRef = useRef(null);
   const originMarkerRef = useRef(null);
@@ -29,8 +30,15 @@ const GoogleMapSection = ({
   const lastPolylineRef = useRef("");
   const [mapError, setMapError] = useState("");
   const [mapReady, setMapReady] = useState(false);
+  const [searchValues, setSearchValues] = useState({ location: "", destination: "" });
+  const [predictions, setPredictions] = useState({ location: [], destination: [] });
+  const [activeSearch, setActiveSearch] = useState(null);
   const latestMapCenterRef = useRef(mapCenter || DEFAULT_MAP_CENTER);
   latestMapCenterRef.current = mapCenter || DEFAULT_MAP_CENTER;
+
+  useEffect(() => () => {
+    Object.values(autocompleteTimersRef.current).forEach(window.clearTimeout);
+  }, []);
 
   useEffect(() => {
     loadGoogleMapsScript(() => {
@@ -60,43 +68,8 @@ const GoogleMapSection = ({
       );
 
       directionsRendererRef.current.setMap(map);
-
-      const setupAutocomplete = (inputRef, field) => {
-        const autocomplete = new window.google.maps.places.Autocomplete(
-          inputRef.current,
-          {
-            fields: ["geometry", "formatted_address", "name"],
-            componentRestrictions: { country: "cl" },
-            types: ["geocode"],
-          },
-        );
-
-        autocomplete.addListener("place_changed", () => {
-          const place = autocomplete.getPlace();
-          if (!place?.geometry?.location) return;
-
-          const coords = {
-            lat: place.geometry.location.lat(),
-            lng: place.geometry.location.lng(),
-          };
-
-          const label = place.formatted_address || place.name || "";
-
-          onLocationChange(field, { ...coords, label });
-
-          setMarkers((prev) =>
-            field === "location" ? [coords, prev[1]] : [prev[0], coords],
-          );
-
-          map.setCenter(coords);
-          map.setZoom(14);
-
-          routeCalculatedRef.current = false;
-        });
-      };
-
-      setupAutocomplete(originInputRef, "location");
-      setupAutocomplete(destinationInputRef, "destination");
+      autocompleteServiceRef.current = new window.google.maps.places.AutocompleteService();
+      placesServiceRef.current = new window.google.maps.places.PlacesService(map);
       setMapReady(true);
     }, () => setMapError("No pudimos cargar Google Maps. Revisa la conexión o la clave de API."));
   }, [mapCenter, onLocationChange, setMarkers]);
@@ -114,7 +87,6 @@ const GoogleMapSection = ({
     if (
       locationStatus !== "granted" ||
       !mapReady ||
-      !originInputRef.current ||
       typeof currentLocation?.lat !== "number" ||
       typeof currentLocation?.lng !== "number"
     ) return;
@@ -122,14 +94,14 @@ const GoogleMapSection = ({
     const locationKey = `${currentLocation.lat},${currentLocation.lng}`;
     if (geocodedLocationRef.current === locationKey) return;
     geocodedLocationRef.current = locationKey;
-    originInputRef.current.value = "Buscando dirección…";
+    setSearchValues((current) => ({ ...current, location: "Buscando dirección…" }));
 
     const geocoder = new window.google.maps.Geocoder();
     geocoder.geocode({ location: currentLocation }, (results, status) => {
       const address = status === "OK" && results?.[0]?.formatted_address
         ? results[0].formatted_address
         : `${currentLocation.lat.toFixed(5)}, ${currentLocation.lng.toFixed(5)}`;
-      if (originInputRef.current) originInputRef.current.value = address;
+      setSearchValues((current) => ({ ...current, location: address }));
       onCurrentAddressResolved(address);
     });
   }, [locationStatus, mapReady, markers, onCurrentAddressResolved]);
@@ -223,20 +195,54 @@ const GoogleMapSection = ({
     map.setZoom(Math.min(21, Math.max(3, currentZoom + amount)));
   };
 
+  const handleSearchChange = (field, value) => {
+    setSearchValues((current) => ({ ...current, [field]: value }));
+    setActiveSearch(field);
+    window.clearTimeout(autocompleteTimersRef.current[field]);
+    if (value.trim().length < 3 || !autocompleteServiceRef.current) {
+      setPredictions((current) => ({ ...current, [field]: [] }));
+      return;
+    }
+    autocompleteTimersRef.current[field] = window.setTimeout(() => {
+      if (!sessionTokensRef.current[field]) sessionTokensRef.current[field] = new window.google.maps.places.AutocompleteSessionToken();
+      autocompleteServiceRef.current.getPlacePredictions({ input: value.trim(), componentRestrictions: { country: "cl" }, sessionToken: sessionTokensRef.current[field] }, (items, status) => {
+        const matches = status === window.google.maps.places.PlacesServiceStatus.OK ? items || [] : [];
+        setPredictions((current) => ({ ...current, [field]: matches.slice(0, 5) }));
+      });
+    }, 300);
+  };
+
+  const selectPrediction = (field, prediction) => {
+    if (!placesServiceRef.current) return;
+    placesServiceRef.current.getDetails({ placeId: prediction.place_id, fields: ["geometry", "formatted_address", "name"], sessionToken: sessionTokensRef.current[field] }, (place, status) => {
+      if (status !== window.google.maps.places.PlacesServiceStatus.OK || !place?.geometry?.location) return;
+      const coords = { lat: place.geometry.location.lat(), lng: place.geometry.location.lng() };
+      const label = place.formatted_address || place.name || prediction.description;
+      setSearchValues((current) => ({ ...current, [field]: label }));
+      setPredictions((current) => ({ ...current, [field]: [] }));
+      setActiveSearch(null);
+      sessionTokensRef.current[field] = null;
+      onLocationChange(field, { ...coords, label });
+      setMarkers((current) => field === "location" ? [coords, current[1]] : [current[0], coords]);
+      mapInstanceRef.current.panTo(coords);
+      mapInstanceRef.current.setZoom(14);
+      routeCalculatedRef.current = false;
+    });
+  };
+
+  const renderAddressField = (field, placeholder) => (
+    <div className="map-address-field">
+      <input className="map-input" value={searchValues[field]} onChange={(event) => handleSearchChange(field, event.target.value)} onFocus={() => setActiveSearch(field)} onBlur={() => window.setTimeout(() => setActiveSearch(null), 180)} onKeyDown={(event) => { if (event.key === "Enter" && predictions[field][0]) { event.preventDefault(); selectPrediction(field, predictions[field][0]); } }} placeholder={placeholder} autoComplete="off" inputMode="search" aria-autocomplete="list" aria-expanded={activeSearch === field && predictions[field].length > 0} />
+      {activeSearch === field && predictions[field].length > 0 && <ul className="map-address-suggestions" role="listbox">{predictions[field].map((prediction) => <li key={prediction.place_id} role="option" aria-selected="false"><button type="button" onPointerDown={(event) => { event.preventDefault(); selectPrediction(field, prediction); }}><strong>{prediction.structured_formatting?.main_text || prediction.description}</strong><small>{prediction.structured_formatting?.secondary_text || "Chile"}</small></button></li>)}</ul>}
+    </div>
+  );
+
   return (
     <div className="map-wrapper">
       <div className="search-container">
         <div className="search-inputs">
-          <input
-            ref={originInputRef}
-            className="map-input"
-            placeholder="Ubicación de inicio"
-          />
-          <input
-            ref={destinationInputRef}
-            className="map-input"
-            placeholder="Destino"
-          />
+          {renderAddressField("location", "Ubicación de inicio")}
+          {renderAddressField("destination", "Destino")}
           {locationStatus !== "idle" && (
             <button
               type="button"

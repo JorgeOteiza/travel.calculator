@@ -32,6 +32,9 @@ export const useTripCalculation = (formData) => {
       user_consumption_kml: formData.consumptionMode === "custom"
         ? Number(formData.userConsumptionKml)
         : null,
+      consumption_reference_profile: formData.consumptionMode === "custom"
+        ? formData.consumptionReferenceProfile
+        : null,
       road_profile: formData.roadProfile,
       driving_style: formData.drivingStyle,
       local_hour: new Date().getHours(),

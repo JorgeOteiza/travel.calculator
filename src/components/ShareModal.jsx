@@ -58,7 +58,7 @@ const ShareModal = ({ result, onClose }) => {
           <a className="share-email" href={`mailto:?subject=${encodeURIComponent("Resumen de mi viaje")}&body=${encodeURIComponent(text)}`}><b><FaEnvelope /></b><span>Correo</span></a>
           <button className="share-copy" type="button" onClick={() => copyText()}><b><FaRegCopy /></b><span>Copiar resumen</span></button>
         </div>
-        <p className="share-help">Instagram, TikTok y Facebook no aceptan este resumen directamente desde una web. Lo copiaremos y abriremos la plataforma para que puedas pegarlo.</p>
+        <p className="share-help">En Instagram, TikTok y Facebook copiaremos el resumen y abriremos la plataforma para que puedas pegarlo en una publicación o mensaje.</p>
         {notice && <div className="share-notice" role="status">{notice}</div>}
       </section>
     </div>

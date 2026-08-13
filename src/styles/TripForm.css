@@ -217,6 +217,7 @@
 .performance-input { position: relative; }
 .performance-input .custom-input { padding-right: 58px; }
 .performance-input span { position: absolute; top: 50%; right: 14px; color: #647985; font-size: 12px; font-weight: 700; transform: translateY(-50%); pointer-events: none; }
+.custom-consumption-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:start}.custom-consumption-row .compact-form-field{width:100%}.performance-help{margin-top:0;color:#6b7e89;font-size:10px;line-height:1.35}
 
 .currency-input .custom-input {
   width: 100%;
@@ -320,14 +321,175 @@ button.calculate-button:disabled {
   }
 }
 
-@media (max-width: 400px) {
-  .fuel-fields-row,.passenger-weight-row { grid-template-columns: 1fr; }
-  .driving-style-choice { grid-template-columns: 1fr; }
+@media (min-width: 761px) and (max-width: 920px) {
   .trip-form {
-    padding: 17px;
+    gap: 4px;
+    padding: 16px 20px 18px;
+  }
+
+  .trip-form-header { margin-bottom: 3px; }
+  .trip-form-header h1 { margin: 2px 0 0; font-size: 21px; }
+  .trip-form-header p { font-size: 11px; }
+  .trip-form label { margin-top: 3px; font-size: 11px; }
+  .trip-form .custom-input,
+  .trip-form select,
+  .custom-select .custom-select__control { min-height: 38px; font-size: 13px; }
+  .custom-select .custom-select__value-container { padding-block: 0; }
+
+  .driving-style-choice { margin-top: 4px; }
+  .driving-style-choice legend,
+  .consumption-choice legend { margin-bottom: 2px; font-size: 11px; }
+  .driving-style-choice label { min-height: 48px; padding: 6px 7px; }
+
+  .consumption-choice {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+    margin-top: 4px;
+  }
+  .consumption-choice legend { grid-column: 1 / -1; }
+  .consumption-choice label { min-height: 52px; padding: 7px 9px; }
+  .consumption-choice small { font-size: 9px; line-height: 1.25; }
+
+  .fuel-fields-row,
+  .passenger-weight-row,
+  .trip-preferences { gap: 8px; }
+  .trip-preferences { margin-top: 2px; }
+  button.calculate-button { min-height: 43px; margin-top: 5px; padding: 10px 16px; }
+}
+
+@media (max-width: 400px) {
+  .fuel-fields-row,.passenger-weight-row,.custom-consumption-row { grid-template-columns: repeat(2,minmax(0,1fr)); gap:7px; }
+  .driving-style-choice { grid-template-columns: repeat(3,minmax(0,1fr)); gap:5px; }
+  .driving-style-choice label { min-height:54px; padding:7px 5px; }
+  .driving-style-choice small { font-size:8px; }
+  .trip-form {
+    gap:6px;
+    padding: 15px;
   }
 
   .trip-form-header h1 {
-    font-size: 22px;
+    font-size: 21px;
+  }
+
+  .trip-form-header { margin-bottom:4px; }
+  .trip-form-header p { font-size:11px; }
+  .trip-form label,.driving-style-choice legend,.consumption-choice legend { font-size:11px; }
+  .consumption-choice label { padding:9px 10px; }
+  .trip-preferences { gap:7px; }
+}
+
+@media (min-width: 360px) and (max-width: 430px) {
+  .trip-form {
+    gap: 3px;
+    padding: 13px 14px 15px;
+  }
+
+  .trip-form-header {
+    margin-bottom: 2px;
+  }
+
+  .trip-form-eyebrow {
+    font-size: 9px;
+  }
+
+  .trip-form-header h1 {
+    margin: 1px 0;
+    font-size: 20px;
+  }
+
+  .trip-form-header p {
+    font-size: 10px;
+    line-height: 1.35;
+  }
+
+  .trip-form label {
+    margin: 3px 0 0;
+    font-size: 10px;
+  }
+
+  .trip-form .custom-input,
+  .trip-form select,
+  .custom-select .custom-select__control {
+    min-height: 43px;
+    font-size: 14px;
+  }
+
+  .trip-form .custom-input,
+  .trip-form select {
+    padding-block: 7px;
+  }
+
+  .custom-select .custom-select__value-container {
+    padding-block: 0;
+    padding-inline: 11px;
+  }
+
+  .driving-style-choice,
+  .consumption-choice {
+    margin-top: 3px;
+  }
+
+  .driving-style-choice legend,
+  .consumption-choice legend {
+    margin-bottom: 2px;
+    font-size: 10px;
+  }
+
+  .driving-style-choice label {
+    min-height: 48px;
+    padding: 6px 5px;
+  }
+
+  .consumption-choice {
+    gap: 5px;
+  }
+
+  .consumption-choice label {
+    padding: 7px 9px;
+  }
+
+  .consumption-choice strong {
+    font-size: 11px;
+  }
+
+  .consumption-choice small {
+    margin-top: 1px;
+    font-size: 9px;
+    line-height: 1.25;
+  }
+
+  .fuel-fields-row,
+  .passenger-weight-row,
+  .custom-consumption-row,
+  .trip-preferences {
+    gap: 6px;
+  }
+
+  .trip-form .fuel-field > label,
+  .trip-form .compact-form-field > label {
+    margin-top: 3px;
+  }
+
+  .trip-preferences {
+    margin-top: 1px;
+  }
+
+  .trip-preferences label {
+    gap: 2px;
+  }
+
+  .trip-preferences select {
+    min-height: 40px;
+  }
+
+  .performance-help {
+    font-size: 9px;
+  }
+
+  button.calculate-button {
+    min-height: 45px;
+    margin-top: 5px;
+    padding: 10px 14px;
   }
 }

@@ -2,6 +2,7 @@ import PropTypes from "prop-types";
 import "../styles/TripResults.css";
 import { formatCLP } from "../utils/currency";
 import { formatConsumption, formatDistance, formatLiters, formatNumber, formatPercentage, formatWeight } from "../utils/numberFormat";
+import { getWeatherLabel } from "../utils/tripLabels";
 
 const TripResults = ({ results }) => {
   if (!results) return null;
@@ -51,7 +52,7 @@ const TripResults = ({ results }) => {
           </li>
 
           <li>
-            <strong>Condiciones climáticas:</strong> {weather || "-"}
+            <strong>Clima:</strong> {getWeatherLabel(weather)}
           </li>
 
           <li>
@@ -65,13 +66,13 @@ const TripResults = ({ results }) => {
 
         {/* 🧠 EXPLICACIÓN DEL MODELO */}
         <div className="trip-explanation">
-          <h4>🧠 ¿Cómo se calculó este consumo?</h4>
+          <h4>🧠 ¿Qué considera esta estimación?</h4>
           <ul>
-            <li>Consumo base del vehículo</li>
-            <li>Ajuste por carga y pasajeros</li>
-            <li>Análisis por tramos de la ruta (polyline)</li>
-            <li>Pendiente real por segmento (elevación)</li>
-            <li>Condiciones climáticas</li>
+            <li>Rendimiento estándar o informado por el usuario</li>
+            <li>Tipo de vía y ritmo de conducción</li>
+            <li>Carga, pasajeros y condiciones de operación</li>
+            <li>Consumo y pendiente por cada tramo de la ruta</li>
+            <li>Clima y tráfico estimado según horario</li>
           </ul>
         </div>
 

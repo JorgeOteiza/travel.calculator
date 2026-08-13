@@ -52,6 +52,9 @@ export const validateTripForm = (formData) => {
     if (Number.isNaN(performance) || performance < 2 || performance > 40) {
       errors.userConsumptionKml = "Ingresa un rendimiento entre 2 y 40 km/L";
     }
+    if (!["city", "mixed", "highway", "rural"].includes(formData.consumptionReferenceProfile)) {
+      errors.consumptionReferenceProfile = "Selecciona dónde obtuviste ese rendimiento";
+    }
   }
   if (!["calm", "moderate", "hurried"].includes(formData.drivingStyle)) {
     errors.drivingStyle = "Selecciona un ritmo de conducción válido";

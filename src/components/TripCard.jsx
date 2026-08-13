@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import "../styles/TripCard.css";
 import { formatCLP } from "../utils/currency";
 import { formatDistance, formatLiters, formatPercentage, formatWeight } from "../utils/numberFormat";
+import { getDrivingStyleLabel, getWeatherLabel } from "../utils/tripLabels";
 
 import { API_BASE_URL } from "../config/api";
 import { tripToResult } from "../utils/tripResultAdapter";
@@ -33,7 +34,7 @@ const TripCard = ({ trip, onDelete, viewMode }) => {
   const hasRouteLabels = Boolean(originLabel && destinationLabel);
   const routeReference = hasRouteLabels
     ? `${originLabel} → ${destinationLabel}`
-    : "Ruta anterior";
+    : "Ruta sin nombres guardados";
   const fullRoute = hasRouteLabels
     ? `${trip.origin_label} → ${trip.destination_label}`
     : "Este viaje se guardó antes de incorporar nombres de origen y destino.";
@@ -103,7 +104,10 @@ const TripCard = ({ trip, onDelete, viewMode }) => {
                 <strong>Peso total:</strong> {formatWeight(trip.total_weight)} kg
               </li>
               <li>
-                <strong>Clima:</strong> {trip.weather}
+                <strong>Clima:</strong> {getWeatherLabel(trip.weather)}
+              </li>
+              <li>
+                <strong>Conducción:</strong> {getDrivingStyleLabel(trip.driving_style)}
               </li>
               <li>
                 <strong>Pendiente:</strong> {formatPercentage(trip.road_grade)}%
@@ -118,7 +122,7 @@ const TripCard = ({ trip, onDelete, viewMode }) => {
           {expanded ? "Ocultar detalles" : "Ver más"}
         </button>
         <button onClick={() => navigate("/resultado/detalles", { state: { result: tripToResult(trip) } })}>
-          Ver análisis
+          Ver análisis completo
         </button>
         <button className="delete-btn" onClick={() => setShowModal(true)}>
           Eliminar

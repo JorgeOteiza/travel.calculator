@@ -25,6 +25,7 @@ export const formatShareValues = (result) => ({
 });
 
 export const buildShareText = (result) => {
+  const weatherNames = { mild: "Templado", normal: "Normal", clear: "Despejado", cloudy: "Nublado", rain: "Lluvia", rainy: "Lluvia", cold: "Frío", hot: "Caluroso", windy: "Ventoso", snow: "Nieve", snowy: "Nieve" };
   const values = formatShareValues(result);
   return [
     "Resumen de mi viaje · Travel Calculator",
@@ -33,6 +34,7 @@ export const buildShareText = (result) => {
     `Combustible estimado: ${values.fuel}`,
     `Consumo ajustado: ${values.consumption}`,
     `Costo estimado: ${values.cost}`,
-    `Clima: ${result.weather || "Sin datos"}`,
+    `Clima: ${weatherNames[String(result.weather || "").toLowerCase()] || result.weather || "Sin datos"}`,
+    "Estimación ajustada según vehículo, ruta y condiciones del viaje.",
   ].join("\n");
 };
