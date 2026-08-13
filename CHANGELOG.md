@@ -4,6 +4,24 @@ Los cambios relevantes de Travel Calculator se documentan en este archivo. El fo
 
 ## [Unreleased]
 
+### Añadido
+
+- Rendimiento personalizado en km/L con contexto de medición urbano, mixto, carretera o rural.
+- Ritmo de conducción tranquilo, moderado o apurado.
+- Ajustes de operación para tráfico horario, trayectos cortos y arranque en frío.
+- Vista de lista real y vista de cuadrícula para el historial de viajes.
+- Nuevas capturas responsive de escritorio, iPad Air e iPhone 12 Pro.
+
+### Cambiado
+
+- Diseño responsive revisado en portada, calculadora, mapa, resultados, perfil, About y autenticación.
+- Textos de la aplicación y documentación actualizados para explicar el modelo contextual vigente.
+- Resultado rápido ampliado con costo por kilómetro, rendimiento de partida y factores aplicados.
+
+### Pruebas
+
+- Suite backend ampliada a 17 casos automatizados.
+
 ### Pendiente
 
 - Despliegue público de frontend, API y PostgreSQL.

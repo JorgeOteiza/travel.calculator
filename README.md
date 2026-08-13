@@ -1,8 +1,8 @@
 # Travel Calculator
 
-Aplicación full-stack que estima el consumo y costo de un viaje considerando más que la distancia: vehículo, pendiente, tipo de vía, clima, pasajeros, carga y precio del combustible.
+Aplicación full-stack que estima el consumo y costo de un viaje considerando más que la distancia: vehículo, rendimiento real o estándar, pendiente, tipo de vía, clima, tráfico horario, ritmo de conducción, pasajeros, carga y precio del combustible.
 
-![Travel Calculator en iPad Air](docs/screenshots/hero-tablet.png)
+![Portada responsive de Travel Calculator en iPad Air](docs/screenshots/hero-tablet-current.png)
 
 ## El problema
 
@@ -17,11 +17,12 @@ Travel Calculator divide la ruta en segmentos y aplica factores medibles para en
 - Origen mediante búsqueda o geolocalización, con Santiago como ubicación inicial segura.
 - Ruta interactiva con zoom, arrastre y direcciones de Google Maps.
 - Elevación y clima mediante Open-Meteo, sin facturación automática.
-- Ajustes por pendiente, tráfico esperado, pasajeros, carga y calibración del vehículo.
+- Rendimiento estándar o personalizado, adaptado al contexto donde fue medido: ciudad, uso mixto, carretera o camino rural.
+- Ajustes por pendiente, tráfico esperado según horario, trayectos cortos, ritmo de conducción, pasajeros y carga.
 - Resumen rápido y análisis detallado con gráficos por segmento.
 - Formato monetario chileno y unidades configurables.
 - Historial autenticado con JWT y persistencia en PostgreSQL.
-- Tarjetas de historial con origen, destino y métricas principales del viaje.
+- Historial con vistas de cuadrícula y lista, rutas resumidas y acceso al análisis completo de cada viaje.
 - Resultado demostrativo accesible sin registro.
 - Diseño responsive para teléfonos, tablets y escritorio.
 
@@ -29,40 +30,66 @@ Travel Calculator divide la ruta en segmentos y aplica factores medibles para en
 
 ### Planificación de la ruta
 
+El formulario permite combinar los datos técnicos del vehículo con el rendimiento que realmente observa el conductor. El mapa permanece como elemento principal para buscar direcciones, utilizar la ubicación actual y revisar visualmente la ruta calculada.
+
+![Calculadora activa y ruta en escritorio](docs/screenshots/calculator-desktop-active.png)
+
 <table>
   <tr>
     <td width="50%">
-      <strong>Datos del viaje</strong><br><br>
-      <img src="docs/screenshots/calculator-form-tablet.png" alt="Formulario responsive con vehículo, perfil vial y precio en CLP">
+      <strong>Formulario compacto en iPhone 12 Pro</strong><br><br>
+      <img src="docs/screenshots/calculator-mobile.png" alt="Formulario responsive de Travel Calculator en iPhone 12 Pro">
     </td>
     <td width="50%">
-      <strong>Ruta interactiva</strong><br><br>
-      <img src="docs/screenshots/calculator-map-tablet.png" alt="Mapa con ruta, geolocalización y controles de zoom">
+      <strong>Ruta completa en iPad Air</strong><br><br>
+      <img src="docs/screenshots/calculator-route-tablet.png" alt="Mapa responsive con una ruta larga, geolocalización y controles de zoom">
     </td>
   </tr>
 </table>
 
 ### Resultado rápido
 
-![Resumen del costo de viaje](docs/screenshots/result-summary-desktop.png)
+El primer nivel responde cuánto combustible y dinero requerirá el viaje. También expone costo por kilómetro, rendimiento de partida y los factores contextuales aplicados, sin obligar al usuario a revisar de inmediato todo el modelo.
+
+![Resultado rápido con costo y factores aplicados](docs/screenshots/result-summary-desktop-current.png)
+
+### Análisis explicable
+
+El detalle presenta elevación y consumo por segmento, vehículo y rendimiento utilizados, condiciones de operación y la secuencia con la que se construyó la estimación.
+
+![Análisis detallado con gráficos y metodología](docs/screenshots/result-details-desktop.png)
 
 <table>
   <tr>
     <td width="50%">
-      <strong>Análisis detallado</strong><br><br>
-      <img src="docs/screenshots/result-details-tablet.png" alt="Análisis detallado con perfil de elevación">
+      <strong>Compartir la estimación</strong><br><br>
+      <img src="docs/screenshots/share-modal-tablet-current.png" alt="Modal responsive para compartir el resumen mediante redes sociales y correo">
     </td>
     <td width="50%">
-      <strong>Compartir resumen</strong><br><br>
-      <img src="docs/screenshots/share-modal-tablet.png" alt="Modal para compartir el resumen del viaje">
+      <strong>Metodología y arquitectura</strong><br><br>
+      <img src="docs/screenshots/about-tablet.png" alt="Vista About en iPad con metodología del cálculo y arquitectura del proyecto">
     </td>
   </tr>
 </table>
 
+### Historial de estimaciones
+
+Los usuarios autenticados pueden alternar entre tarjetas visuales y una lista horizontal de historial, ordenar los viajes y volver a abrir su análisis completo.
+
+![Historial de viajes en vista de lista para escritorio](docs/screenshots/profile-list-desktop.png)
+
+<details>
+  <summary><strong>Ver también la cuadrícula responsive en iPad Air</strong></summary>
+  <br>
+  <img src="docs/screenshots/profile-grid-tablet.png" alt="Historial de viajes en cuadrícula responsive para iPad Air">
+</details>
+
+La lista aprovecha el ancho del monitor para presentar vehículo, fecha, métricas, ruta y acciones en filas de historial. La cuadrícula mantiene tarjetas compactas para comparar varios viajes visualmente en tablets y teléfonos.
+
 ## Estado del proyecto
 
 - Rama estable: `master`.
-- Suite backend: 12 pruebas automatizadas.
+- Suite backend: 17 pruebas automatizadas.
 - Frontend: ESLint y build de producción verificados.
 - Dependencias npm: 0 vulnerabilidades conocidas al 11 de agosto de 2026.
 - Despliegue público: pendiente.
@@ -209,7 +236,8 @@ Antes de desplegar:
 ## Limitaciones conocidas
 
 - El resultado es una estimación y depende de la calidad de los datos del vehículo y la ruta.
-- Tráfico en tiempo real, estilo de conducción, neumáticos y estado mecánico pueden cambiar el consumo observado.
+- El tráfico se aproxima por horario y tipo de vía; no corresponde a congestión en tiempo real.
+- La velocidad efectiva, neumáticos, estado mecánico y hábitos reales pueden cambiar el consumo observado.
 - La calibración con consumos reales todavía requiere más muestras de usuarios.
 - El historial aún no incluye paginación para cuentas con grandes volúmenes de viajes.
 - La suite automatizada cubre backend; las pruebas E2E del frontend siguen pendientes.

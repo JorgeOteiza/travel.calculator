@@ -1,16 +1,16 @@
 # Notas de desarrollo
 
-Estado técnico de Travel Calculator. Última revisión: 11 de agosto de 2026.
+Estado técnico de Travel Calculator. Última revisión: 12 de agosto de 2026.
 
 ## Estado actual
 
 - Rama estable: `master`.
 - Frontend: React/Vite, responsive desde móvil hasta escritorio.
 - Backend: Flask con PostgreSQL, JWT y migraciones Alembic.
-- Cálculo: vehículo, perfil vial, pendiente, clima, pasajeros y carga.
+- Cálculo: vehículo, rendimiento estándar o personalizado, perfil vial, pendiente, clima, tráfico horario, ritmo de conducción, trayectos cortos, pasajeros y carga.
 - Proveedores predeterminados: Open-Meteo para clima y elevación.
 - APIs pagadas del backend: bloqueadas con `PAID_GOOGLE_APIS_ENABLED=False`.
-- Calidad: 12 pruebas backend, lint/build correctos y auditoría npm limpia.
+- Calidad: 17 pruebas backend, lint/build correctos y auditoría npm limpia.
 - Catálogo: sólo expone vehículos con consumo mixto, peso y combustible válidos.
 - Despliegue público: pendiente.
 
@@ -36,10 +36,11 @@ La clave de Google Maps es pública por naturaleza porque llega al navegador. Su
 ```text
 Formulario + mapa
       │
-      ├── vehículo y consumo base
+      ├── vehículo y rendimiento contextual
       ├── ruta y polyline
       ├── elevación por segmentos
-      ├── clima y perfil vial
+      ├── clima, tráfico horario y perfil vial
+      ├── ritmo de conducción y trayecto corto
       └── pasajeros y peso adicional
                  │
                  ▼
@@ -52,7 +53,7 @@ Formulario + mapa
 
 ## Migraciones
 
-La cabeza vigente es `c47a12e9d630`. Las últimas migraciones agregan el perfil vial y las etiquetas de origen/destino a los viajes.
+La cabeza vigente es `f14c83d9a426`. Las últimas migraciones agregan el perfil vial, las etiquetas de origen/destino y el contexto del rendimiento personalizado.
 
 ```powershell
 pipenv run flask db heads
