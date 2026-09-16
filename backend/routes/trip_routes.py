@@ -290,7 +290,8 @@ def get_trips():
 @jwt_required()
 def delete_trip(trip_id):
     try:
-        trip = Trip.query.get(trip_id)
+        user_id = get_jwt_identity()
+        trip = Trip.query.filter_by(id=trip_id, user_id=user_id).first()
 
         if not trip:
             return jsonify({"error": "El viaje no fue encontrado"}), 404

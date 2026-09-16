@@ -9,7 +9,7 @@ os.environ["DEBUG"] = "False"
 
 from app import create_app
 from backend.extensions import db
-from backend.models import Vehicle
+from backend.models import Vehicle, Trip
 from backend.utils.trip_calculation import (
     calculate_fuel_consumption,
     calculate_trip_from_segments,
@@ -207,6 +207,58 @@ class AuthenticationTests(unittest.TestCase):
         })
         self.assertEqual(login.status_code, 200)
         self.assertIn("jwt", login.get_json())
+
+    def test_delete_trip_requires_ownership(self):
+        client = self.app.test_client()
+        owner = client.post("/api/register", json={
+            "name": "Owner", "email": "owner@example.com", "password": "secure123"
+        }).get_json()
+        intruder = client.post("/api/register", json={
+            "name": "Intruder", "email": "intruder@example.com", "password": "secure123"
+        }).get_json()
+        owner_token = owner["jwt"]
+        intruder_token = intruder["jwt"]
+
+        with self.app.app_context():
+            trip = Trip(
+                user_id=owner["user"]["id"],
+                brand="Owner Vehicle", model="X", year=2024,
+                fuel_type="gasoline", fuel_price=1000,
+                total_weight=1200, passengers=1,
+                location="Test", distance=10,
+                road_grade=0, weather="mild",
+                expected_consumption=7.0,
+                fuel_consumed=1, total_cost=1000,
+            )
+            db.session.add(trip)
+            db.session.commit()
+            trip_id = trip.id
+
+        delete_by_intruder = client.delete(
+            f"/api/trips/{trip_id}",
+            headers={"Authorization": f"Bearer {intruder_token}"},
+        )
+        self.assertEqual(delete_by_intruder.status_code, 404)
+
+        still_there = client.get(
+            "/api/trips", headers={"Authorization": f"Bearer {owner_token}"}
+        )
+        self.assertTrue(any(t["id"] == trip_id for t in still_there.get_json()))
+
+        delete_by_owner = client.delete(
+            f"/api/trips/{trip_id}",
+            headers={"Authorization": f"Bearer {owner_token}"},
+        )
+        self.assertEqual(delete_by_owner.status_code, 200)
+
+    def test_jwt_secret_key_required_at_boot(self):
+        original = os.environ.pop("JWT_SECRET_KEY", None)
+        try:
+            with self.assertRaises(RuntimeError):
+                create_app()
+        finally:
+            if original is not None:
+                os.environ["JWT_SECRET_KEY"] = original
 
     def test_paid_google_backend_routes_are_blocked(self):
         client = self.app.test_client()

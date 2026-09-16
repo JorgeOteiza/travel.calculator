@@ -27,9 +27,16 @@ def create_app():
         supports_credentials=True
     )
 
+    jwt_secret_key = os.getenv("JWT_SECRET_KEY")
+    if not jwt_secret_key:
+        raise RuntimeError(
+            "JWT_SECRET_KEY no está definida. Configúrala como variable de entorno "
+            "antes de iniciar la aplicación."
+        )
+
     app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("SQLALCHEMY_DATABASE_URI")
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-    app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "default_secret_key")
+    app.config["JWT_SECRET_KEY"] = jwt_secret_key
     app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=12)
     app.config["DEBUG"] = os.getenv("DEBUG", "False") == "True"
 
