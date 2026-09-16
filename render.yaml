@@ -18,26 +18,10 @@ services:
         generateValue: true
       - key: DEBUG
         value: "False"
+      # Dominio del frontend en Cloudflare Pages (ej. https://travelcalculator.pages.dev)
       - key: CORS_ORIGINS
         sync: false
       - key: VITE_GOOGLE_MAPS_API_KEY
         sync: false
       - key: OPENWEATHERMAP_API_KEY
         sync: false
-
-  - type: web
-    name: travelcalculator-web
-    runtime: static
-    buildCommand: npm ci && npm run build
-    staticPublishPath: ./dist
-    envVars:
-      - key: VITE_BACKEND_URL
-        sync: false
-      - key: VITE_GOOGLE_MAPS_API_KEY
-        sync: false
-      - key: VITE_MAP_ID
-        sync: false
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
