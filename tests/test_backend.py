@@ -251,6 +251,44 @@ class AuthenticationTests(unittest.TestCase):
         )
         self.assertEqual(delete_by_owner.status_code, 200)
 
+    def test_logout_revokes_token(self):
+        client = self.app.test_client()
+        register = client.post("/api/register", json={
+            "name": "Revocable", "email": "revocable@example.com", "password": "secure123"
+        }).get_json()
+        token = register["jwt"]
+        auth_header = {"Authorization": f"Bearer {token}"}
+
+        before_logout = client.get("/api/user", headers=auth_header)
+        self.assertEqual(before_logout.status_code, 200)
+
+        logout = client.post("/api/logout", headers=auth_header)
+        self.assertEqual(logout.status_code, 200)
+
+        after_logout = client.get("/api/user", headers=auth_header)
+        self.assertEqual(after_logout.status_code, 401)
+
+    def test_login_is_rate_limited(self):
+        client = self.app.test_client()
+        # Rate limiting is keyed by IP; use a dedicated fake IP so this test
+        # doesn't consume the shared 127.0.0.1 bucket used by other tests.
+        attacker_ip = {"REMOTE_ADDR": "203.0.113.50"}
+
+        for _ in range(5):
+            response = client.post(
+                "/api/login",
+                json={"email": "nobody@example.com", "password": "wrong"},
+                environ_overrides=attacker_ip,
+            )
+            self.assertEqual(response.status_code, 401)
+
+        blocked = client.post(
+            "/api/login",
+            json={"email": "nobody@example.com", "password": "wrong"},
+            environ_overrides=attacker_ip,
+        )
+        self.assertEqual(blocked.status_code, 429)
+
     def test_jwt_secret_key_required_at_boot(self):
         original = os.environ.pop("JWT_SECRET_KEY", None)
         try:

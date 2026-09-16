@@ -9,6 +9,7 @@ class User(db.Model):
     name = db.Column(db.String(80), nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(256), nullable=False)
+    session_version = db.Column(db.Integer, nullable=False, default=0)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(UTC).replace(tzinfo=None))
 
     trips = db.relationship("Trip", back_populates="user", cascade="all, delete", lazy=True)
@@ -242,3 +243,16 @@ class UserRole(db.Model):
 
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"), primary_key=True)
     role_id = db.Column(db.Integer, db.ForeignKey("role.id"), primary_key=True)
+
+
+class RevokedToken(db.Model):
+    __tablename__ = "revoked_token"
+
+    id = db.Column(db.Integer, primary_key=True)
+    jti = db.Column(db.String(36), nullable=False, unique=True, index=True)
+    token_type = db.Column(db.String(10), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    expires_at = db.Column(db.DateTime, nullable=False)
+    revoked_at = db.Column(
+        db.DateTime, nullable=False, default=lambda: datetime.now(UTC).replace(tzinfo=None)
+    )
