@@ -49,46 +49,41 @@ def get_car_models():
 @car_bp.route("/model_details", methods=["GET"])
 @cross_origin()
 def get_model_details():
-    try:
-        make = request.args.get("make")
-        model = request.args.get("model")
-        year = request.args.get("year", type=int)
+    make = request.args.get("make")
+    model = request.args.get("model")
+    year = request.args.get("year", type=int)
 
-        if not make or not model or not year:
-            return jsonify({"error": "Faltan parámetros"}), 400
+    if not make or not model or not year:
+        return jsonify({"error": "Faltan parámetros"}), 400
 
-        vehicle = Vehicle.query.filter(
-            db.func.lower(Vehicle.make) == make.lower(),
-            db.func.lower(Vehicle.model) == model.lower(),
-            Vehicle.year == year
-        ).first()
+    vehicle = Vehicle.query.filter(
+        db.func.lower(Vehicle.make) == make.lower(),
+        db.func.lower(Vehicle.model) == model.lower(),
+        Vehicle.year == year
+    ).first()
 
-        if not vehicle:
-            return jsonify({
-                "error": "Vehículo no disponible aún"
-            }), 404
-
-        if not is_vehicle_calculation_ready(vehicle):
-            return jsonify({
-                "error": "Vehículo sin datos suficientes para calcular"
-            }), 422
-
+    if not vehicle:
         return jsonify({
-            "make": vehicle.make,
-            "model": vehicle.model,
-            "year": vehicle.year,
-            "fuel_type": vehicle.fuel_type,
-            "engine_cc": vehicle.engine_cc,
-            "cylinders": vehicle.engine_cylinders,
-            "weight_kg": vehicle.weight_kg,
-            "lkm_mixed": vehicle.lkm_mixed,
-            "lkm_highway": vehicle.lkm_highway,
-            "source": "db",
-        }), 200
+            "error": "Vehículo no disponible aún"
+        }), 404
 
-    except Exception as e:
-        print(f"[ERROR] /model_details: {e}")
-        return jsonify({"error": "Error obteniendo vehículo"}), 500
+    if not is_vehicle_calculation_ready(vehicle):
+        return jsonify({
+            "error": "Vehículo sin datos suficientes para calcular"
+        }), 422
+
+    return jsonify({
+        "make": vehicle.make,
+        "model": vehicle.model,
+        "year": vehicle.year,
+        "fuel_type": vehicle.fuel_type,
+        "engine_cc": vehicle.engine_cc,
+        "cylinders": vehicle.engine_cylinders,
+        "weight_kg": vehicle.weight_kg,
+        "lkm_mixed": vehicle.lkm_mixed,
+        "lkm_highway": vehicle.lkm_highway,
+        "source": "db",
+    }), 200
 
 
 

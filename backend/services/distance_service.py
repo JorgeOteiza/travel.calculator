@@ -1,5 +1,8 @@
+import logging
 import math
 from backend.services.polyline_service import decode_polyline
+
+logger = logging.getLogger("travelcalculator")
 
 # ============================================================
 # 🔹 Haversine (distancia en línea recta)
@@ -39,7 +42,7 @@ def calculate_polyline_distance(polyline: str) -> float:
 
     # 🔒 OPTIMIZACIÓN ANTI-COSTO / PERFORMANCE
     if len(points) > 500:
-        print(f"⚠️ Polyline muy grande ({len(points)} puntos), reduciendo...")
+        logger.debug("Polyline muy grande (%d puntos), reduciendo...", len(points))
         points = points[::5]
 
     total_distance = 0.0
@@ -70,17 +73,17 @@ def get_distance_km(origin, destination, polyline=None):
             distance = calculate_polyline_distance(polyline)
 
             if distance > 0:
-                print("🧪 Distancia calculada desde polyline (PRECISA)")
+                logger.debug("Distancia calculada desde polyline (precisa)")
                 return distance
 
-            print("⚠️ Polyline inválida, usando fallback")
+            logger.debug("Polyline inválida, usando fallback")
 
-        except Exception as e:
-            print("❌ Error calculando distancia por polyline:", str(e))
+        except Exception:
+            logger.exception("Error calculando distancia por polyline")
 
     # 🟡 FALLBACK (seguro)
     if origin and destination:
-        print("🧪 Fallback Haversine (línea recta)")
+        logger.debug("Fallback Haversine (línea recta)")
         return haversine_distance_km(origin, destination)
 
     # 🔴 ERROR TOTAL

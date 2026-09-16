@@ -1,3 +1,4 @@
+import logging
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from flask_cors import cross_origin
@@ -22,8 +23,9 @@ from backend.services.elevation_profile_chart_service import (
     build_elevation_segments,
 )
 
-import traceback
 from backend.config import ELEVATION_PROVIDER
+
+logger = logging.getLogger("travelcalculator")
 
 trip_calc_and_save_bp = Blueprint("trip_calc_and_save_bp", __name__)
 
@@ -38,9 +40,9 @@ MAX_FUEL_PRICE = 5000
 def calculate_and_save_trip():
     try:
         user_id = get_jwt_identity()
-        data = request.get_json() or {}
+        data = request.get_json(silent=True) or {}
 
-        print("📥 DATA:", data)
+        logger.debug("Calculate-and-save request data: %s", data)
 
         # ===============================
         # 🔎 VALIDACIÓN
@@ -145,8 +147,8 @@ def calculate_and_save_trip():
         # ===============================
         try:
             distance_km = float(get_distance_km(origin, destination, polyline=polyline))
-        except Exception as e:
-            print("❌ ERROR DISTANCIA:", e)
+        except Exception:
+            logger.exception("Error calculando distancia")
             return jsonify({"error": "Error calculando distancia"}), 500
 
         if distance_km <= 0:
@@ -158,8 +160,8 @@ def calculate_and_save_trip():
         try:
             weather_data = get_weather_from_coords(origin)
             climate_label = weather_data.get("climate", "unknown")
-        except Exception as e:
-            print("❌ ERROR CLIMA:", e)
+        except Exception:
+            logger.exception("Error obteniendo clima")
             climate_label = "unknown"
 
         # ===============================
@@ -175,8 +177,8 @@ def calculate_and_save_trip():
                 raise ValueError("Perfil de elevación vacío")
             elevation_source = ELEVATION_PROVIDER
 
-        except Exception as e:
-            print("❌ ERROR SEGMENTOS:", e)
+        except Exception:
+            logger.exception("Error calculando segmentos de elevación")
             segments = [{
                 "distance_km": distance_km,
                 "grade_percent": 0
@@ -194,8 +196,8 @@ def calculate_and_save_trip():
                 / segment_distance
                 if segment_distance > 0 else 0
             )
-        except Exception as e:
-            print("⚠️ ERROR calculando road_grade:", e)
+        except Exception:
+            logger.exception("Error calculando road_grade")
             avg_grade = 0
 
         road_grade = round(avg_grade, 2)
@@ -388,22 +390,6 @@ def calculate_and_save_trip():
     except ConsumptionError as e:
         return jsonify({"error": str(e)}), 422
 
-    except SQLAlchemyError as e:
+    except SQLAlchemyError:
         db.session.rollback()
-
-        print("💥 SQL ERROR:")
-        traceback.print_exc()
-
-        return jsonify({
-            "error": "Error de base de datos",
-            "details": str(e)
-        }), 500
-
-    except Exception as e:
-        print("🔥 ERROR GLOBAL:")
-        traceback.print_exc()
-
-        return jsonify({
-            "error": str(e),
-            "type": type(e).__name__
-        }), 500
+        raise

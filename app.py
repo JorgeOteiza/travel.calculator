@@ -1,9 +1,12 @@
+import logging
 import os
-from flask import Flask
+import uuid
+from flask import Flask, jsonify
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from datetime import timedelta
 from dotenv import load_dotenv
+from werkzeug.exceptions import HTTPException
 
 from backend.extensions import db, bcrypt, migrate, limiter
 from backend.models import User, RevokedToken
@@ -11,6 +14,9 @@ from backend.routes import main_bp
 from backend.routes.trip_calculate_and_save import trip_calc_and_save_bp
 
 load_dotenv()
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+logger = logging.getLogger("travelcalculator")
 
 def create_app():
     app = Flask(__name__)
@@ -75,7 +81,20 @@ def create_app():
         response.headers["Content-Security-Policy"] = "default-src 'none'"
         return response
 
-    print("Flask iniciado correctamente")
+    @app.errorhandler(HTTPException)
+    def handle_http_exception(error):
+        return jsonify({"error": error.description}), error.code
+
+    @app.errorhandler(Exception)
+    def handle_unexpected_error(error):
+        incident_id = uuid.uuid4().hex
+        logger.exception("Error no controlado [%s]", incident_id)
+        return jsonify({
+            "error": "Ocurrió un error interno. Inténtalo de nuevo más tarde.",
+            "incident_id": incident_id,
+        }), 500
+
+    logger.info("Flask iniciado correctamente")
     return app
 
 if __name__ == "__main__":

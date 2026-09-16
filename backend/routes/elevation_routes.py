@@ -23,18 +23,14 @@ def get_elevation():
     if not api_key:
         return jsonify({"error": "API Key de Google no configurada"}), 500
 
-    try:
-        url = (
-            "https://maps.googleapis.com/maps/api/elevation/json"
-            f"?locations={origin}|{destination}&key={api_key}"
-        )
-        response = requests.get(url)
-        data = response.json()
+    url = (
+        "https://maps.googleapis.com/maps/api/elevation/json"
+        f"?locations={origin}|{destination}&key={api_key}"
+    )
+    response = requests.get(url, timeout=8)
+    data = response.json()
 
-        if data["status"] != "OK":
-            return jsonify({"error": "Error en Google Elevation API"}), 500
+    if data["status"] != "OK":
+        return jsonify({"error": "Error en Google Elevation API"}), 500
 
-        return jsonify(data), 200
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    return jsonify(data), 200

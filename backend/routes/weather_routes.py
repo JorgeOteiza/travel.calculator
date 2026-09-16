@@ -1,6 +1,9 @@
+import logging
 from flask import Blueprint, request, jsonify
 from flask_cors import cross_origin
 from backend.services.weather_service import get_weather_from_coords
+
+logger = logging.getLogger("travelcalculator")
 
 weather_bp = Blueprint("weather_bp", __name__)
 
@@ -22,11 +25,10 @@ def get_weather():
 
         return jsonify(weather_data), 200
 
-    except Exception as e:
-        print(f"❌ [ERROR] /weather: {e}")
+    except Exception:
+        logger.exception("Error obteniendo clima")
         return jsonify({
             "climate": "mild",
             "raw": None,
             "source": "fallback_due_to_exception",
-            "error": str(e)
         }), 200
