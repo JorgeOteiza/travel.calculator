@@ -1,6 +1,8 @@
 services:
   - type: web
     name: travelcalculator-api
+    branch: prod-readiness
+    region: virginia
     runtime: python
     plan: free
     buildCommand: pip install -r requirements.txt && flask db upgrade
