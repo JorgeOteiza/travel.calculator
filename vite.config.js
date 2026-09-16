@@ -2,8 +2,16 @@ import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 import process from "node:process";
 
-export default defineConfig(({ mode }) => {
+export default defineConfig(({ mode, command }) => {
   const env = loadEnv(mode, process.cwd(), "");
+
+  if (command === "build" && !env.VITE_BACKEND_URL) {
+    throw new Error(
+      "VITE_BACKEND_URL no está definida. Configúrala como variable de entorno " +
+        "de build antes de ejecutar `vite build` (en Cloudflare Pages: " +
+        "Settings → Environment variables)."
+    );
+  }
 
   return {
     plugins: [react()],
