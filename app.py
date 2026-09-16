@@ -94,6 +94,13 @@ def create_app():
             "incident_id": incident_id,
         }), 500
 
+    @app.cli.command("seed-vehicles")
+    def seed_vehicles_command():
+        """Carga el catálogo base de vehículos (no duplica los ya existentes)."""
+        from backend.seeds.vehicles import seed_vehicles
+        created = seed_vehicles()
+        print(f"✅ Seed de vehículos ejecutado. {created} vehículo(s) nuevo(s) creado(s).")
+
     logger.info("Flask iniciado correctamente")
     return app
 

@@ -298,6 +298,23 @@ class AuthenticationTests(unittest.TestCase):
             if original is not None:
                 os.environ["JWT_SECRET_KEY"] = original
 
+    def test_seed_vehicles_is_idempotent(self):
+        from backend.seeds.vehicles import seed_vehicles, VEHICLES
+
+        with self.app.app_context():
+            first_run = seed_vehicles()
+            self.assertEqual(first_run, len(VEHICLES))
+
+            second_run = seed_vehicles()
+            self.assertEqual(second_run, 0)
+
+            count = Vehicle.query.filter_by(
+                make=VEHICLES[0]["make"],
+                model=VEHICLES[0]["model"],
+                year=VEHICLES[0]["year"],
+            ).count()
+            self.assertEqual(count, 1)
+
     def test_paid_google_backend_routes_are_blocked(self):
         client = self.app.test_client()
         self.assertEqual(client.get("/api/elevation?origin=1,1&destination=2,2").status_code, 403)
