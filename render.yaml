@@ -1,9 +1,3 @@
-databases:
-  - name: travelcalculator-db
-    databaseName: travelcalculator
-    user: travelcalculator
-    plan: free
-
 services:
   - type: web
     name: travelcalculator-api
@@ -15,10 +9,11 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: 3.12.6
+      # Base de datos: PostgreSQL gratuito y persistente en Neon (neon.com),
+      # no el Postgres free de Render (expira a los 30 días). Pega aquí la
+      # cadena de conexión del proyecto Neon manualmente en el dashboard.
       - key: SQLALCHEMY_DATABASE_URI
-        fromDatabase:
-          name: travelcalculator-db
-          property: connectionString
+        sync: false
       - key: JWT_SECRET_KEY
         generateValue: true
       - key: DEBUG
