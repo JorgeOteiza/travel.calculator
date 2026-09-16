@@ -3,6 +3,7 @@ import axios from "axios";
 import { Link, useNavigate } from "react-router-dom";
 import PropTypes from "prop-types";
 import { API_BASE_URL } from "../config/api";
+import { handleAuthError } from "../utils/auth";
 import TripCard from "../components/TripCard";
 import { formatCLP } from "../utils/currency";
 import { formatDistance, formatLiters } from "../utils/numberFormat";
@@ -24,8 +25,10 @@ const Profile = ({ user, authLoading }) => {
         const token = localStorage.getItem("token");
         const response = await axios.get(`${API_BASE_URL}/api/trips`, { headers: { Authorization: `Bearer ${token}` } });
         setTrips(Array.isArray(response.data) ? response.data : []);
-      } catch {
-        setError("No pudimos cargar tu historial. Inténtalo nuevamente más tarde.");
+      } catch (error) {
+        if (!handleAuthError(error, navigate)) {
+          setError("No pudimos cargar tu historial. Inténtalo nuevamente más tarde.");
+        }
       } finally { setLoading(false); }
     };
     fetchTrips();

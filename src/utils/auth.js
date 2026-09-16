@@ -60,3 +60,14 @@ export const logout = () => {
   localStorage.removeItem("token"); // ✅ Asegurar eliminación del token
   localStorage.removeItem("user"); // ✅ Eliminar datos del usuario
 };
+
+// Limpia la sesión y redirige a login cuando el backend responde 401
+// (token expirado o revocado). Devuelve true si manejó el error.
+export const handleAuthError = (error, navigate) => {
+  if (error.response?.status === 401) {
+    logout();
+    navigate?.("/login");
+    return true;
+  }
+  return false;
+};

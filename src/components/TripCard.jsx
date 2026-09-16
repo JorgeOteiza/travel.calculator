@@ -9,6 +9,7 @@ import { formatDistance, formatLiters, formatPercentage, formatWeight } from "..
 import { getDrivingStyleLabel, getWeatherLabel } from "../utils/tripLabels";
 
 import { API_BASE_URL } from "../config/api";
+import { handleAuthError } from "../utils/auth";
 import { tripToResult } from "../utils/tripResultAdapter";
 
 const isCoordinateLabel = (value = "") => /^-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?$/.test(value.trim());
@@ -48,8 +49,9 @@ const TripCard = ({ trip, onDelete, viewMode }) => {
       });
       onDelete(trip.id);
     } catch (error) {
-      console.error("Error al eliminar viaje:", error);
-      setDeleteError("No se pudo eliminar el viaje. Inténtalo nuevamente.");
+      if (!handleAuthError(error, navigate)) {
+        setDeleteError("No se pudo eliminar el viaje. Inténtalo nuevamente.");
+      }
     } finally {
       setDeleting(false);
       setShowModal(false);

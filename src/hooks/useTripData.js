@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
+import { API_BASE_URL } from "../config/api";
 
 const fallbackVehicles = [
   { make: "Chery", model: "Tiggo 2 GLX", year: 2021 },
@@ -33,7 +34,7 @@ const useTripData = (initialFormData) => {
   useEffect(() => {
     const fetchAvailableVehicles = async () => {
       try {
-        const response = await axios.get("/api/cars/vehicles");
+        const response = await axios.get(`${API_BASE_URL}/api/cars/vehicles`);
         const vehicles = Array.isArray(response.data) ? response.data : [];
         if (!vehicles.length) throw new Error("Catálogo vacío");
         setVehicleCatalog(vehicles);
@@ -87,7 +88,7 @@ const useTripData = (initialFormData) => {
 
     try {
       const response = await axios.get(
-        `/api/cars/model_details?make=${encodeURIComponent(brand)}&model=${encodeURIComponent(model)}&year=${year}`,
+        `${API_BASE_URL}/api/cars/model_details?make=${encodeURIComponent(brand)}&model=${encodeURIComponent(model)}&year=${year}`,
       );
       if (response.status === 200 && response.data) {
         setVehicleDetails(response.data);

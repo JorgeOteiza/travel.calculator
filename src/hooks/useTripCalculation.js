@@ -1,10 +1,13 @@
 import { useState } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 import { API_BASE_URL } from "../config/api";
+import { handleAuthError } from "../utils/auth";
 
 export const useTripCalculation = (formData) => {
   const [isCalculating, setIsCalculating] = useState(false);
   const [calculationError, setCalculationError] = useState("");
+  const navigate = useNavigate();
 
   const calculateTrip = async () => {
     const token = localStorage.getItem("token");
@@ -54,6 +57,10 @@ export const useTripCalculation = (formData) => {
       );
       return response.data;
     } catch (error) {
+      if (handleAuthError(error, navigate)) {
+        setCalculationError("Tu sesión expiró. Inicia sesión nuevamente.");
+        return null;
+      }
       const serviceMessage = error.response?.data?.error;
       setCalculationError(
         serviceMessage ||
