@@ -56,7 +56,8 @@ const Home = () => {
         setMapCenter(DEFAULT_MAP_CENTER);
         setLocationStatus("denied");
       },
-      { enableHighAccuracy: false, timeout: 5000, maximumAge: 900000 },
+      // timeout amplio: da tiempo a responder el diálogo nativo de permiso
+      { enableHighAccuracy: false, timeout: 30000, maximumAge: 900000 },
     );
   }, [handleLocationChange]);
 
