@@ -17,6 +17,16 @@ export const useTripFormHandlers = (
       return;
     }
 
+    // 🧹 LIMPIEZA EXPLÍCITA (el usuario editó el texto tras una selección confirmada)
+    if (data === null) {
+      setFormData((prev) => ({
+        ...prev,
+        [`${field}Coords`]: null,
+        [`${field}Label`]: "",
+      }));
+      return;
+    }
+
     // 📍 VALIDACIÓN
     if (!data || typeof data.lat !== "number" || typeof data.lng !== "number") {
       console.warn("⚠️ Datos inválidos en ubicación:", data);

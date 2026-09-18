@@ -33,6 +33,7 @@ const GoogleMapSection = ({
   const [searchValues, setSearchValues] = useState({ location: "", destination: "" });
   const [predictions, setPredictions] = useState({ location: [], destination: [] });
   const [activeSearch, setActiveSearch] = useState(null);
+  const [activeIndex, setActiveIndex] = useState({ location: -1, destination: -1 });
   const latestMapCenterRef = useRef(mapCenter || DEFAULT_MAP_CENTER);
   latestMapCenterRef.current = mapCenter || DEFAULT_MAP_CENTER;
 
@@ -170,7 +171,13 @@ const GoogleMapSection = ({
     if (!map || !mapReady) return;
 
     const updateMarker = (ref, position, label) => {
-      if (typeof position?.lat !== "number" || typeof position?.lng !== "number") return;
+      if (typeof position?.lat !== "number" || typeof position?.lng !== "number") {
+        if (ref.current) {
+          ref.current.setMap(null);
+          ref.current = null;
+        }
+        return;
+      }
 
       if (!ref.current) {
         ref.current = new window.google.maps.Marker({
@@ -196,8 +203,19 @@ const GoogleMapSection = ({
   };
 
   const handleSearchChange = (field, value) => {
+    const markerIndex = field === "location" ? 0 : 1;
+    if (typeof markers[markerIndex]?.lat === "number") {
+      // El usuario edita el texto tras una selección ya confirmada: esas
+      // coordenadas ya no corresponden a lo escrito, hay que invalidarlas.
+      setMarkers((current) => (
+        field === "location" ? [null, current[1]] : [current[0], null]
+      ));
+      onLocationChange(field, null);
+      routeCalculatedRef.current = false;
+    }
     setSearchValues((current) => ({ ...current, [field]: value }));
     setActiveSearch(field);
+    setActiveIndex((current) => ({ ...current, [field]: -1 }));
     window.clearTimeout(autocompleteTimersRef.current[field]);
     if (value.trim().length < 3 || !autocompleteServiceRef.current) {
       setPredictions((current) => ({ ...current, [field]: [] }));
@@ -220,6 +238,7 @@ const GoogleMapSection = ({
       const label = place.formatted_address || place.name || prediction.description;
       setSearchValues((current) => ({ ...current, [field]: label }));
       setPredictions((current) => ({ ...current, [field]: [] }));
+      setActiveIndex((current) => ({ ...current, [field]: -1 }));
       setActiveSearch(null);
       sessionTokensRef.current[field] = null;
       onLocationChange(field, { ...coords, label });
@@ -230,12 +249,82 @@ const GoogleMapSection = ({
     });
   };
 
-  const renderAddressField = (field, placeholder) => (
-    <div className="map-address-field">
-      <input className="map-input" value={searchValues[field]} onChange={(event) => handleSearchChange(field, event.target.value)} onFocus={() => setActiveSearch(field)} onBlur={() => window.setTimeout(() => setActiveSearch(null), 180)} onKeyDown={(event) => { if (event.key === "Enter" && predictions[field][0]) { event.preventDefault(); selectPrediction(field, predictions[field][0]); } }} placeholder={placeholder} autoComplete="off" inputMode="search" aria-autocomplete="list" aria-expanded={activeSearch === field && predictions[field].length > 0} />
-      {activeSearch === field && predictions[field].length > 0 && <ul className="map-address-suggestions" role="listbox">{predictions[field].map((prediction) => <li key={prediction.place_id} role="option" aria-selected="false"><button type="button" onPointerDown={(event) => { event.preventDefault(); selectPrediction(field, prediction); }}><strong>{prediction.structured_formatting?.main_text || prediction.description}</strong><small>{prediction.structured_formatting?.secondary_text || "Chile"}</small></button></li>)}</ul>}
-    </div>
-  );
+  const handleFieldKeyDown = (field, event) => {
+    const items = predictions[field];
+
+    if (event.key === "ArrowDown") {
+      if (!items.length) return;
+      event.preventDefault();
+      setActiveIndex((current) => ({
+        ...current,
+        [field]: Math.min((current[field] ?? -1) + 1, items.length - 1),
+      }));
+      return;
+    }
+
+    if (event.key === "ArrowUp") {
+      if (!items.length) return;
+      event.preventDefault();
+      setActiveIndex((current) => ({
+        ...current,
+        [field]: Math.max((current[field] ?? -1) - 1, 0),
+      }));
+      return;
+    }
+
+    if (event.key === "Enter") {
+      // Enter solo confirma la sugerencia resaltada por teclado; nunca
+      // selecciona la primera de la lista a ciegas (evita destinos ambiguos).
+      event.preventDefault();
+      const index = activeIndex[field];
+      if (index >= 0 && items[index]) selectPrediction(field, items[index]);
+      return;
+    }
+
+    if (event.key === "Escape") {
+      setPredictions((current) => ({ ...current, [field]: [] }));
+      setActiveIndex((current) => ({ ...current, [field]: -1 }));
+    }
+  };
+
+  const renderAddressField = (field, placeholder) => {
+    const isConfirmed = typeof markers[field === "location" ? 0 : 1]?.lat === "number";
+
+    return (
+      <div className="map-address-field">
+        <input
+          className={`map-input${isConfirmed ? " is-confirmed" : ""}`}
+          value={searchValues[field]}
+          onChange={(event) => handleSearchChange(field, event.target.value)}
+          onFocus={() => setActiveSearch(field)}
+          onBlur={() => window.setTimeout(() => setActiveSearch(null), 180)}
+          onKeyDown={(event) => handleFieldKeyDown(field, event)}
+          placeholder={placeholder}
+          autoComplete="off"
+          inputMode="search"
+          aria-autocomplete="list"
+          aria-expanded={activeSearch === field && predictions[field].length > 0}
+        />
+        {activeSearch === field && predictions[field].length > 0 && (
+          <ul className="map-address-suggestions" role="listbox">
+            {predictions[field].map((prediction, index) => (
+              <li key={prediction.place_id} role="option" aria-selected={index === activeIndex[field]}>
+                <button
+                  type="button"
+                  className={index === activeIndex[field] ? "is-active" : ""}
+                  onPointerDown={(event) => { event.preventDefault(); selectPrediction(field, prediction); }}
+                  onMouseEnter={() => setActiveIndex((current) => ({ ...current, [field]: index }))}
+                >
+                  <strong>{prediction.structured_formatting?.main_text || prediction.description}</strong>
+                  <small>{prediction.structured_formatting?.secondary_text || "Chile"}</small>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="map-wrapper">
