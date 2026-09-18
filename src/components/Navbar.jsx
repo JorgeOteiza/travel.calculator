@@ -11,7 +11,7 @@ import {
 } from "react-icons/fa6";
 import "../styles/Navbar.css";
 
-const Navbar = ({ user, setUser }) => {
+const Navbar = ({ user, setUser, authLoading }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -85,7 +85,7 @@ const Navbar = ({ user, setUser }) => {
           </ul>
 
           <div className="navbar-actions">
-            {isAuthenticated ? (
+            {authLoading ? null : isAuthenticated ? (
               <>
                 <NavLink to="/profile" className={({ isActive }) => `nav-link profile-link${isActive ? " active" : ""}`} onClick={closeMenu}>
                   <FaUser /> <span>{user?.name || "Mi perfil"}</span>
@@ -118,6 +118,7 @@ const Navbar = ({ user, setUser }) => {
 Navbar.propTypes = {
   user: PropTypes.object,
   setUser: PropTypes.func.isRequired,
+  authLoading: PropTypes.bool.isRequired,
 };
 
 export default Navbar;

@@ -45,7 +45,7 @@ function App() {
 
   return (
     <Router>
-      <Navbar user={user} setUser={setUser} loading={loadingUser} />
+      <Navbar user={user} setUser={setUser} authLoading={loadingUser} />
       <main className="main-container">
         <Routes>
           <Route path="/" element={<Landing />} />
