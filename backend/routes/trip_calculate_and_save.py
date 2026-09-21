@@ -1,4 +1,6 @@
 import logging
+import math
+from datetime import datetime, timezone
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from flask_cors import cross_origin
@@ -11,9 +13,13 @@ from backend.services.consumption_service import (
     ConsumptionError,
     calculate_trip_consumption,
     get_vehicle_data_issues,
+    resolve_consumption_type,
 )
 from backend.services.driving_conditions_service import calculate_operating_conditions
-from backend.services.custom_consumption_service import adapt_user_consumption
+from backend.services.custom_consumption_service import (
+    adapt_user_consumption,
+    kml_from_consumption,
+)
 from backend.utils.trip_calculation import calculate_trip_from_segments
 
 from backend.services.polyline_service import decode_polyline, reduce_points
@@ -33,6 +39,41 @@ PASSENGER_WEIGHT = 75
 MAX_PASSENGERS = 8
 MAX_FUEL_PRICE = 5000
 
+# Vehículo personalizado ("No encuentro mi vehículo"): sin catálogo, sin
+# homologación. Combustibles admitidos en esta primera versión — eléctrico e
+# híbrido quedan fuera porque el rendimiento en km/L no les aplica.
+CUSTOM_VEHICLE_FUEL_TYPES = {"gasoline", "diesel"}
+MAX_CUSTOM_TEXT_LENGTH = 80
+MIN_CUSTOM_YEAR = 1900
+MAX_CUSTOM_YEAR = datetime.now(timezone.utc).year + 1
+
+
+def _validate_custom_vehicle(payload):
+    """Valida el bloque custom_vehicle. Devuelve (datos, None) o (None, error)."""
+    if not isinstance(payload, dict):
+        return None, "Faltan los datos del vehículo personalizado"
+
+    brand = str(payload.get("brand") or "").strip()
+    model = str(payload.get("model") or "").strip()
+    fuel_type = str(payload.get("fuel_type") or "").strip().lower()
+
+    if not brand or len(brand) > MAX_CUSTOM_TEXT_LENGTH:
+        return None, "Marca del vehículo inválida"
+    if not model or len(model) > MAX_CUSTOM_TEXT_LENGTH:
+        return None, "Modelo del vehículo inválido"
+
+    try:
+        year = int(payload.get("year"))
+    except (TypeError, ValueError):
+        return None, "Año del vehículo inválido"
+    if not MIN_CUSTOM_YEAR <= year <= MAX_CUSTOM_YEAR:
+        return None, "Año del vehículo inválido"
+
+    if fuel_type not in CUSTOM_VEHICLE_FUEL_TYPES:
+        return None, "Combustible no soportado para vehículo personalizado"
+
+    return {"brand": brand, "model": model, "year": year, "fuel_type": fuel_type}, None
+
 
 @trip_calc_and_save_bp.route("/trips/calculate-and-save", methods=["POST"])
 @cross_origin()
@@ -47,19 +88,23 @@ def calculate_and_save_trip():
         # ===============================
         # 🔎 VALIDACIÓN
         # ===============================
+        is_custom_vehicle = data.get("is_custom_vehicle") is True
+
         required_fields = [
-            "brand", "model", "year",
             "origin", "destination",
             "passengers", "route_polyline"
         ]
+        if not is_custom_vehicle:
+            required_fields += ["brand", "model", "year"]
 
         for field in required_fields:
             if field not in data:
                 return jsonify({"error": f"Falta el campo '{field}'"}), 400
 
-        brand = str(data["brand"]).lower().strip()
-        model = str(data["model"]).lower().strip()
-        year = int(data["year"])
+        if not is_custom_vehicle:
+            brand = str(data["brand"]).lower().strip()
+            model = str(data["model"]).lower().strip()
+            year = int(data["year"])
         passengers = int(data["passengers"])
 
         if passengers < 0 or passengers > MAX_PASSENGERS:
@@ -71,16 +116,42 @@ def calculate_and_save_trip():
         consumption_mode = str(data.get("consumption_mode") or "standard").lower()
         if consumption_mode not in {"standard", "custom"}:
             return jsonify({"error": "Origen del rendimiento inválido"}), 400
-        user_consumption_kml = data.get("user_consumption_kml")
+
+        if is_custom_vehicle and consumption_mode != "custom":
+            return jsonify({
+                "error": "El vehículo personalizado requiere indicar un rendimiento conocido"
+            }), 400
+
         consumption_reference_profile = str(
             data.get("consumption_reference_profile") or "mixed"
         ).lower()
+
         if consumption_mode == "custom":
-            try:
-                user_consumption_kml = float(user_consumption_kml)
-            except (TypeError, ValueError):
-                return jsonify({"error": "Ingresa un rendimiento actual válido"}), 400
-            if not 2 <= user_consumption_kml <= 40:
+            if is_custom_vehicle:
+                consumption_unit = str(data.get("consumption_unit") or "").lower()
+                if consumption_unit not in {"kml", "l100km"}:
+                    return jsonify({"error": "Unidad de consumo inválida"}), 400
+
+                raw_consumption = data.get("consumption_value")
+                try:
+                    raw_consumption = float(raw_consumption)
+                except (TypeError, ValueError):
+                    return jsonify({"error": "Ingresa un rendimiento actual válido"}), 400
+                if not math.isfinite(raw_consumption) or raw_consumption <= 0:
+                    return jsonify({"error": "Ingresa un rendimiento actual válido"}), 400
+
+                try:
+                    user_consumption_kml = kml_from_consumption(raw_consumption, consumption_unit)
+                except ValueError as exc:
+                    return jsonify({"error": str(exc)}), 400
+            else:
+                user_consumption_kml = data.get("user_consumption_kml")
+                try:
+                    user_consumption_kml = float(user_consumption_kml)
+                except (TypeError, ValueError):
+                    return jsonify({"error": "Ingresa un rendimiento actual válido"}), 400
+
+            if not math.isfinite(user_consumption_kml) or not 2 <= user_consumption_kml <= 40:
                 return jsonify({"error": "El rendimiento debe estar entre 2 y 40 km/L"}), 400
             if consumption_reference_profile not in {"city", "mixed", "highway", "rural"}:
                 return jsonify({"error": "Contexto del rendimiento inválido"}), 400
@@ -117,30 +188,47 @@ def calculate_and_save_trip():
         # ===============================
         # 🚗 VEHÍCULO
         # ===============================
-        vehicle = Vehicle.query.filter(
-            db.func.lower(Vehicle.make) == brand,
-            db.func.lower(Vehicle.model) == model,
-            Vehicle.year == year,
-        ).first()
+        if is_custom_vehicle:
+            custom_vehicle, custom_vehicle_error = _validate_custom_vehicle(
+                data.get("custom_vehicle")
+            )
+            if custom_vehicle_error:
+                return jsonify({"error": custom_vehicle_error}), 400
 
-        if not vehicle:
-            return jsonify({"error": "Vehículo no encontrado"}), 404
+            vehicle = None
+            fuel_type = custom_vehicle["fuel_type"]
+            is_electric = False  # combustibles admitidos: solo gasoline/diesel
 
-        vehicle_issues = get_vehicle_data_issues(vehicle)
-        if vehicle_issues:
-            return jsonify({
-                "error": "Vehículo sin datos suficientes para calcular",
-                "missing": vehicle_issues,
-            }), 422
+            # ===============================
+            # ⚖️ PESO — sin peso base inventado, ver Checkpoint 2 aprobado
+            # ===============================
+            base_weight = 0.0
+            total_weight = extra_weight + (passengers * PASSENGER_WEIGHT)
+        else:
+            vehicle = Vehicle.query.filter(
+                db.func.lower(Vehicle.make) == brand,
+                db.func.lower(Vehicle.model) == model,
+                Vehicle.year == year,
+            ).first()
 
-        fuel_type = vehicle.fuel_type or "gasoline"
-        is_electric = "electric" in fuel_type.lower()
+            if not vehicle:
+                return jsonify({"error": "Vehículo no encontrado"}), 404
 
-        # ===============================
-        # ⚖️ PESO
-        # ===============================
-        base_weight = float(vehicle.weight_kg or 1500)
-        total_weight = base_weight + extra_weight + (passengers * PASSENGER_WEIGHT)
+            vehicle_issues = get_vehicle_data_issues(vehicle)
+            if vehicle_issues:
+                return jsonify({
+                    "error": "Vehículo sin datos suficientes para calcular",
+                    "missing": vehicle_issues,
+                }), 422
+
+            fuel_type = vehicle.fuel_type or "gasoline"
+            is_electric = "electric" in fuel_type.lower()
+
+            # ===============================
+            # ⚖️ PESO
+            # ===============================
+            base_weight = float(vehicle.weight_kg or 1500)
+            total_weight = base_weight + extra_weight + (passengers * PASSENGER_WEIGHT)
 
         # ===============================
         # 📏 DISTANCIA
@@ -214,14 +302,28 @@ def calculate_and_save_trip():
             consumption_segments = []
 
         else:
-            base_data = calculate_trip_consumption(
-                vehicle=vehicle,
-                total_km=distance_km,
-                highway_km=data.get("highway_km"),
-                road_profile=road_profile,
-            )
+            if vehicle is not None:
+                base_data = calculate_trip_consumption(
+                    vehicle=vehicle,
+                    total_km=distance_km,
+                    highway_km=data.get("highway_km"),
+                    road_profile=road_profile,
+                )
+                consumption_type = base_data.get("consumption_type", "mixed")
+                base_consumption = float(base_data.get("base_consumption", 0))
+            else:
+                # Vehículo personalizado: no hay lkm_mixed/lkm_highway de catálogo,
+                # el consumo base sale exclusivamente del rendimiento declarado
+                # por el usuario (ver bloque siguiente). Solo reutilizamos la
+                # misma clasificación mixed/highway que usa el catálogo.
+                consumption_type = (
+                    "highway" if road_profile == "highway"
+                    else resolve_consumption_type(
+                        total_km=distance_km, highway_km=data.get("highway_km")
+                    )
+                )
+                base_consumption = 0.0
 
-            base_consumption = float(base_data.get("base_consumption", 0))
             custom_consumption_context = None
             if user_consumption_kml is not None:
                 custom_consumption_context = adapt_user_consumption(
@@ -231,7 +333,6 @@ def calculate_and_save_trip():
                     distance_km=distance_km,
                 )
                 base_consumption = custom_consumption_context["base_l100km"]
-            consumption_type = base_data.get("consumption_type", "mixed")
 
             route_result = calculate_trip_from_segments(
                 base_fc=base_consumption,
@@ -267,7 +368,9 @@ def calculate_and_save_trip():
                 for segment in consumption_segments
             ]
 
-            calibration_factor = float(vehicle.calibration_factor or 1.0)
+            calibration_factor = (
+                float(vehicle.calibration_factor or 1.0) if vehicle is not None else 1.0
+            )
             calibration_factor = max(0.7, min(calibration_factor, 1.3))
 
             adjusted_consumption *= calibration_factor
@@ -291,13 +394,17 @@ def calculate_and_save_trip():
         # ===============================
         trip = Trip(
             user_id=user_id,
-            vehicle_id=vehicle.id,
-            brand=vehicle.make,
-            model=vehicle.model,
-            year=vehicle.year,
+            vehicle_id=(vehicle.id if vehicle is not None else None),
+            brand=(vehicle.make if vehicle is not None else custom_vehicle["brand"]),
+            model=(vehicle.model if vehicle is not None else custom_vehicle["model"]),
+            year=(vehicle.year if vehicle is not None else custom_vehicle["year"]),
             fuel_type=fuel_type,
             fuel_price=float(fuel_price),
             fuel_octane=fuel_octane,
+            # Vehículo personalizado: total_weight NO representa el peso del
+            # vehículo (desconocido), representa únicamente pasajeros + carga
+            # adicional declarados. El frontend debe presentarlo acorde
+            # ("Pasajeros y carga"), nunca como "Peso total del vehículo".
             total_weight=float(total_weight),
             passengers=int(passengers),
             location=f"{origin.get('lat')},{origin.get('lng')}",
@@ -316,7 +423,9 @@ def calculate_and_save_trip():
             user_consumption_kml=user_consumption_kml,
             consumption_reference_profile=consumption_reference_profile,
             consumption_source=consumption_mode,
-            calibration_factor_used=float(vehicle.calibration_factor or 1.0),
+            calibration_factor_used=(
+                float(vehicle.calibration_factor or 1.0) if vehicle is not None else None
+            ),
             elevation_profile=elevation_profile,
             consumption_profile=consumption_segments,
             elevation_source=elevation_source,
@@ -329,7 +438,7 @@ def calculate_and_save_trip():
 
         db.session.add(trip)
 
-        if not UserVehicle.query.filter_by(
+        if vehicle is not None and not UserVehicle.query.filter_by(
             user_id=user_id,
             vehicle_id=vehicle.id
         ).first():
@@ -374,15 +483,27 @@ def calculate_and_save_trip():
                     "method": "no aplica a vehículo eléctrico",
                 }
             ),
-            "vehicle": {
-                "make": vehicle.make,
-                "model": vehicle.model,
-                "year": vehicle.year,
-                "fuel_type": fuel_type,
-                "engine_cc": vehicle.engine_cc,
-                "weight_kg": vehicle.weight_kg,
-                "lkm_mixed": vehicle.lkm_mixed,
-            },
+            "isCustomVehicle": vehicle is None,
+            "vehicle": (
+                {
+                    "make": vehicle.make,
+                    "model": vehicle.model,
+                    "year": vehicle.year,
+                    "fuel_type": fuel_type,
+                    "engine_cc": vehicle.engine_cc,
+                    "weight_kg": vehicle.weight_kg,
+                    "lkm_mixed": vehicle.lkm_mixed,
+                }
+                if vehicle is not None else {
+                    "make": custom_vehicle["brand"],
+                    "model": custom_vehicle["model"],
+                    "year": custom_vehicle["year"],
+                    "fuel_type": fuel_type,
+                    "engine_cc": None,
+                    "weight_kg": None,
+                    "lkm_mixed": None,
+                }
+            ),
             "origin": origin,
             "destination": destination,
         }), 201

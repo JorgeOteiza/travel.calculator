@@ -6,6 +6,22 @@ ROAD_REFERENCE_FACTORS = {
 }
 
 
+def kml_from_consumption(value: float, unit: str) -> float:
+    """Convierte un rendimiento declarado por el usuario a km/L (unidad canónica).
+
+    No es la conversión general del sistema: es exclusivamente el paso de
+    normalización de entrada para vehículos personalizados, antes de que el
+    valor entre al mismo camino de validación que ya usa el modo custom.
+    """
+    if unit == "kml":
+        return value
+    if unit == "l100km":
+        if value <= 0:
+            raise ValueError("El consumo en L/100km debe ser mayor a cero")
+        return 100 / value
+    raise ValueError("Unidad de consumo no soportada")
+
+
 def adapt_user_consumption(
     *,
     consumption_kml: float,
