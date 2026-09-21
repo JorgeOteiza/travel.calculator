@@ -20,6 +20,9 @@ export const tripToResult = (trip) => ({
   userConsumptionKml: trip.user_consumption_kml,
   consumptionReferenceProfile: trip.consumption_reference_profile,
   consumptionSource: trip.consumption_source || "standard",
+  // vehicle_id es el indicador persistido de vehículo personalizado (ver
+  // backend, commit 22a2c19): null significa que no proviene del catálogo.
+  isCustomVehicle: trip.vehicle_id === null,
   vehicle: { make: trip.brand, model: trip.model, year: trip.year, fuel_type: trip.fuel_type },
   settings: { currency: "CLP", distanceUnit: "km" },
   fromHistory: true,

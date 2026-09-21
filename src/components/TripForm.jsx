@@ -18,6 +18,7 @@ const TripForm = ({
   isLoadingBrands,
   isLoadingModels,
   message,
+  onToggleCustomVehicle,
 }) => {
   const fuelTypeOptions = [
     { label: "Gasoline 93", value: "gasoline_93" },
@@ -28,6 +29,12 @@ const TripForm = ({
   const isElectric = vehicleDetails?.fuel_type
     ?.toLowerCase()
     .includes("electric");
+
+  const currentYear = new Date().getFullYear();
+  // Octanaje solo aplica a gasolina: en modo personalizado con diésel no
+  // corresponde mostrarlo ni exigirlo (ver fuel-fields-row más abajo).
+  const showOctane = !isElectric
+    && !(formData.isCustomVehicle && formData.customFuelType === "diesel");
 
   return (
     <form
@@ -47,58 +54,133 @@ const TripForm = ({
         </div>
       )}
 
-      {/* Marca */}
-      <label htmlFor="brand">Marca del vehículo</label>
-      <Select
-        id="brand"
-        name="brand"
-        options={brandOptions}
-        value={brandOptions.find((opt) => opt.value === formData.brand) || null}
-        onChange={handleBrandSelect}
-        placeholder="Selecciona una marca"
-        isClearable
-        className="custom-select"
-        classNamePrefix="custom-select"
-        isLoading={isLoadingBrands}
-      />
-      {errors.brand && <span className="error-text">{errors.brand}</span>}
+      <div className="vehicle-mode-toggle">
+        <button type="button" className="link-button" onClick={onToggleCustomVehicle}>
+          {formData.isCustomVehicle ? "Elegir un vehículo del catálogo" : "No encuentro mi vehículo"}
+        </button>
+      </div>
 
-      {/* Modelo */}
-      <label htmlFor="model">Modelo</label>
-      <Select
-        id="model"
-        name="model"
-        options={modelOptions}
-        value={modelOptions.find((opt) => opt.value === formData.model) || null}
-        onChange={handleModelSelect}
-        placeholder="Selecciona un modelo"
-        isClearable
-        className="custom-select"
-        classNamePrefix="custom-select"
-        isDisabled={!formData.brand}
-        isLoading={isLoadingModels}
-      />
-      {errors.model && <span className="error-text">{errors.model}</span>}
+      {formData.isCustomVehicle ? (
+        <div className="custom-vehicle-fields">
+          <p className="custom-vehicle-help">
+            Ingresa los datos de tu vehículo. El cálculo usará el rendimiento que nos
+            indiques a continuación — es una estimación, no un dato homologado.
+          </p>
 
-      {/* Año */}
-      <label htmlFor="year">Año</label>
-      <select
-        id="year"
-        name="year"
-        value={formData.year || ""}
-        onChange={(e) => handleYearSelect(e.target.value)}
-        className="custom-input"
-        disabled={!availableYears.length}
-        required
-      >
-        <option value="">Selecciona un año</option>
-        {availableYears.map((year) => (
-          <option key={year} value={year}>
-            {year}
-          </option>
-        ))}
-      </select>
-      {errors.year && <span className="error-text">{errors.year}</span>}
+          <div className="custom-vehicle-row">
+            <div className="compact-form-field">
+              <label htmlFor="customBrand">Marca</label>
+              <input id="customBrand" type="text" name="customBrand" value={formData.customBrand ?? ""} onChange={handleChange} placeholder="Ej. Suzuki" maxLength={80} className="custom-input" required />
+              {errors.customBrand && <span className="error-text">{errors.customBrand}</span>}
+            </div>
+            <div className="compact-form-field">
+              <label htmlFor="customModel">Modelo</label>
+              <input id="customModel" type="text" name="customModel" value={formData.customModel ?? ""} onChange={handleChange} placeholder="Ej. Mastervan" maxLength={80} className="custom-input" required />
+              {errors.customModel && <span className="error-text">{errors.customModel}</span>}
+            </div>
+          </div>
+
+          <div className="custom-vehicle-row">
+            <div className="compact-form-field">
+              <label htmlFor="customYear">Año</label>
+              <input id="customYear" type="number" name="customYear" value={formData.customYear ?? ""} onChange={handleChange} placeholder="Ej. 2000" min="1900" max={currentYear + 1} className="custom-input" required />
+              {errors.customYear && <span className="error-text">{errors.customYear}</span>}
+            </div>
+            <div className="compact-form-field">
+              <label htmlFor="customFuelType">Tipo de combustible</label>
+              <select id="customFuelType" name="customFuelType" value={formData.customFuelType ?? ""} onChange={handleChange} className="custom-input" required>
+                <option value="">Selecciona</option>
+                <option value="gasoline">Gasolina</option>
+                <option value="diesel">Diésel</option>
+              </select>
+              {errors.customFuelType && <span className="error-text">{errors.customFuelType}</span>}
+            </div>
+          </div>
+
+          <div className="custom-consumption-row">
+            <div className="compact-form-field">
+              <label htmlFor="customConsumptionValue">Rendimiento conocido</label>
+              <div className="custom-consumption-value">
+                <input id="customConsumptionValue" type="number" name="customConsumptionValue" value={formData.customConsumptionValue ?? ""} onChange={handleChange} placeholder="Ej. 8.5" min="0.1" step="0.1" className="custom-input" required />
+                <select name="customConsumptionUnit" value={formData.customConsumptionUnit} onChange={handleChange} aria-label="Unidad del rendimiento" className="custom-input">
+                  <option value="kml">km/L</option>
+                  <option value="l100km">L/100km</option>
+                </select>
+              </div>
+              {errors.customConsumptionValue && <span className="error-text">{errors.customConsumptionValue}</span>}
+            </div>
+            <div className="compact-form-field">
+              <label htmlFor="customConsumptionReferenceProfile">¿Dónde lo mediste?</label>
+              <select id="customConsumptionReferenceProfile" name="customConsumptionReferenceProfile" value={formData.customConsumptionReferenceProfile} onChange={handleChange} className="custom-input">
+                <option value="city">Ciudad</option>
+                <option value="mixed">Uso mixto</option>
+                <option value="highway">Carretera</option>
+                <option value="rural">Camino rural</option>
+              </select>
+              {errors.customConsumptionReferenceProfile && <span className="error-text">{errors.customConsumptionReferenceProfile}</span>}
+            </div>
+          </div>
+          <small className="performance-help">
+            Necesitamos este dato para calcular: no podemos estimar el consumo de un
+            vehículo que no está en nuestro catálogo sin el rendimiento que nos indiques.
+          </small>
+        </div>
+      ) : (
+        <>
+          {/* Marca */}
+          <label htmlFor="brand">Marca del vehículo</label>
+          <Select
+            id="brand"
+            name="brand"
+            options={brandOptions}
+            value={brandOptions.find((opt) => opt.value === formData.brand) || null}
+            onChange={handleBrandSelect}
+            placeholder="Selecciona una marca"
+            isClearable
+            className="custom-select"
+            classNamePrefix="custom-select"
+            isLoading={isLoadingBrands}
+          />
+          {errors.brand && <span className="error-text">{errors.brand}</span>}
+
+          {/* Modelo */}
+          <label htmlFor="model">Modelo</label>
+          <Select
+            id="model"
+            name="model"
+            options={modelOptions}
+            value={modelOptions.find((opt) => opt.value === formData.model) || null}
+            onChange={handleModelSelect}
+            placeholder="Selecciona un modelo"
+            isClearable
+            className="custom-select"
+            classNamePrefix="custom-select"
+            isDisabled={!formData.brand}
+            isLoading={isLoadingModels}
+          />
+          {errors.model && <span className="error-text">{errors.model}</span>}
+
+          {/* Año */}
+          <label htmlFor="year">Año</label>
+          <select
+            id="year"
+            name="year"
+            value={formData.year || ""}
+            onChange={(e) => handleYearSelect(e.target.value)}
+            className="custom-input"
+            disabled={!availableYears.length}
+            required
+          >
+            <option value="">Selecciona un año</option>
+            {availableYears.map((year) => (
+              <option key={year} value={year}>
+                {year}
+              </option>
+            ))}
+          </select>
+          {errors.year && <span className="error-text">{errors.year}</span>}
+        </>
+      )}
 
       <label htmlFor="roadProfile">Tipo de vía predominante</label>
       <select
@@ -122,35 +204,40 @@ const TripForm = ({
       </fieldset>
       {errors.drivingStyle && <span className="error-text">{errors.drivingStyle}</span>}
 
-      <fieldset className="consumption-choice">
-        <legend>Base de rendimiento del vehículo</legend>
-        <label>
-          <input type="radio" name="consumptionMode" value="standard" checked={formData.consumptionMode === "standard"} onChange={handleChange} />
-          <span><strong>Usar dato estándar</strong><small>Usaremos el rendimiento disponible para este modelo.</small></span>
-        </label>
-        <label>
-          <input type="radio" name="consumptionMode" value="custom" checked={formData.consumptionMode === "custom"} onChange={handleChange} />
-          <span><strong>Ingresar rendimiento real</strong><small>Si conoces cuántos kilómetros recorre por litro.</small></span>
-        </label>
-      </fieldset>
-      {formData.consumptionMode === "custom" && <>
-        <div className="custom-consumption-row">
-          <div className="compact-form-field">
-            <label htmlFor="userConsumptionKml">Rendimiento actual</label>
-            <div className="performance-input"><input id="userConsumptionKml" type="number" name="userConsumptionKml" value={formData.userConsumptionKml ?? ""} onChange={handleChange} placeholder="Ej. 9,4" min="2" max="40" step="0.1" className="custom-input" /><span>km/L</span></div>
-            {errors.userConsumptionKml && <span className="error-text">{errors.userConsumptionKml}</span>}
-          </div>
-          <div className="compact-form-field">
-            <label htmlFor="consumptionReferenceProfile">¿Dónde lo mediste?</label>
-            <select id="consumptionReferenceProfile" name="consumptionReferenceProfile" value={formData.consumptionReferenceProfile} onChange={handleChange} className="custom-input"><option value="city">Ciudad</option><option value="mixed">Uso mixto</option><option value="highway">Carretera</option><option value="rural">Camino rural</option></select>
-            {errors.consumptionReferenceProfile && <span className="error-text">{errors.consumptionReferenceProfile}</span>}
-          </div>
-        </div>
-        <small className="performance-help">Adaptaremos ese rendimiento al tipo de vía y a las condiciones de la ruta calculada.</small>
-      </>}
+      {!formData.isCustomVehicle && (
+        <>
+          <fieldset className="consumption-choice">
+            <legend>Base de rendimiento del vehículo</legend>
+            <label>
+              <input type="radio" name="consumptionMode" value="standard" checked={formData.consumptionMode === "standard"} onChange={handleChange} />
+              <span><strong>Usar dato estándar</strong><small>Usaremos el rendimiento disponible para este modelo.</small></span>
+            </label>
+            <label>
+              <input type="radio" name="consumptionMode" value="custom" checked={formData.consumptionMode === "custom"} onChange={handleChange} />
+              <span><strong>Ingresar rendimiento real</strong><small>Si conoces cuántos kilómetros recorre por litro.</small></span>
+            </label>
+          </fieldset>
+          {formData.consumptionMode === "custom" && <>
+            <div className="custom-consumption-row">
+              <div className="compact-form-field">
+                <label htmlFor="userConsumptionKml">Rendimiento actual</label>
+                <div className="performance-input"><input id="userConsumptionKml" type="number" name="userConsumptionKml" value={formData.userConsumptionKml ?? ""} onChange={handleChange} placeholder="Ej. 9,4" min="2" max="40" step="0.1" className="custom-input" /><span>km/L</span></div>
+                {errors.userConsumptionKml && <span className="error-text">{errors.userConsumptionKml}</span>}
+              </div>
+              <div className="compact-form-field">
+                <label htmlFor="consumptionReferenceProfile">¿Dónde lo mediste?</label>
+                <select id="consumptionReferenceProfile" name="consumptionReferenceProfile" value={formData.consumptionReferenceProfile} onChange={handleChange} className="custom-input"><option value="city">Ciudad</option><option value="mixed">Uso mixto</option><option value="highway">Carretera</option><option value="rural">Camino rural</option></select>
+                {errors.consumptionReferenceProfile && <span className="error-text">{errors.consumptionReferenceProfile}</span>}
+              </div>
+            </div>
+            <small className="performance-help">Adaptaremos ese rendimiento al tipo de vía y a las condiciones de la ruta calculada.</small>
+          </>}
+        </>
+      )}
 
       {!isElectric && (
         <div className="fuel-fields-row">
+          {showOctane && (
           <div className="fuel-field">
             <label htmlFor="fuelType">Octanaje</label>
             <Select
@@ -166,6 +253,7 @@ const TripForm = ({
             />
             {errors.fuelType && <span className="error-text">{errors.fuelType}</span>}
           </div>
+          )}
           <div className="fuel-field">
             <label htmlFor="fuelPrice">Precio por litro</label>
             <div className="currency-input">
@@ -228,6 +316,7 @@ TripForm.propTypes = {
   isLoadingBrands: PropTypes.bool.isRequired,
   isLoadingModels: PropTypes.bool.isRequired,
   message: PropTypes.string,
+  onToggleCustomVehicle: PropTypes.func.isRequired,
 };
 
 export default TripForm;

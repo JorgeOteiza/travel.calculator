@@ -24,6 +24,10 @@ const Home = () => {
     locationCoords: null, destinationCoords: null, locationLabel: "",
     destinationLabel: "", climate: "", roadGrade: 0, route_polyline: "",
     currency: "CLP", distanceUnit: "km", roadProfile: "mixed", drivingStyle: "moderate",
+    // "No encuentro mi vehículo": datos separados del catálogo, ver handleToggleCustomVehicle
+    isCustomVehicle: false, customBrand: "", customModel: "", customYear: "",
+    customFuelType: "", customConsumptionValue: "", customConsumptionUnit: "kml",
+    customConsumptionReferenceProfile: "mixed",
   });
 
   const { fetchWeather, weatherWarning } = useWeather(setFormData);
@@ -64,6 +68,21 @@ const Home = () => {
   const handleCurrentAddressResolved = useCallback((address) => {
     setFormData((previous) => ({ ...previous, locationLabel: address }));
   }, [setFormData]);
+
+  // Cambiar entre catálogo y vehículo personalizado limpia los datos del
+  // modo anterior en ambos sentidos, para que nunca queden datos de
+  // selección/consumo reutilizados silenciosamente entre un modo y otro.
+  const handleToggleCustomVehicle = useCallback(() => {
+    handleBrandSelect(null); // limpia brand/model/year del catálogo + vehicleDetails
+    setFormData((previous) => ({
+      ...previous,
+      isCustomVehicle: !previous.isCustomVehicle,
+      customBrand: "", customModel: "", customYear: "", customFuelType: "",
+      customConsumptionValue: "", customConsumptionUnit: "kml",
+      customConsumptionReferenceProfile: "mixed",
+      consumptionMode: "standard", userConsumptionKml: "", consumptionReferenceProfile: "city",
+    }));
+  }, [handleBrandSelect, setFormData]);
 
   const { calculateTrip, isCalculating, calculationError } = useTripCalculation(formData);
 
@@ -116,6 +135,7 @@ const Home = () => {
           calculateTrip={handleSubmit} errors={errors} isCalculating={isCalculating}
           isLoadingBrands={isLoadingBrands} isLoadingModels={isLoadingModels}
           message={calculationError || weatherWarning || dataWarning}
+          onToggleCustomVehicle={handleToggleCustomVehicle}
           />
         </div>
         </section>

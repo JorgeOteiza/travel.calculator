@@ -272,6 +272,49 @@ button.calculate-button:active {
   padding: 7px 10px;
 }
 
+.vehicle-mode-toggle { margin: 2px 0 4px; }
+
+.link-button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #087f8c;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.link-button:hover { color: #065f68; }
+
+.custom-vehicle-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 2px;
+  padding: 13px;
+  border: 1px dashed #b9d3da;
+  border-radius: 14px;
+  background: #f4fbfb;
+}
+
+.custom-vehicle-help {
+  margin: 0 0 4px;
+  color: #48626c;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.custom-vehicle-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.custom-consumption-value { display: flex; gap: 6px; }
+.custom-consumption-value .custom-input { flex: 1; min-width: 0; }
+.custom-consumption-value select { flex: 0 0 auto; width: 96px; }
+
 .form-notification {
   margin-top: 7px;
   padding: 11px 12px;
@@ -359,7 +402,7 @@ button.calculate-button:disabled {
 }
 
 @media (max-width: 400px) {
-  .fuel-fields-row,.passenger-weight-row,.custom-consumption-row { grid-template-columns: repeat(2,minmax(0,1fr)); gap:7px; }
+  .fuel-fields-row,.passenger-weight-row,.custom-consumption-row,.custom-vehicle-row { grid-template-columns: repeat(2,minmax(0,1fr)); gap:7px; }
   .driving-style-choice { grid-template-columns: repeat(3,minmax(0,1fr)); gap:5px; }
   .driving-style-choice label { min-height:54px; padding:7px 5px; }
   .driving-style-choice small { font-size:8px; }

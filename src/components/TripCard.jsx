@@ -30,6 +30,9 @@ const TripCard = ({ trip, onDelete, viewMode }) => {
   const [showModal, setShowModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
+  // vehicle_id es el indicador persistido de vehículo personalizado (backend,
+  // commit 22a2c19) — total_weight en ese caso es solo pasajeros + carga.
+  const isCustomVehicle = trip.vehicle_id === null;
   const originLabel = compactLocation(trip.origin_label);
   const destinationLabel = compactLocation(trip.destination_label);
   const hasRouteLabels = Boolean(originLabel && destinationLabel);
@@ -69,6 +72,7 @@ const TripCard = ({ trip, onDelete, viewMode }) => {
       <div className="trip-header">
         <h4>
           {trip.brand} {trip.model} ({trip.year})
+          {isCustomVehicle && <small className="custom-vehicle-badge">Personalizado</small>}
         </h4>
         <span>{new Date(trip.created_at).toLocaleDateString()}</span>
       </div>
@@ -103,7 +107,7 @@ const TripCard = ({ trip, onDelete, viewMode }) => {
               transition={{ duration: 0.3 }}
             >
               <li>
-                <strong>Peso total:</strong> {formatWeight(trip.total_weight)} kg
+                <strong>{isCustomVehicle ? "Pasajeros y carga" : "Peso total"}:</strong> {formatWeight(trip.total_weight)} kg
               </li>
               <li>
                 <strong>Clima:</strong> {getWeatherLabel(trip.weather)}

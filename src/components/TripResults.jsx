@@ -17,6 +17,7 @@ const TripResults = ({ results }) => {
     adjustedFC,
     segmentsAnalyzed,
     vehicle = {},
+    isCustomVehicle = false,
   } = results;
 
   const gradeValue = parseFloat(roadGrade);
@@ -28,6 +29,13 @@ const TripResults = ({ results }) => {
     <div className="trip-results-container">
       <div className="trip-results-card">
         <h2>📊 Resultados del Viaje</h2>
+
+        {isCustomVehicle && (
+          <div className="trip-info" role="status">
+            ℹ️ Este cálculo es una <strong>estimación</strong> basada en el rendimiento
+            que tú ingresaste para tu vehículo — no corresponde a un dato homologado.
+          </div>
+        )}
 
         <ul>
           <li>
@@ -115,19 +123,27 @@ const TripResults = ({ results }) => {
               <strong>Combustible:</strong> {vehicle.fuel_type || "-"}
             </li>
 
-            <li>
-              <strong>Cilindrada:</strong>{" "}
-              {formatNumber(vehicle.engine_cc, { maximumFractionDigits: 0 })} cc
-            </li>
+            {isCustomVehicle ? (
+              <li>
+                <strong>Fuente del rendimiento:</strong> Ingresado por ti
+              </li>
+            ) : (
+              <>
+                <li>
+                  <strong>Cilindrada:</strong>{" "}
+                  {formatNumber(vehicle.engine_cc, { maximumFractionDigits: 0 })} cc
+                </li>
 
-            <li>
-              <strong>Peso:</strong> {formatWeight(vehicle.weight_kg)} kg
-            </li>
+                <li>
+                  <strong>Peso:</strong> {formatWeight(vehicle.weight_kg)} kg
+                </li>
 
-            <li>
-              <strong>Consumo mixto:</strong>{" "}
-              {formatConsumption(vehicle.lkm_mixed)} L/100 km
-            </li>
+                <li>
+                  <strong>Consumo mixto:</strong>{" "}
+                  {formatConsumption(vehicle.lkm_mixed)} L/100 km
+                </li>
+              </>
+            )}
           </ul>
         </div>
       </div>

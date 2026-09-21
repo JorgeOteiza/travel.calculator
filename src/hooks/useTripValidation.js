@@ -3,9 +3,57 @@ export const validateTripForm = (formData) => {
   const errors = {};
 
   // 🚗 Vehículo
-  if (!formData.brand) errors.brand = "Selecciona una marca";
-  if (!formData.model) errors.model = "Selecciona un modelo";
-  if (!formData.year) errors.year = "Selecciona un año";
+  if (formData.isCustomVehicle) {
+    if (!formData.customBrand?.trim()) errors.customBrand = "Ingresa la marca de tu vehículo";
+    if (!formData.customModel?.trim()) errors.customModel = "Ingresa el modelo de tu vehículo";
+
+    const customYear = Number(formData.customYear);
+    const maxYear = new Date().getFullYear() + 1;
+    if (!formData.customYear || Number.isNaN(customYear) || customYear < 1900 || customYear > maxYear) {
+      errors.customYear = "Ingresa un año válido";
+    }
+
+    if (!["gasoline", "diesel"].includes(formData.customFuelType)) {
+      errors.customFuelType = "Selecciona el tipo de combustible";
+    }
+
+    const consumptionValue = Number(formData.customConsumptionValue);
+    if (!formData.customConsumptionValue || Number.isNaN(consumptionValue) || consumptionValue <= 0) {
+      errors.customConsumptionValue = "Ingresa el rendimiento de tu vehículo para poder calcular";
+    } else {
+      const kml = formData.customConsumptionUnit === "l100km"
+        ? 100 / consumptionValue
+        : consumptionValue;
+      if (!Number.isFinite(kml) || kml < 2 || kml > 40) {
+        errors.customConsumptionValue = "El rendimiento debe estar entre 2 y 40 km/L (o su equivalente en L/100km)";
+      }
+    }
+
+    if (!["city", "mixed", "highway", "rural"].includes(formData.customConsumptionReferenceProfile)) {
+      errors.customConsumptionReferenceProfile = "Selecciona dónde obtuviste ese rendimiento";
+    }
+
+    if (formData.customFuelType === "gasoline" && !formData.fuelType) {
+      errors.fuelType = "Selecciona el octanaje";
+    }
+  } else {
+    if (!formData.brand) errors.brand = "Selecciona una marca";
+    if (!formData.model) errors.model = "Selecciona un modelo";
+    if (!formData.year) errors.year = "Selecciona un año";
+
+    if (formData.consumptionMode === "custom") {
+      const performance = Number(formData.userConsumptionKml);
+      if (Number.isNaN(performance) || performance < 2 || performance > 40) {
+        errors.userConsumptionKml = "Ingresa un rendimiento entre 2 y 40 km/L";
+      }
+      if (!["city", "mixed", "highway", "rural"].includes(formData.consumptionReferenceProfile)) {
+        errors.consumptionReferenceProfile = "Selecciona dónde obtuviste ese rendimiento";
+      }
+    }
+
+    if (!formData.fuelType) errors.fuelType = "Selecciona el octanaje";
+  }
+
   if (!["city", "mixed", "highway", "rural"].includes(formData.roadProfile)) {
     errors.roadProfile = "Selecciona un tipo de vía válido";
   }
@@ -45,17 +93,6 @@ export const validateTripForm = (formData) => {
     errors.fuelPrice = "Ingresa un precio de combustible válido";
   }
 
-  if (!formData.fuelType) errors.fuelType = "Selecciona el octanaje";
-
-  if (formData.consumptionMode === "custom") {
-    const performance = Number(formData.userConsumptionKml);
-    if (Number.isNaN(performance) || performance < 2 || performance > 40) {
-      errors.userConsumptionKml = "Ingresa un rendimiento entre 2 y 40 km/L";
-    }
-    if (!["city", "mixed", "highway", "rural"].includes(formData.consumptionReferenceProfile)) {
-      errors.consumptionReferenceProfile = "Selecciona dónde obtuviste ese rendimiento";
-    }
-  }
   if (!["calm", "moderate", "hurried"].includes(formData.drivingStyle)) {
     errors.drivingStyle = "Selecciona un ritmo de conducción válido";
   }
