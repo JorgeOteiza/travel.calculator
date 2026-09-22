@@ -70,12 +70,12 @@ const TripForm = ({
           <div className="custom-vehicle-row">
             <div className="compact-form-field">
               <label htmlFor="customBrand">Marca</label>
-              <input id="customBrand" type="text" name="customBrand" value={formData.customBrand ?? ""} onChange={handleChange} placeholder="Ej. Suzuki" maxLength={80} className="custom-input" required />
+              <input id="customBrand" type="text" name="customBrand" value={formData.customBrand ?? ""} onChange={handleChange} placeholder="Ej. Chevrolet" maxLength={80} className="custom-input" required />
               {errors.customBrand && <span className="error-text">{errors.customBrand}</span>}
             </div>
             <div className="compact-form-field">
               <label htmlFor="customModel">Modelo</label>
-              <input id="customModel" type="text" name="customModel" value={formData.customModel ?? ""} onChange={handleChange} placeholder="Ej. Mastervan" maxLength={80} className="custom-input" required />
+              <input id="customModel" type="text" name="customModel" value={formData.customModel ?? ""} onChange={handleChange} placeholder="Ej. Spark" maxLength={80} className="custom-input" required />
               {errors.customModel && <span className="error-text">{errors.customModel}</span>}
             </div>
           </div>
@@ -83,7 +83,7 @@ const TripForm = ({
           <div className="custom-vehicle-row">
             <div className="compact-form-field">
               <label htmlFor="customYear">Año</label>
-              <input id="customYear" type="number" name="customYear" value={formData.customYear ?? ""} onChange={handleChange} placeholder="Ej. 2000" min="1900" max={currentYear + 1} className="custom-input" required />
+              <input id="customYear" type="number" name="customYear" value={formData.customYear ?? ""} onChange={handleChange} placeholder="Ej. 2021" min="1900" max={currentYear + 1} className="custom-input" required />
               {errors.customYear && <span className="error-text">{errors.customYear}</span>}
             </div>
             <div className="compact-form-field">

@@ -33,10 +33,11 @@ const Landing = () => {
         </div>
 
         <div className="hero-preview" aria-hidden="true">
+          <span className="hero-kicker hero-preview-label">Ejemplo ilustrativo</span>
           <div className="preview-route"><span>A</span><i /><span>B</span></div>
-          <div className="preview-metric"><small>Distancia</small><strong>42,1 km</strong></div>
-          <div className="preview-metric"><small>Consumo</small><strong>3,61 L</strong></div>
-          <div className="preview-metric accent"><small>Costo estimado</small><strong>$5.054</strong></div>
+          <div className="preview-metric"><small>Distancia</small><strong>115 km</strong></div>
+          <div className="preview-metric"><small>Consumo</small><strong>7,48 L</strong></div>
+          <div className="preview-metric accent"><small>Costo estimado</small><strong>$9.344</strong></div>
         </div>
       </section>
 
