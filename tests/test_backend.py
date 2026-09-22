@@ -21,6 +21,11 @@ from backend.services.elevation_profile import get_elevation_for_points
 from backend.services.weather_service import get_weather_from_coords
 from backend.services.driving_conditions_service import calculate_operating_conditions
 from backend.services.custom_consumption_service import adapt_user_consumption
+from backend.routes.trip_calculate_and_save import (
+    MAX_POLYLINE_LENGTH,
+    MAX_PUBLIC_PAYLOAD_BYTES,
+    PUBLIC_CALCULATE_RATE_LIMIT,
+)
 
 
 class CalculationTests(unittest.TestCase):
@@ -720,6 +725,358 @@ class CustomVehicleTripTests(unittest.TestCase):
                     user_id=trip.user_id, vehicle_id=trip.vehicle_id
                 ).first()
             )
+
+
+class PublicCalculateTripTests(unittest.TestCase):
+    """Cobertura del modo invitado: POST /api/trips/calculate, sin sesión y
+    sin ninguna escritura en base de datos."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.app = create_app()
+        cls.app.config.update(TESTING=True)
+        with cls.app.app_context():
+            db.create_all()
+
+    def setUp(self):
+        # Mocks locales de clima/elevación: nunca se consulta Open-Meteo real.
+        self.weather_patch = patch(
+            "backend.routes.trip_calculate_and_save.get_weather_from_coords",
+            return_value={"climate": "mild", "source": "mock"},
+        )
+        self.elevation_patch = patch(
+            "backend.routes.trip_calculate_and_save.get_elevation_for_points",
+            side_effect=lambda points: [100.0] * len(points),
+        )
+        self.weather_patch.start()
+        self.elevation_patch.start()
+        self.addCleanup(self.weather_patch.stop)
+        self.addCleanup(self.elevation_patch.stop)
+
+    @staticmethod
+    def _sample_polyline():
+        return polyline_codec.encode([(-33.45, -70.66), (-33.03, -71.55)])
+
+    _ip_counter = 0
+
+    def _fake_ip(self):
+        # IPs únicas (bloque TEST-NET-2) por llamada para no compartir el
+        # cupo de /api/trips/calculate entre tests distintos.
+        PublicCalculateTripTests._ip_counter += 1
+        return {"REMOTE_ADDR": f"198.51.100.{PublicCalculateTripTests._ip_counter % 250 + 1}"}
+
+    def _register(self, client, email):
+        PublicCalculateTripTests._ip_counter += 1
+        fake_ip = f"198.51.100.{PublicCalculateTripTests._ip_counter % 250 + 1}"
+        response = client.post(
+            "/api/register",
+            json={"name": "Public Calc User", "email": email, "password": "secure123"},
+            environ_overrides={"REMOTE_ADDR": fake_ip},
+        ).get_json()
+        return response["jwt"]
+
+    def _custom_payload(self, **overrides):
+        payload = {
+            "is_custom_vehicle": True,
+            "custom_vehicle": {
+                "brand": "Suzuki", "model": "Mastervan", "year": 2000, "fuel_type": "gasoline",
+            },
+            "consumption_mode": "custom",
+            "consumption_value": 8.5,
+            "consumption_unit": "kml",
+            "consumption_reference_profile": "mixed",
+            "origin": {"lat": -33.45, "lng": -70.66},
+            "destination": {"lat": -33.03, "lng": -71.55},
+            "origin_label": "Santiago",
+            "destination_label": "Valparaíso",
+            "route_polyline": self._sample_polyline(),
+            "passengers": 2,
+            "extra_weight": 15,
+            "fuel_price": 1250,
+            "road_profile": "mixed",
+            "driving_style": "moderate",
+        }
+        payload.update(overrides)
+        return payload
+
+    def _create_catalog_vehicle(self):
+        # Marca única por llamada: varios tests de esta clase crean su propio
+        # vehículo de catálogo y comparten la misma base SQLite en memoria.
+        PublicCalculateTripTests._ip_counter += 1
+        make = f"PublicTest{PublicCalculateTripTests._ip_counter}"
+        with self.app.app_context():
+            vehicle = Vehicle(
+                make=make, model="Model", year=2022,
+                fuel_type="gasoline", weight_kg=1300, lkm_mixed=7.0, lkm_highway=6.0,
+                calibration_factor=1.0,
+            )
+            db.session.add(vehicle)
+            db.session.commit()
+            return vehicle.id, make
+
+    def _catalog_payload(self, make, **overrides):
+        payload = {
+            "brand": make.lower(), "model": "model", "year": 2022,
+            "origin": {"lat": -33.45, "lng": -70.66},
+            "destination": {"lat": -33.03, "lng": -71.55},
+            "origin_label": "Santiago", "destination_label": "Valparaíso",
+            "route_polyline": self._sample_polyline(),
+            "passengers": 1, "extra_weight": 0, "fuel_price": 1250,
+            "road_profile": "mixed", "driving_style": "moderate",
+        }
+        payload.update(overrides)
+        return payload
+
+    # ------------------------------------------------------------------
+    # Casos válidos, sin token
+    # ------------------------------------------------------------------
+
+    def test_public_catalog_vehicle_succeeds_without_token(self):
+        _, make = self._create_catalog_vehicle()
+        client = self.app.test_client()
+        response = client.post(
+            "/api/trips/calculate",
+            json=self._catalog_payload(make),
+            environ_overrides=self._fake_ip(),
+        )
+        self.assertEqual(response.status_code, 200, response.get_json())
+        body = response.get_json()
+        self.assertFalse(body["isCustomVehicle"])
+        self.assertFalse(body["saved"])
+        self.assertNotIn("id", body)
+
+    def test_public_custom_vehicle_succeeds_without_token(self):
+        client = self.app.test_client()
+        response = client.post(
+            "/api/trips/calculate",
+            json=self._custom_payload(),
+            environ_overrides=self._fake_ip(),
+        )
+        self.assertEqual(response.status_code, 200, response.get_json())
+        body = response.get_json()
+        self.assertTrue(body["isCustomVehicle"])
+        self.assertFalse(body["saved"])
+        self.assertNotIn("id", body)
+
+    def test_public_diesel_custom_vehicle_succeeds(self):
+        client = self.app.test_client()
+        response = client.post(
+            "/api/trips/calculate",
+            json=self._custom_payload(
+                custom_vehicle={
+                    "brand": "Chevrolet", "model": "N300", "year": 2015, "fuel_type": "diesel",
+                }
+            ),
+            environ_overrides=self._fake_ip(),
+        )
+        self.assertEqual(response.status_code, 200, response.get_json())
+        self.assertEqual(response.get_json()["vehicle"]["fuel_type"], "diesel")
+
+    # ------------------------------------------------------------------
+    # Ausencia de persistencia y de efectos secundarios
+    # ------------------------------------------------------------------
+
+    def test_public_calculation_creates_no_rows(self):
+        _, make = self._create_catalog_vehicle()
+        with self.app.app_context():
+            trips_before = Trip.query.count()
+            uservehicles_before = UserVehicle.query.count()
+            vehicles_before = Vehicle.query.count()
+
+        client = self.app.test_client()
+        response = client.post(
+            "/api/trips/calculate",
+            json=self._catalog_payload(make),
+            environ_overrides=self._fake_ip(),
+        )
+        self.assertEqual(response.status_code, 200)
+
+        response_custom = client.post(
+            "/api/trips/calculate",
+            json=self._custom_payload(),
+            environ_overrides=self._fake_ip(),
+        )
+        self.assertEqual(response_custom.status_code, 200)
+
+        with self.app.app_context():
+            self.assertEqual(Trip.query.count(), trips_before)
+            self.assertEqual(UserVehicle.query.count(), uservehicles_before)
+            self.assertEqual(Vehicle.query.count(), vehicles_before)
+
+    def test_public_calculation_does_not_modify_calibration_factor(self):
+        vehicle_id, make = self._create_catalog_vehicle()
+        with self.app.app_context():
+            before = Vehicle.query.get(vehicle_id).calibration_factor
+
+        client = self.app.test_client()
+        response = client.post(
+            "/api/trips/calculate",
+            json=self._catalog_payload(make),
+            environ_overrides=self._fake_ip(),
+        )
+        self.assertEqual(response.status_code, 200)
+
+        with self.app.app_context():
+            after = Vehicle.query.get(vehicle_id).calibration_factor
+        self.assertEqual(before, after)
+
+    # ------------------------------------------------------------------
+    # Validación de payload, coordenadas y geometría
+    # ------------------------------------------------------------------
+
+    def test_out_of_range_coordinates_are_rejected(self):
+        client = self.app.test_client()
+        for bad_origin in (
+            {"lat": 200, "lng": -70.66},
+            {"lat": -33.45, "lng": -400},
+        ):
+            with self.subTest(bad_origin=bad_origin):
+                response = client.post(
+                    "/api/trips/calculate",
+                    json=self._custom_payload(origin=bad_origin),
+                    environ_overrides=self._fake_ip(),
+                )
+                self.assertEqual(response.status_code, 400)
+
+    def test_non_finite_coordinates_are_rejected(self):
+        client = self.app.test_client()
+        response = client.post(
+            "/api/trips/calculate",
+            json=self._custom_payload(origin={"lat": float("nan"), "lng": -70.66}),
+            environ_overrides=self._fake_ip(),
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_non_numeric_coordinates_are_rejected(self):
+        client = self.app.test_client()
+        response = client.post(
+            "/api/trips/calculate",
+            json=self._custom_payload(destination={"lat": "north", "lng": -70.66}),
+            environ_overrides=self._fake_ip(),
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_excessively_long_polyline_is_rejected(self):
+        client = self.app.test_client()
+        response = client.post(
+            "/api/trips/calculate",
+            json=self._custom_payload(route_polyline="a" * (MAX_POLYLINE_LENGTH + 1)),
+            environ_overrides=self._fake_ip(),
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_oversized_payload_is_rejected(self):
+        client = self.app.test_client()
+        payload = self._custom_payload()
+        payload["origin_label"] = "X" * (MAX_PUBLIC_PAYLOAD_BYTES + 100)
+        response = client.post(
+            "/api/trips/calculate",
+            json=payload,
+            environ_overrides=self._fake_ip(),
+        )
+        self.assertEqual(response.status_code, 413)
+
+    # ------------------------------------------------------------------
+    # Rate limit propio de la ruta pública
+    # ------------------------------------------------------------------
+
+    def test_public_endpoint_is_rate_limited(self):
+        # Bloque TEST-NET-3, reservado a este test: no lo genera _fake_ip().
+        limit = int(PUBLIC_CALCULATE_RATE_LIMIT.split(" ")[0])
+        client = self.app.test_client()
+        fixed_ip = {"REMOTE_ADDR": "203.0.113.99"}
+
+        for _ in range(limit):
+            response = client.post(
+                "/api/trips/calculate",
+                json=self._custom_payload(),
+                environ_overrides=fixed_ip,
+            )
+            self.assertEqual(response.status_code, 200)
+
+        blocked = client.post(
+            "/api/trips/calculate",
+            json=self._custom_payload(),
+            environ_overrides=fixed_ip,
+        )
+        self.assertEqual(blocked.status_code, 429)
+
+    # ------------------------------------------------------------------
+    # calculate-and-save conserva su exigencia de autenticación
+    # ------------------------------------------------------------------
+
+    def test_calculate_and_save_rejects_anonymous_access(self):
+        client = self.app.test_client()
+        response = client.post(
+            "/api/trips/calculate-and-save",
+            json=self._custom_payload(),
+            environ_overrides=self._fake_ip(),
+        )
+        self.assertEqual(response.status_code, 401)
+
+    def test_calculate_and_save_still_works_for_authenticated_user(self):
+        client = self.app.test_client()
+        token = self._register(client, "auth-still-works@example.com")
+        response = client.post(
+            "/api/trips/calculate-and-save",
+            json=self._custom_payload(),
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        self.assertEqual(response.status_code, 201, response.get_json())
+        body = response.get_json()
+        self.assertTrue(body["saved"])
+        self.assertIn("id", body)
+
+    # ------------------------------------------------------------------
+    # Equivalencia numérica: público vs. autenticado, mismas entradas
+    # ------------------------------------------------------------------
+
+    def test_public_and_authenticated_results_are_numerically_equivalent_custom_vehicle(self):
+        client = self.app.test_client()
+        token = self._register(client, "equivalence-custom@example.com")
+
+        payload = self._custom_payload()
+        public_response = client.post(
+            "/api/trips/calculate", json=payload, environ_overrides=self._fake_ip(),
+        )
+        auth_response = client.post(
+            "/api/trips/calculate-and-save", json=payload,
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        self.assertEqual(public_response.status_code, 200, public_response.get_json())
+        self.assertEqual(auth_response.status_code, 201, auth_response.get_json())
+
+        public_body = public_response.get_json()
+        auth_body = auth_response.get_json()
+        for field in (
+            "distance", "fuelUsed", "totalCost", "adjustedFC", "baseFC",
+            "roadGrade", "weather", "consumptionProfile", "vehicle",
+        ):
+            self.assertEqual(public_body[field], auth_body[field], field)
+
+    def test_public_and_authenticated_results_are_numerically_equivalent_catalog_vehicle(self):
+        _, make = self._create_catalog_vehicle()
+        client = self.app.test_client()
+        token = self._register(client, "equivalence-catalog@example.com")
+
+        payload = self._catalog_payload(make)
+        public_response = client.post(
+            "/api/trips/calculate", json=payload, environ_overrides=self._fake_ip(),
+        )
+        auth_response = client.post(
+            "/api/trips/calculate-and-save", json=payload,
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        self.assertEqual(public_response.status_code, 200, public_response.get_json())
+        self.assertEqual(auth_response.status_code, 201, auth_response.get_json())
+
+        public_body = public_response.get_json()
+        auth_body = auth_response.get_json()
+        for field in (
+            "distance", "fuelUsed", "totalCost", "adjustedFC", "baseFC",
+            "roadGrade", "weather", "consumptionProfile", "vehicle",
+        ):
+            self.assertEqual(public_body[field], auth_body[field], field)
 
 
 if __name__ == "__main__":
