@@ -151,3 +151,46 @@
   .collapsible-trip-panel { border-radius: 18px; }
   .collapsible-trip-panel .trip-form { border-radius: 0 0 18px 18px; }
 }
+
+/* Dos causas confirmadas contra Google Maps real en móvil horizontal
+   (844x390): (1) el alto de .map-wrapper se fijaba con aspect-ratio,
+   calculado a partir del ANCHO del contenedor y sin relación con el alto
+   real del viewport -- en horizontal eso daba ~585px de alto, muy por
+   encima de los 390px de viewport, empujando el origen y parte del
+   recorrido fuera del área visible sin necesidad de scroll. (2) Una vez
+   acotada esa altura al espacio real disponible, el recorrido reencuadrado
+   por DirectionsRenderer puede caer bajo .search-container, que se
+   superpone al mapa como overlay absoluto -- confirmado visualmente: el
+   destino quedaba oculto tras el buscador. Este bloque corrige ambas: (1)
+   acota el alto de .map-wrapper a lo que cabe en el viewport, para que el
+   propio ajuste automático de DirectionsRenderer (ya verificado, sin
+   cambios de cámara aquí) encuadre el recorrido dentro del espacio visible;
+   (2) en vez de dejar el buscador flotando sobre el mapa (que en un mapa ya
+   bajo aumenta el riesgo de tapar la ruta), pasa a ocupar su propia fila
+   fija arriba, reduciendo pero eliminando por completo la superposición
+   -- no es un ajuste de cámara ni compite con setDirections()/fitBounds(),
+   solo reparte el espacio del contenedor entre buscador y mapa. Va al
+   final del archivo, después de los breakpoints por ancho, para que gane
+   sobre ellos en un teléfono angosto Y apaisado a la vez. */
+@media (max-width: 920px) and (max-height: 600px) and (orientation: landscape) {
+  .map-wrapper {
+    aspect-ratio: auto;
+    flex-direction: column;
+    height: min(78vh, 420px);
+    min-height: 220px;
+  }
+
+  .search-container {
+    position: static;
+    left: auto;
+    width: 100%;
+    flex: none;
+    transform: none;
+  }
+
+  .map-container {
+    flex: 1;
+    height: auto;
+    min-height: 0;
+  }
+}
