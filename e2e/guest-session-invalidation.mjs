@@ -60,7 +60,14 @@ const FAKE_POLYLINE = "nedkE~wgnL_`qAnylD"; // Santiago -> Valparaíso (real, de
 const ORIGIN_LABEL = "Origen Playwright E2E";
 const DESTINATION_LABEL = "Destino Playwright E2E";
 const TEST_BRAND = "PlaywrightTest";
-const TEST_MODEL = "SesionInvalidacion";
+// Sufijo único por ejecución: si una corrida anterior no llegó a limpiar su
+// viaje (p. ej. por un fallo a mitad de la prueba), TEST_BRAND por sí solo
+// ya no basta para identificar SIN AMBIGÜEDAD cuál viaje borrar -- podría
+// haber más de uno con esa marca. El sufijo hace que cada ejecución cree un
+// modelo imposible de confundir con el de cualquier otra corrida (pasada o
+// futura), sin depender del orden de clasificación del historial.
+const RUN_ID = `${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
+const TEST_MODEL = `SesionInvalidacion-${RUN_ID}`;
 
 const PASS = [];
 const FAIL = [];
@@ -377,17 +384,27 @@ async function main() {
   console.log("\n=== Verificando historial y limpiando el viaje de prueba ===");
   await page.goto(`${FRONTEND_URL}/profile`);
   await page.waitForLoadState("networkidle");
-  const testCard = page.locator(".trip-card", { hasText: TEST_BRAND }).first();
-  const appearsInHistory = await testCard.isVisible().catch(() => false);
-  check("A: el viaje de prueba aparece en el historial", appearsInHistory);
+
+  // Identificación SIN AMBIGÜEDAD: se filtra por TEST_MODEL, que incluye
+  // RUN_ID (timestamp + aleatorio, único por ejecución) -- no por TEST_BRAND
+  // a secas, que sería idéntico entre corridas y podría coincidir con un
+  // viaje de otra ejecución (p. ej. una anterior que no llegó a limpiarse).
+  // Antes de tocar nada se exige que el conteo sea EXACTAMENTE 1: si hay 0
+  // o más de 1, el script se niega a borrar en vez de adivinar con .first().
+  const matchingCards = page.locator(".trip-card", { hasText: TEST_MODEL });
+  const matchCount = await matchingCards.count();
+  check("A: el viaje de prueba aparece en el historial, identificado sin ambigüedad", matchCount === 1, `coincidencias=${matchCount}`);
 
   let cleanedUp = false;
-  if (appearsInHistory) {
+  if (matchCount === 1) {
+    const testCard = matchingCards.first();
     await testCard.getByRole("button", { name: "Eliminar" }).click();
     await page.getByRole("button", { name: "Confirmar" }).click();
     await page.waitForTimeout(500);
-    cleanedUp = !(await page.locator(".trip-card", { hasText: TEST_BRAND }).first().isVisible().catch(() => false));
+    cleanedUp = (await page.locator(".trip-card", { hasText: TEST_MODEL }).count()) === 0;
     check("A: el viaje de prueba se eliminó correctamente (mecanismo habitual de la app)", cleanedUp);
+  } else {
+    console.log(`ATENCIÓN: se omitió la limpieza automática porque hay ${matchCount} viajes que coinciden con el modelo único de esta corrida (se esperaba exactamente 1). Revisa el historial manualmente antes de repetir la prueba.`);
   }
 
   // ============================================================
