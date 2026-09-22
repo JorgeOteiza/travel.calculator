@@ -43,6 +43,12 @@ def create_app():
 
     app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("SQLALCHEMY_DATABASE_URI")
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+    # Evita reutilizar conexiones que el servidor/pooler ya cerró del lado
+    # remoto mientras estaban inactivas (ver incidente SSL connection has
+    # been closed unexpectedly en /api/login y /api/register).
+    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+        "pool_pre_ping": True,
+    }
     app.config["JWT_SECRET_KEY"] = jwt_secret_key
     app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(minutes=30)
     app.config["DEBUG"] = os.getenv("DEBUG", "False") == "True"
