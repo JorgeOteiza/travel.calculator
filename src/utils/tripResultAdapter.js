@@ -26,4 +26,7 @@ export const tripToResult = (trip) => ({
   vehicle: { make: trip.brand, model: trip.model, year: trip.year, fuel_type: trip.fuel_type },
   settings: { currency: "CLP", distanceUnit: "km" },
   fromHistory: true,
+  // Todo lo que pasa por este adaptador viene de un Trip ya persistido
+  // (tiene id, viene del historial autenticado) — siempre guardado.
+  saved: true,
 });

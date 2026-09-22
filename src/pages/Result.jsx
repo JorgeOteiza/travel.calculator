@@ -13,6 +13,15 @@ const Result = () => {
 
   if (!result) return <div className="empty-result"><span>🧭</span><h1>No hay un resultado disponible</h1><p>Realiza un cálculo para generar el resumen.</p><Link to="/calculadora">Ir a la calculadora</Link></div>;
 
+  // saved === false: cálculo real de invitado o de sesión expirada (ver
+  // useTripCalculation.js), nunca un viaje del historial. sessionExpired
+  // distingue el caso de un token que dejó de ser válido a mitad del envío.
+  const savedNotice = result.saved === false
+    ? (result.sessionExpired
+        ? "Tu sesión expiró, así que este viaje no se guardó."
+        : "Este resultado no se guardó.")
+    : null;
+
   const currency = result.settings?.currency || "CLP";
   const cost = new Intl.NumberFormat("es-CL", { style: "currency", currency, maximumFractionDigits: currency === "CLP" ? 0 : 2 }).format(result.totalCost || 0);
   const costPerKm = new Intl.NumberFormat("es-CL", { style: "currency", currency, maximumFractionDigits: currency === "CLP" ? 0 : 2 }).format(result.distance > 0 ? result.totalCost / result.distance : 0);
@@ -34,7 +43,7 @@ const Result = () => {
     <div className="result-page quick-result-page">
       <header className="result-header">
         <div className="result-heading-copy">
-          <span className="result-kicker">Resultado rápido {result.isDemo && "· Demostración"}</span>
+          <span className="result-kicker">Resultado rápido {result.isDemo && "· Demostración"}{result.saved === false && "· No guardado"}</span>
           <h1 title={`${result.originLabel} → ${result.destinationLabel}`}><span className="route-location">{result.originLabel || "Origen"}</span><i>→</i><span className="route-location">{result.destinationLabel || "Destino"}</span></h1>
           <p>Revisa el costo principal o abre el análisis para entender cada ajuste.</p>
         </div>
@@ -43,6 +52,12 @@ const Result = () => {
           <Link to="/calculadora">Nuevo cálculo</Link>
         </div>
       </header>
+
+      {savedNotice && (
+        <div className="result-notice" role="status">
+          {savedNotice} Inicia sesión para guardar tus próximos viajes. <Link to="/login">Iniciar sesión</Link>
+        </div>
+      )}
 
       <section className="quick-result-card">
         <div className="quick-result-lead"><span>Costo estimado de combustible</span><strong>{cost}</strong><p>Consumo contextual de la ruta × precio por litro ingresado.</p></div>

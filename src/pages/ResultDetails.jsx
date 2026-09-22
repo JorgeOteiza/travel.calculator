@@ -17,10 +17,18 @@ const ResultDetails = () => {
 
   if (!result) return <div className="empty-result"><h1>No hay detalles disponibles</h1><Link to="/calculadora">Ir a la calculadora</Link></div>;
   const cost = new Intl.NumberFormat("es-CL", { style: "currency", currency, maximumFractionDigits: currency === "CLP" ? 0 : 2 }).format(result.totalCost || 0);
+  // saved === false: cálculo real de invitado o de sesión expirada (ver
+  // useTripCalculation.js), nunca un viaje del historial.
+  const savedNotice = result.saved === false
+    ? (result.sessionExpired
+        ? "Tu sesión expiró, así que este viaje no se guardó."
+        : "Este resultado no se guardó.")
+    : null;
 
   return <div className="result-page">
     <Link className="back-to-summary" to="/resultado" state={{ result }}>← Volver al resumen</Link>
-    <header className="result-header"><div className="result-heading-copy"><span className="result-kicker">Análisis detallado</span><h1 title={`${result.originLabel} → ${result.destinationLabel}`}><span className="route-location">{result.originLabel || "Origen"}</span><i>→</i><span className="route-location">{result.destinationLabel || "Destino"}</span></h1><p>Desglose del consumo, la ruta y los ajustes aplicados.</p></div><div className="result-actions"><button type="button" onClick={() => setShowShare(true)}>Compartir resumen</button><Link to="/calculadora">Nuevo cálculo</Link></div></header>
+    <header className="result-header"><div className="result-heading-copy"><span className="result-kicker">Análisis detallado {result.saved === false && "· No guardado"}</span><h1 title={`${result.originLabel} → ${result.destinationLabel}`}><span className="route-location">{result.originLabel || "Origen"}</span><i>→</i><span className="route-location">{result.destinationLabel || "Destino"}</span></h1><p>Desglose del consumo, la ruta y los ajustes aplicados.</p></div><div className="result-actions"><button type="button" onClick={() => setShowShare(true)}>Compartir resumen</button><Link to="/calculadora">Nuevo cálculo</Link></div></header>
+    {savedNotice && <div className="result-notice" role="status">{savedNotice} Inicia sesión para guardar tus próximos viajes. <Link to="/login">Iniciar sesión</Link></div>}
     <section className="result-settings"><label>Moneda<select value={currency} onChange={(e) => setCurrency(e.target.value)}><option>CLP</option><option>USD</option><option>EUR</option></select></label><label>Distancia<select value={distanceUnit} onChange={(e) => setDistanceUnit(e.target.value)}><option value="km">Kilómetros</option><option value="mi">Millas</option></select></label><p>El selector cambia el formato, no convierte el tipo de cambio.</p></section>
     <section className="metric-grid"><article><span>Distancia</span><strong>{formatDistance(distance)} {distanceUnit}</strong><small>Ruta calculada</small></article><article><span>Combustible estimado</span><strong>{formatLiters(result.fuelUsed)} L</strong><small>{formatConsumption(result.adjustedFC)} L/100 km</small></article><article className="metric-highlight"><span>Costo de combustible</span><strong>{cost}</strong><small>Litros estimados × precio por litro</small></article><article><span>Clima</span><strong>{getWeatherLabel(result.weather)}</strong><small>Pendiente media {formatPercentage(result.roadGrade)}%</small></article></section>
     <section className="chart-grid"><LineChart data={result.elevationProfile} valueKey="elevation" label="Perfil de elevación" unit="m" /><LineChart data={result.consumptionProfile} valueKey="consumption_l100km" label="Consumo por segmento" unit="L/100 km" color="#ef8a3c" /></section>
