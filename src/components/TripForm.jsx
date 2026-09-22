@@ -266,8 +266,8 @@ const TripForm = ({
       )}
 
       <div className="passenger-weight-row">
-        <div className="compact-form-field"><label htmlFor="passengers">Número de pasajeros</label><input id="passengers" type="number" name="passengers" value={formData.passengers ?? ""} onChange={handleChange} placeholder="Ej. 2" min="1" className="custom-input" required />{errors.passengers && <span className="error-text">{errors.passengers}</span>}</div>
-        <div className="compact-form-field"><label htmlFor="extraWeight">Peso adicional (kg)</label><input id="extraWeight" type="number" name="extraWeight" value={formData.extraWeight ?? ""} onChange={handleChange} placeholder="Ej. 20" min="0" className="custom-input" required />{errors.extraWeight && <span className="error-text">{errors.extraWeight}</span>}</div>
+        <div className="compact-form-field"><label htmlFor="passengers">Número de pasajeros</label><input id="passengers" type="number" name="passengers" value={formData.passengers ?? ""} onChange={handleChange} onFocus={(e) => e.target.select()} placeholder="Ej. 2" min="1" className="custom-input" required />{errors.passengers && <span className="error-text">{errors.passengers}</span>}</div>
+        <div className="compact-form-field"><label htmlFor="extraWeight">Peso adicional (kg)</label><input id="extraWeight" type="number" name="extraWeight" value={formData.extraWeight ?? ""} onChange={handleChange} onFocus={(e) => e.target.select()} placeholder="Ej. 20" min="0" className="custom-input" required />{errors.extraWeight && <span className="error-text">{errors.extraWeight}</span>}</div>
       </div>
 
       <div className="trip-preferences">

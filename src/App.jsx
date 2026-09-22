@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+import ScrollToTop from "./components/ScrollToTop";
 import Home from "./pages/Home";
 import Landing from "./pages/Landing";
 import Result from "./pages/Result";
@@ -45,6 +46,7 @@ function App() {
 
   return (
     <Router>
+      <ScrollToTop />
       <Navbar user={user} setUser={setUser} authLoading={loadingUser} />
       <main className="main-container">
         <Routes>
