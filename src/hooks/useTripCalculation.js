@@ -1,6 +1,7 @@
 import { useState } from "react";
 import axios from "axios";
 import { API_BASE_URL } from "../config/api";
+import { logout } from "../utils/auth";
 
 // Construye el payload una sola vez a partir del formulario. Es el mismo
 // objeto para ambos endpoints (público y autenticado): lo único que cambia
@@ -85,7 +86,7 @@ const resolveErrorMessage = (error) => {
   return serviceMessage || "No fue posible calcular el viaje.";
 };
 
-export const useTripCalculation = (formData) => {
+export const useTripCalculation = (formData, onSessionInvalidated) => {
   const [isCalculating, setIsCalculating] = useState(false);
   const [calculationError, setCalculationError] = useState("");
 
@@ -130,12 +131,25 @@ export const useTripCalculation = (formData) => {
         // Sesión expirada o token inválido: NO se llama a handleAuthError()
         // aquí a propósito. handleAuthError() cierra sesión y redirige a
         // /login, lo que en este flujo perdería los datos ya ingresados en
-        // el formulario. En vez de eso, reutilizamos el mismo payload — sin
-        // pedir de nuevo los datos — contra el endpoint público, una única
-        // vez (sin reintentos en bucle). El resultado se marca con
-        // sessionExpired para que la página de resultado explique lo
-        // ocurrido; el manejo de sesión expirada de perfil/historial no se
-        // toca y sigue usando handleAuthError() como hasta ahora.
+        // el formulario y la presentación del resultado público. En vez de
+        // eso, invalidamos la sesión de forma acotada (localStorage + el
+        // estado `user` de React vía onSessionInvalidated) y reutilizamos
+        // el mismo payload — sin pedir de nuevo los datos — contra el
+        // endpoint público, una única vez (sin reintentos en bucle). El
+        // manejo de sesión expirada de perfil/historial no se toca y sigue
+        // usando handleAuthError() como hasta ahora.
+        //
+        // Guarda contra respuestas tardías: `token` es el que se usó en
+        // ESTA petición (capturado al inicio de esta ejecución de
+        // calculateTrip). Si el usuario cerró sesión e inició una nueva
+        // mientras la petición estaba en curso, localStorage ya tiene un
+        // token distinto — en ese caso esta respuesta 401 es tardía
+        // respecto a la sesión nueva, y no la tocamos.
+        if (localStorage.getItem("token") === token) {
+          logout();
+          onSessionInvalidated?.();
+        }
+
         try {
           const fallback = await axios.post(`${API_BASE_URL}/api/trips/calculate`, payload);
           return { ...fallback.data, sessionExpired: true };

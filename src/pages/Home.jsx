@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import PropTypes from "prop-types";
 import TripForm from "../components/TripForm";
 import GoogleMapSection from "../components/GoogleMapSection";
 import useTripData from "../hooks/useTripData";
@@ -10,7 +11,7 @@ import { useTripFormHandlers } from "../hooks/useTripFormHandlers";
 import { DEFAULT_MAP_CENTER } from "../constants/googleMaps";
 import "../styles/home.css";
 
-const Home = () => {
+const Home = ({ setUser }) => {
   const navigate = useNavigate();
   const userFromStorage = JSON.parse(localStorage.getItem("user"));
   const {
@@ -84,7 +85,13 @@ const Home = () => {
     }));
   }, [handleBrandSelect, setFormData]);
 
-  const { calculateTrip, isCalculating, calculationError } = useTripCalculation(formData);
+  // Si calculate-and-save responde 401 con el token vigente en ese momento,
+  // useTripCalculation ya invalida localStorage (logout()) y avisa aquí para
+  // que Navbar deje de mostrar la sesión cerrada de inmediato — sin navegar.
+  const { calculateTrip, isCalculating, calculationError } = useTripCalculation(
+    formData,
+    () => setUser(null),
+  );
 
   const handleSubmit = async () => {
     const validationErrors = validateTripForm(formData);
@@ -149,6 +156,10 @@ const Home = () => {
       </div>
     </div>
   );
+};
+
+Home.propTypes = {
+  setUser: PropTypes.func.isRequired,
 };
 
 export default Home;

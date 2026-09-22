@@ -49,7 +49,7 @@ function App() {
       <main className="main-container">
         <Routes>
           <Route path="/" element={<Landing />} />
-          <Route path="/calculadora" element={<Home user={user} />} />
+          <Route path="/calculadora" element={<Home user={user} setUser={setUser} />} />
           <Route path="/resultado" element={<Result />} />
           <Route path="/resultado/detalles" element={<ResultDetails />} />
           <Route path="/about" element={<About />} />
