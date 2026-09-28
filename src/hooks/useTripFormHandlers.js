@@ -6,8 +6,6 @@ export const useTripFormHandlers = (
   fetchWeather,
 ) => {
   const handleLocationChange = useCallback((field, data) => {
-    console.log("📥 handleLocationChange", field, data);
-
     // 🧭 POLYLINE
     if (field === "route_polyline") {
       setFormData((prev) => ({

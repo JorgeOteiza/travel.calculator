@@ -32,7 +32,6 @@ const Register = ({ setUser }) => {
           throw new Error("⚠️ No se recibió un token o usuario válido.");
         }
 
-        console.log("🔑 Token recibido:", jwt);
         localStorage.setItem("token", jwt);
         localStorage.setItem("user", JSON.stringify(user));
 

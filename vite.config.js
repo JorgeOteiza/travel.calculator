@@ -15,6 +15,11 @@ export default defineConfig(({ mode, command }) => {
 
   return {
     plugins: [react()],
+    build: {
+      // Declaración explícita del comportamiento por defecto de Vite: no
+      // publicar source maps del código fuente original en producción.
+      sourcemap: false,
+    },
     define: {
       "import.meta.env.VITE_BACKEND_URL": JSON.stringify(env.VITE_BACKEND_URL),
       "import.meta.env.VITE_GOOGLE_MAPS_API_KEY": JSON.stringify(

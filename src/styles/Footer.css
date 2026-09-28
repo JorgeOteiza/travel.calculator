@@ -20,14 +20,3 @@ footer p {
     font-size: 11px;
   }
 }
-
-footer a {
-  color: #aad8ff;
-  text-decoration: none;
-  padding: 1px;
-  margin: 1px;
-}
-
-footer a:hover {
-  text-decoration: underline;
-}

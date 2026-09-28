@@ -355,8 +355,6 @@ const GoogleMapSection = ({
 
     routeCalculatedRef.current = true;
 
-    console.log("🧭 Calculando ruta", { origin, destination });
-
     routeRequestIdRef.current += 1;
     const requestId = routeRequestIdRef.current;
 
@@ -367,8 +365,6 @@ const GoogleMapSection = ({
         travelMode: window.google.maps.TravelMode.DRIVING,
       },
       (result, status) => {
-        console.log("📡 Directions callback:", status);
-
         // Respuesta fuera de orden, de una dirección ya editada, o llegada
         // tras el desmontaje: se descarta sin tocar ningún estado (ni el
         // mapa, ni las refs, ni el formulario).
@@ -391,8 +387,6 @@ const GoogleMapSection = ({
 
         // 🔥 FIX REAL AQUÍ
         const encodedPolyline = route?.overview_polyline;
-
-        console.log("🧵 Polyline:", encodedPolyline);
 
         if (!encodedPolyline) {
           console.error("❌ NO polyline");

@@ -46,11 +46,6 @@ const Landing = () => {
         <article><span>02</span><h2>Cada tramo importa</h2><p>La ruta se divide en segmentos con pendientes positivas y negativas, elevación y tipo de vía predominante.</p></article>
         <article><span>03</span><h2>Condiciones del viaje</h2><p>Ajusta por clima, tráfico según horario, trayectos cortos, pasajeros, carga y ritmo de conducción.</p></article>
       </section>
-
-      <section className="landing-stack">
-        <p>Construido con</p>
-        <div><span>React</span><span>Flask</span><span>PostgreSQL</span><span>Google Maps</span><span>Open-Meteo</span></div>
-      </section>
     </div>
   );
 };
