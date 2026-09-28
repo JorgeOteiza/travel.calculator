@@ -8,12 +8,47 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(80), nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
-    password = db.Column(db.String(256), nullable=False)
+    # Nullable: una cuenta creada exclusivamente mediante un proveedor
+    # externo (p. ej. Google) no tiene ni necesita contraseña propia. El
+    # registro tradicional (backend/routes/auth_routes.py) sigue exigiendo
+    # contraseña igual que antes -- este cambio de esquema no relaja esa
+    # validación, solo permite que exista el caso sin contraseña.
+    password = db.Column(db.String(256), nullable=True)
     session_version = db.Column(db.Integer, nullable=False, default=0)
+    # NOT NULL con default de aplicación en False y server_default a nivel
+    # de base de datos (coherente con el ALTER TABLE de la migración): las
+    # cuentas existentes NO verificaron realmente su correo, así que quedan
+    # en False -- no se les atribuye un hecho que no ocurrió. Todavía no se
+    # usa como gate de ninguna funcionalidad (login, guardar viajes, perfil).
+    email_verified = db.Column(db.Boolean, nullable=False, default=False, server_default=db.false())
+    email_verified_at = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=lambda: datetime.now(UTC).replace(tzinfo=None))
 
     trips = db.relationship("Trip", back_populates="user", cascade="all, delete", lazy=True)
     roles = db.relationship("Role", secondary="user_role", backref="users")
+    # Vínculos con proveedores externos (Google y, más adelante, otros) y
+    # tokens de verificación/recuperación. Si se elimina un User, ninguno de
+    # los dos tiene sentido por sí solo -- mismo criterio de cascade que ya
+    # se usa para trips. El cascade se declara aquí, del lado "uno", no en
+    # AuthIdentity.user/VerificationToken.user -- es la convención habitual
+    # de SQLAlchemy y la que ya sigue trips/Trip.user.
+    #
+    # Nota deliberada sobre el alcance de este cascade: es EXCLUSIVAMENTE a
+    # nivel de ORM (cascade="all, delete" de SQLAlchemy), igual que ya hace
+    # el proyecto para trips/RevokedToken -- ninguna FK del esquema usa
+    # ondelete="CASCADE" a nivel de PostgreSQL. Esto significa que eliminar
+    # un User funciona limpiamente vía db.session.delete(user) (el ORM
+    # borra primero las filas hijas), pero un DELETE directo en PostgreSQL
+    # que ignore el ORM fallará por violación de FK si quedan filas
+    # relacionadas -- no las elimina en cascada ni las deja huérfanas en
+    # silencio. Mantener el mismo criterio que trips evita mezclar dos
+    # comportamientos de cascade distintos dentro del mismo esquema.
+    auth_identities = db.relationship(
+        "AuthIdentity", back_populates="user", cascade="all, delete", lazy=True
+    )
+    verification_tokens = db.relationship(
+        "VerificationToken", back_populates="user", cascade="all, delete", lazy=True
+    )
 
     def __init__(self, name, email, password):
         self.name = name
@@ -256,3 +291,73 @@ class RevokedToken(db.Model):
     revoked_at = db.Column(
         db.DateTime, nullable=False, default=lambda: datetime.now(UTC).replace(tzinfo=None)
     )
+
+
+class AuthIdentity(db.Model):
+    """Vínculo entre un User y una identidad externa (Google y, más
+    adelante, otros proveedores OIDC/OAuth). Preparatorio: en este
+    checkpoint no se genera, valida ni consume ninguna identidad todavía.
+
+    provider_subject es el identificador ESTABLE que entrega el proveedor
+    (p. ej. el "sub" de un ID token de Google) -- nunca el email, que puede
+    cambiar o faltar según el proveedor. provider_email/
+    provider_email_verified son solo lo que el proveedor reportó en el
+    momento del vínculo, no se usan como prueba de identidad por sí solos.
+    """
+    __tablename__ = "auth_identity"
+
+    __table_args__ = (
+        db.UniqueConstraint(
+            "provider", "provider_subject", name="uq_auth_identity_provider_subject"
+        ),
+    )
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False, index=True)
+
+    provider = db.Column(db.String(30), nullable=False)
+    provider_subject = db.Column(db.String(255), nullable=False)
+
+    provider_email = db.Column(db.String(120), nullable=True)
+    provider_email_verified = db.Column(
+        db.Boolean, nullable=False, default=False, server_default=db.false()
+    )
+
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(UTC).replace(tzinfo=None))
+
+    user = db.relationship("User", back_populates="auth_identities")
+
+
+class VerificationToken(db.Model):
+    """Token reutilizable de un solo uso para verificación de correo y,
+    más adelante, recuperación de contraseña. Preparatorio: en este
+    checkpoint no se genera, hashea ni consume ningún token todavía.
+
+    Se guarda solo el HASH del token, nunca el token en texto plano -- igual
+    criterio que ya se usa para password en User. `purpose` distingue el uso
+    ("email_verification" | futuro "password_reset") reutilizando la misma
+    tabla en vez de duplicar su forma cuando se agregue recuperación de
+    contraseña.
+
+    `purpose` es un string, no un ENUM nativo de PostgreSQL: todos los demás
+    campos "de tipo/categoría" del proyecto (token_type, data_source,
+    fuel_type, road_profile, driving_style, weather, consumption_source,
+    elevation_source, etc.) ya usan db.String, ninguno usa ENUM de Postgres
+    -- y un ENUM nativo exigiría una migración de esquema (ALTER TYPE) cada
+    vez que se agregue un nuevo propósito, mientras que un string no
+    requiere ningún cambio de esquema para aceptar "password_reset" el día
+    de mañana.
+    """
+    __tablename__ = "verification_token"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False, index=True)
+
+    token_hash = db.Column(db.String(128), nullable=False, unique=True)
+    purpose = db.Column(db.String(30), nullable=False)
+
+    expires_at = db.Column(db.DateTime, nullable=False)
+    used_at = db.Column(db.DateTime, nullable=True)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(UTC).replace(tzinfo=None))
+
+    user = db.relationship("User", back_populates="verification_tokens")
