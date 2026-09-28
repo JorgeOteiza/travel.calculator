@@ -1,9 +1,34 @@
 from datetime import UTC, datetime
 from backend.extensions import db, bcrypt
+from backend.utils.email_utils import normalize_email
 
 
 class User(db.Model):
     __tablename__ = "user"
+
+    __table_args__ = (
+        # Garantía a nivel de base de datos de que email siempre queda en
+        # forma canónica (recortado + minúsculas) y no vacío, sin depender
+        # únicamente de que cada ruta recuerde llamar a normalize_email().
+        # lower()/trim() son funciones SQL estándar, compatibles tanto con
+        # PostgreSQL como con el SQLite en memoria que usan los tests --
+        # deliberadamente se evita algo PostgreSQL-only como btrim().
+        #
+        # NOTA sobre equivalencia con normalize_email(): trim() SQL (sin
+        # argumentos de caracteres) solo recorta el carácter espacio (0x20)
+        # -- verificado empíricamente igual en PostgreSQL y SQLite --, a
+        # diferencia de Python str.strip(), que también recorta tab/salto
+        # de línea. No es una equivalencia perfecta, pero cualquier email
+        # que llegue a esta tabla ya pasó por normalize_email() (rutas y
+        # User.__init__), así que en la práctica esto solo importaría ante
+        # un INSERT que evite por completo la capa de aplicación -- riesgo
+        # aceptado deliberadamente en vez de introducir una expresión
+        # PostgreSQL-only o un trigger solo para igualar ese detalle.
+        db.CheckConstraint(
+            "email <> '' AND email = lower(trim(email))",
+            name="ck_user_email_canonical",
+        ),
+    )
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(80), nullable=False)
@@ -52,7 +77,14 @@ class User(db.Model):
 
     def __init__(self, name, email, password):
         self.name = name
-        self.email = email
+        # Canonicaliza también aquí, no solo en las rutas: cualquier código
+        # interno (seeds, tests, futuros flujos OAuth) que construya un
+        # User directamente termina con el mismo email canónico que exige
+        # el CheckConstraint de la tabla, sin duplicar la lógica de
+        # normalize_email() en cada sitio de llamada. NO cambia el
+        # requisito de password -- eso sigue siendo exclusivo del
+        # checkpoint de Google OAuth.
+        self.email = normalize_email(email)
         self.set_password(password)
 
     def set_password(self, password):

@@ -5,6 +5,7 @@ from flask_jwt_extended import (
 )
 from backend.models import db, User, RevokedToken
 from backend.extensions import bcrypt, limiter
+from backend.utils.email_utils import normalize_email
 from functools import wraps
 
 auth_bp = Blueprint('auth_bp', __name__)
@@ -51,6 +52,20 @@ def register():
         if not all([name, email, password]):
             return jsonify({"error": "Todos los campos son obligatorios"}), 400
 
+        # isinstance ANTES de normalize_email(): la utilidad se mantiene
+        # estricta (TypeError ante cualquier no-string) y la validación de
+        # lo que puede llegar en un JSON de HTTP -- un email numérico, una
+        # lista, etc. -- queda aquí, en la ruta, no mezclada dentro de la
+        # utilidad. El chequeo posterior a normalizar cubre el caso de un
+        # email compuesto solo por espacios ("   "), que "not all([...])"
+        # no detecta porque ese string es truthy antes de recortarlo.
+        if not isinstance(email, str):
+            return jsonify({"error": "El correo debe ser un texto válido"}), 400
+
+        email = normalize_email(email)
+        if not email:
+            return jsonify({"error": "El correo no puede estar vacío"}), 400
+
         if User.query.filter_by(email=email).first():
             return jsonify({"error": "El correo ya está registrado"}), 409
 
@@ -87,6 +102,13 @@ def login():
 
     if not email or not password:
         return jsonify({"error": "Correo y contraseña son requeridos"}), 400
+
+    if not isinstance(email, str):
+        return jsonify({"error": "El correo debe ser un texto válido"}), 400
+
+    email = normalize_email(email)
+    if not email:
+        return jsonify({"error": "El correo no puede estar vacío"}), 400
 
     user = User.query.filter_by(email=email).first()
 
