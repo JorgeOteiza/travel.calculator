@@ -75,17 +75,25 @@ class User(db.Model):
         "VerificationToken", back_populates="user", cascade="all, delete", lazy=True
     )
 
-    def __init__(self, name, email, password):
+    def __init__(self, name, email, password=None):
         self.name = name
         # Canonicaliza también aquí, no solo en las rutas: cualquier código
-        # interno (seeds, tests, futuros flujos OAuth) que construya un
-        # User directamente termina con el mismo email canónico que exige
-        # el CheckConstraint de la tabla, sin duplicar la lógica de
-        # normalize_email() en cada sitio de llamada. NO cambia el
-        # requisito de password -- eso sigue siendo exclusivo del
-        # checkpoint de Google OAuth.
+        # interno (seeds, tests, flujos OAuth) que construya un User
+        # directamente termina con el mismo email canónico que exige el
+        # CheckConstraint de la tabla, sin duplicar la lógica de
+        # normalize_email() en cada sitio de llamada.
         self.email = normalize_email(email)
-        self.set_password(password)
+        # password=None es EXCLUSIVAMENTE para cuentas creadas por un
+        # proveedor externo (Google) -- el registro tradicional
+        # (backend/routes/auth_routes.py) sigue validando que password sea
+        # un string no vacío ANTES de llamar a User(...), así que esta rama
+        # nunca se activa para /api/register. Con cualquier valor no-None
+        # (incluida una cadena vacía) el comportamiento es idéntico al de
+        # antes: set_password() sigue siendo quien decide si es válido.
+        if password is None:
+            self.password = None
+        else:
+            self.set_password(password)
 
     def set_password(self, password):
         if not password:

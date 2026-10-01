@@ -17,6 +17,8 @@ flask-caching = "*"
 flask-limiter = "*"
 polyline = "*"
 gunicorn = "*"
+google-auth = "*"
+cachecontrol = "*"
 
 [requires]
 python_version = "3.12"

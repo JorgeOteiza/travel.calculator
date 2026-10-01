@@ -64,3 +64,75 @@
 .register-form button:hover {
   background-color: #218838;
 }
+
+.register-form input:disabled,
+.register-form button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.button-spinner-row {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.button-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  border-top-color: white;
+  border-radius: 50%;
+  display: inline-block;
+  animation: auth-spin 0.7s linear infinite;
+}
+
+@keyframes auth-spin {
+  to { transform: rotate(360deg); }
+}
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 16px 0;
+  color: #999;
+  font-size: 0.85rem;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: #e0e0e0;
+}
+
+.google-signin {
+  display: flex;
+  justify-content: center;
+}
+
+.google-signin__button {
+  display: flex;
+  justify-content: center;
+  min-height: 40px;
+  transition: opacity 0.2s;
+}
+
+.google-signin__error,
+.google-signin__status {
+  font-size: 0.85rem;
+  color: #666;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.google-signin__status .button-spinner {
+  border-color: rgba(0, 0, 0, 0.2);
+  border-top-color: #555;
+}

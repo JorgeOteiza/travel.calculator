@@ -51,6 +51,13 @@ def create_app():
     }
     app.config["JWT_SECRET_KEY"] = jwt_secret_key
     app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(minutes=30)
+    # Leído aquí dentro de create_app() (no como constante de módulo
+    # importada una sola vez) a propósito: create_app() se vuelve a
+    # ejecutar en cada test/proceso, así que esto sí refleja el valor
+    # actual de la variable de entorno en cada caso, en vez de quedar
+    # congelado en lo que valía la primera vez que algo importó el
+    # módulo que la leyera.
+    app.config["GOOGLE_CLIENT_ID"] = os.getenv("GOOGLE_CLIENT_ID")
     app.config["DEBUG"] = os.getenv("DEBUG", "False") == "True"
 
     # extensiones

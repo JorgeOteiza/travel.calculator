@@ -26,6 +26,14 @@ export default defineConfig(({ mode, command }) => {
         env.VITE_GOOGLE_MAPS_API_KEY
       ),
       "import.meta.env.VITE_MAP_ID": JSON.stringify(env.VITE_MAP_ID),
+      // Identificador público del cliente OAuth (Sign in with Google) --
+      // no es un secreto, pero igual debe pasar por este whitelist
+      // explícito de variables VITE_* que ya usa el proyecto para el
+      // build de producción, o quedaría undefined en el bundle aunque
+      // esté definida en Cloudflare Pages.
+      "import.meta.env.VITE_GOOGLE_CLIENT_ID": JSON.stringify(
+        env.VITE_GOOGLE_CLIENT_ID
+      ),
     },
     server: {
       proxy: {
